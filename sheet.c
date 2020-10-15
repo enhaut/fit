@@ -77,7 +77,8 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     }
     printf("\n");
 
-    return 1;
+    if (row_index == 0)  // set column count from first row
+        *columns_count = column_index;
 
     return 0;
 }
