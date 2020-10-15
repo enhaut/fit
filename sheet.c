@@ -6,14 +6,8 @@
 #include <stdbool.h>
 
 
-void get_cells_delimiter(char *delimiter_argument, char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
+void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
-    if (strcmp(delimiter_argument, "-d"))
-    {
-        strcpy(delimiter, " ");
-        return;
-    }
-
     int raw_delimiter_size = strlen(raw_delimiter);
     int free_position = 0;
 
@@ -25,6 +19,7 @@ void get_cells_delimiter(char *delimiter_argument, char *raw_delimiter, char *de
             free_position++;
         }
     }
+    delimiter[free_position] = '\0';
     return;
 }
 
@@ -40,14 +35,16 @@ bool defined_delimiter(int args_count, char *arguments[])
 
 int main(int args_count, char *arguments[])
 {
-    (void)args_count;
-
     int delimiter_size = 1;
-    if(!strcmp(arguments[1], "-d"))  // negation because of strcmp returns 0 in case, strings are the same
+    bool defined_custom_delimiter = defined_delimiter(args_count, arguments);
+    if (defined_custom_delimiter)
         delimiter_size = strlen(arguments[2]);
 
-    char cells_delimiter[delimiter_size];
-    get_cells_delimiter(arguments[1], arguments[2], cells_delimiter);
+    char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
+    if (defined_custom_delimiter)
+        get_cells_delimiter(arguments[2], cells_delimiter);
+    else
+        strcpy(cells_delimiter, " ");
 
     printf("DELIMITER: '%s'\n", cells_delimiter);
 
