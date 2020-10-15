@@ -78,6 +78,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 
     return 1;
 
+    return 0;
 }
 
 int main(int args_count, char *arguments[])
