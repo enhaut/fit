@@ -1,0 +1,6 @@
+image: gcc
+
+build_linux:
+   stage: build
+   script:
+      - make
