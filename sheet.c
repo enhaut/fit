@@ -3,6 +3,7 @@
 //
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 
 void get_cells_delimiter(char *delimiter_argument, char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
@@ -27,6 +28,15 @@ void get_cells_delimiter(char *delimiter_argument, char *raw_delimiter, char *de
     return;
 }
 
+
+bool defined_delimiter(int args_count, char *arguments[])
+{
+    bool is_defined_delimiter = false;
+    if (args_count >= 3 && strcmp(arguments[1], "-d") == 0)
+        is_defined_delimiter = true;
+
+    return is_defined_delimiter;
+}
 
 int main(int args_count, char *arguments[])
 {
