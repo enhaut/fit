@@ -49,8 +49,9 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     while (remaining_row != NULL)
     {
         int column_size = 0;
-        char original_row[strlen(remaining_row) + 1];
-        original_row[strlen(remaining_row)] = '\0';
+        int remaining_row_length = strlen(remaining_row);
+        char original_row[remaining_row_length + 1];
+        original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
         remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
