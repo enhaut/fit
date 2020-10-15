@@ -42,7 +42,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     int delimiter_size = strlen(delimiter);
     char *remaining_row = row;
 
-    char column[MAX_COLUMNS][CELL_SIZE] = {0};
+    char columns[MAX_COLUMNS][CELL_SIZE] = {0};
     int column_index = 0;
 
 
@@ -64,13 +64,13 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 
         if (column_size <= 0)
         {
-            strcpy(column[column_index], "");
+            strcpy(columns[column_index], "");
             column_size = 1;
         }else{
-            strncpy(column[column_index], original_row, column_size);
-            printf("%s%s", column[column_index], delimiter);
+            strncpy(columns[column_index], original_row, column_size);
+            printf("%s", columns[column_index]);
         }
-        column[column_index][column_size] = '\0';
+        columns[column_index][column_size] = '\0';
         column_index++;
 
     }
