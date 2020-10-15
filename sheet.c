@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
+#define CELL_SIZE 100
 
 void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
@@ -46,8 +48,28 @@ int main(int args_count, char *arguments[])
     else
         strcpy(cells_delimiter, " ");
 
-    printf("DELIMITER: '%s'\n", cells_delimiter);
+    int character;
+    unsigned long row_index = 0;  // using ulong because max number of rows is not defined
 
+    char row_buffer[MAX_COLUMNS * CELL_SIZE];
+    int row_buffer_position = 0;
+
+    while ((character = getchar()))
+    {
+        if ((character == '\n' || character == '\r' || character == EOF) && row_buffer_position > 0)
+        {
+            row_buffer[row_buffer_position] = '\0';
+            printf("%lu - %s\n", row_index, row_buffer);
+            row_index++;
+            row_buffer_position = 0;
+        }else{
+            row_buffer[row_buffer_position] = character;
+            row_buffer_position++;
+        }
+
+        if (character == EOF)
+            break;
+    }
 
     return 0;
 }
