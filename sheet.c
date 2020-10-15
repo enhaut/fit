@@ -34,23 +34,40 @@ bool defined_delimiter(int args_count, char *arguments[])
     return is_defined_delimiter;
 }
 
+int check_column_requirements(int column_size, int column_index, int column_count, int row_index, char *remaining_row)
+{
+    int return_code = 0;
+    if (column_size > CELL_SIZE - 1)  // 1 bite is reserved for \0, -1 because of that
+    {
+        printf("Column is bigger than allowed!\n");
+        return_code = -1;
+    }else if (column_index > MAX_COLUMNS){
+        printf("You are trying to use more columns than allowed!\n");
+        return_code = -2;
+    }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){
+        // +1 because column index is indexed from 0 and column_count from 1, chechking of remaining_row to make sure, actual column is last one
+        printf("You have inconsistent column count!\n");
+        return_code = -3;
+    }
+    return return_code;
+}
+
 
 int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 {
-    (void)row_index;
-    (void)columns_count;
     int delimiter_size = strlen(delimiter);
     char *remaining_row = row;
 
-    char column[MAX_COLUMNS][CELL_SIZE];
+    char columns[MAX_COLUMNS][CELL_SIZE] = {0};
     int column_index = 0;
 
 
     while (remaining_row != NULL)
     {
         int column_size = 0;
-        char original_row[strlen(remaining_row) + 1];
-        original_row[strlen(remaining_row)] = '\0';
+        int remaining_row_length = strlen(remaining_row);
+        char original_row[remaining_row_length + 1];
+        original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
         remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
@@ -62,20 +79,28 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
             remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter, behind actual column
         }
 
+        int column_requirements = check_column_requirements(column_size, column_index, *columns_count, row_index, remaining_row);
+        if (column_requirements < 0)
+            return column_requirements;
+
         if (column_size <= 0)
-            strcpy(column[column_index], "");
-        else{
-            strncpy(column[column_index], original_row, column_size);
-            printf("%s\n", column[column_index]);
+        {
+            strcpy(columns[column_index], "");
+            column_size = 1;
+        }else{
+            strncpy(columns[column_index], original_row, column_size);
+            printf("%s", columns[column_index]);
         }
-        column[column_index][column_size] = '\0';
+        columns[column_index][column_size] = '\0';
         column_index++;
 
     }
     printf("\n");
 
-    return 1;
+    if (row_index == 0)  // set column count from first row
+        *columns_count = column_index;
 
+    return 0;
 }
 
 int main(int args_count, char *arguments[])
@@ -103,7 +128,9 @@ int main(int args_count, char *arguments[])
         if ((character == '\n' || character == '\r' || character == EOF) && row_buffer_position > 0)
         {
             row_buffer[row_buffer_position] = '\0';
-            process_row(row_buffer, cells_delimiter, row_index, &column_count);
+            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count);
+            if (result_of_processing != 0)
+                return result_of_processing;
             row_index++;
             row_buffer_position = 0;
         }else{
