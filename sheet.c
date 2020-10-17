@@ -25,7 +25,7 @@ void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimit
     return;
 }
 
-bool defined_delimiter(int args_count, char *arguments[])
+bool is_defined_delimiter(int args_count, char **arguments)
 {
     bool is_defined_delimiter = false;
     if (args_count >= 3 && strcmp(arguments[1], "-d") == 0)
@@ -106,7 +106,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 int main(int args_count, char *arguments[])
 {
     int delimiter_size = 1;
-    bool defined_custom_delimiter = defined_delimiter(args_count, arguments);
+    bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
     if (defined_custom_delimiter)
         delimiter_size = strlen(arguments[2]);
 
