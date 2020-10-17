@@ -34,6 +34,29 @@ bool is_defined_delimiter(int args_count, char **arguments)
     return is_defined_delimiter;
 }
 
+void get_printable_delimiter(char *table_delimiter, char *printable_delimiter)
+{
+    printable_delimiter[0] = table_delimiter[0];
+    printable_delimiter[1] = '\0';
+    return;
+}
+
+void print_row(char parsed_row[MAX_COLUMNS][CELL_SIZE], char *delimiter, int columns_count)
+{
+    char delimiter_to_print[2];
+    get_printable_delimiter(delimiter, delimiter_to_print);
+
+    for (int column_index = 0; column_index < columns_count; column_index++)
+    {
+        printf("%s", parsed_row[column_index]);
+        if (column_index < columns_count - 1)  // prevent adding delimiter to end of row
+            printf("%s", delimiter);
+    }
+
+    printf("\n");
+
+}
+
 int check_column_requirements(int column_size, int column_index, int column_count, int row_index, char *remaining_row)
 {
     int return_code = 0;
@@ -45,7 +68,7 @@ int check_column_requirements(int column_size, int column_index, int column_coun
         printf("You are trying to use more columns than allowed!\n");
         return_code = -2;
     }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){
-        // +1 because column index is indexed from 0 and column_count from 1, chechking of remaining_row to make sure, actual column is last one
+        // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
         printf("You have inconsistent column count!\n");
         return_code = -3;
     }
@@ -66,7 +89,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     {
         int column_size = 0;
         int remaining_row_length = strlen(remaining_row);
-        char original_row[remaining_row_length + 1];
+        char original_row[remaining_row_length + 1];  // +1 for \0 at the end
         original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
@@ -85,20 +108,20 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 
         if (column_size <= 0)
         {
-            strcpy(columns[column_index], "");
+            strcpy(columns[column_index], "");  // clear first \0 from array to mark column as used
             column_size = 1;
         }else{
             strncpy(columns[column_index], original_row, column_size);
-            printf("%s", columns[column_index]);
         }
         columns[column_index][column_size] = '\0';
         column_index++;
 
     }
-    printf("\n");
 
     if (row_index == 0)  // set column count from first row
         *columns_count = column_index;
+
+    print_row(columns, delimiter, *columns_count);
 
     return 0;
 }
