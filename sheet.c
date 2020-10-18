@@ -8,6 +8,11 @@
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
 
+bool compare_strings(char *first, char *second)
+{
+    return strcmp(first, second) == 0 ? true : false;
+}
+
 void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
     int raw_delimiter_size = strlen(raw_delimiter);
@@ -28,7 +33,7 @@ void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimit
 bool is_defined_delimiter(int args_count, char **arguments)
 {
     bool is_defined_delimiter = false;
-    if (args_count >= 3 && strcmp(arguments[1], "-d") == 0)
+    if (args_count >= 3 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
         is_defined_delimiter = true;
 
     return is_defined_delimiter;
