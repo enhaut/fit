@@ -157,6 +157,11 @@ int main(int args_count, char *arguments[])
             row_index++;
             row_buffer_position = 0;
         }else{
+            if (row_buffer_position == 10240)
+            {
+                printf("Row is too big!");
+                return -3;
+            }
             row_buffer[row_buffer_position] = character;
             row_buffer_position++;
         }
