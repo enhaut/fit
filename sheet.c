@@ -218,7 +218,9 @@ int main(int args_count, char *arguments[])
         strcpy(cells_delimiter, " ");
 
     int selection_commands_indexes[3] = {0};  // indexes of commands in *arguments[]
-    get_selection_commands(args_count, arguments, selection_commands_indexes);
+    int selection_commands_parsing_result = get_selection_commands(args_count, arguments, selection_commands_indexes);
+    if (selection_commands_parsing_result != 0)
+        return selection_commands_parsing_result;
 
     int character;
     unsigned long row_index = 0;  // using ulong because max number of rows is not defined
