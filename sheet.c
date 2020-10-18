@@ -4,9 +4,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
+
+bool compare_strings(char *first, char *second)
+{
+    return strcmp(first, second) == 0 ? true : false;
+}
 
 void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
@@ -28,7 +36,7 @@ void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimit
 bool is_defined_delimiter(int args_count, char **arguments)
 {
     bool is_defined_delimiter = false;
-    if (args_count >= 3 && strcmp(arguments[1], "-d") == 0)
+    if (args_count >= 3 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
         is_defined_delimiter = true;
 
     return is_defined_delimiter;
@@ -126,6 +134,76 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     return 0;
 }
 
+// function for parsing selection commands using strings (contains, beginswith)
+int process_string_selection_commands(char *arguments[], int *commands, int command_index, int saving_index)
+{
+    errno = 0;
+
+    char *remaining_start;
+    long start_at = strtol(arguments[command_index + 1], &remaining_start, 10);
+    int should_contain_text_length = strlen(arguments[command_index + 2]);
+
+    if (*remaining_start == '\0' && start_at > 0 &&
+        0 < should_contain_text_length && should_contain_text_length < CELL_SIZE &&
+        start_at != LONG_MIN && start_at != LONG_MAX && errno != ERANGE)
+    {
+        commands[saving_index] = command_index;
+    }else{
+        printf("Invalid syntax of command. Usage: beginswith/contains [from row] [should contains]\n");
+        return 2;
+    }
+    return 0;
+}
+
+int get_selection_commands(int args_count, char *arguments[], int *commands)
+{
+    bool started_with_selection_commands = false;
+    for (int command_index = 0; command_index < args_count;)  // using custom incrementing to skip command values
+    {
+        int saving_index = -1;  // dont need to make sure it could overflow, it is used in "if (saving_index)" only
+        if (compare_strings(arguments[command_index], "rows"))
+            saving_index = 0;
+        else if (compare_strings(arguments[command_index], "beginswith"))
+            saving_index = 1;
+        else if (compare_strings(arguments[command_index], "contains"))
+            saving_index = 2;
+
+        if (saving_index == 0)
+        {
+            started_with_selection_commands = true;
+            errno = 0;
+
+            char *remaining_start;
+            char *remaining_end;
+            long starts_with = strtol(arguments[command_index + 1], &remaining_start, 10);
+            long ends_with = strtol(arguments[command_index + 2], &remaining_end, 10);
+
+            if ((compare_strings(remaining_start, "-") || (arguments[command_index + 1] != remaining_start && starts_with > 0 && *remaining_start == '\0')) && (starts_with != LONG_MIN && starts_with != LONG_MAX) && errno != ERANGE)
+                if ((compare_strings(remaining_end, "-") || (arguments[command_index + 2] != remaining_end && ends_with > 0 && *remaining_end == '\0' && !compare_strings(remaining_start, "-") && ends_with > starts_with)) && (ends_with != LONG_MIN && ends_with != LONG_MAX) && errno != ERANGE)
+                    commands[saving_index] = command_index;
+
+            if (commands[saving_index] != command_index)
+            {
+                printf("Invalid syntax of row command! Usage: rows [from] [to]\n");
+                return 1;
+            }
+            command_index += 2;  // 2 because there is 2 of values for rows command
+        }else if(saving_index == 1 || saving_index == 2){
+            int result = process_string_selection_commands(arguments, commands, command_index, saving_index);
+            if (result > 0) {
+                return result;
+            }
+
+            started_with_selection_commands = true;
+            command_index += 2;
+        }else if (started_with_selection_commands)
+            break;  // prevent to parse not row selection commands, it is useless here
+
+        command_index++;
+    }
+    return 0;
+}
+
 int main(int args_count, char *arguments[])
 {
     int delimiter_size = 1;
@@ -138,6 +216,9 @@ int main(int args_count, char *arguments[])
         get_cells_delimiter(arguments[2], cells_delimiter);
     else
         strcpy(cells_delimiter, " ");
+
+    int selection_commands_indexes[3] = {0};  // indexes of commands in *arguments[]
+    get_selection_commands(args_count, arguments, selection_commands_indexes);
 
     int character;
     unsigned long row_index = 0;  // using ulong because max number of rows is not defined
@@ -157,6 +238,11 @@ int main(int args_count, char *arguments[])
             row_index++;
             row_buffer_position = 0;
         }else{
+            if (row_buffer_position == 10240)
+            {
+                printf("Row is too big!");
+                return -3;
+            }
             row_buffer[row_buffer_position] = character;
             row_buffer_position++;
         }
