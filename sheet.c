@@ -11,6 +11,14 @@
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
 
+struct SelectionRowCommand{
+    char command[10 + 1];       // 10 is length of longest command, + 1 for \0
+    long starting_row;          // -1 is unused command or invalid input, 0 is reserved for "rows" and means "-" in input
+    long ending_row;            // used in "rows" command only, can contains value, -1 for invalid or unused, 0 means "-" in input
+    char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
+};
+
+
 bool compare_strings(char *first, char *second)
 {
     return strcmp(first, second) == 0 ? true : false;
@@ -134,72 +142,88 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     return 0;
 }
 
-// function for parsing selection commands using strings (contains, beginswith)
-int process_string_selection_commands(char *arguments[], int *commands, int command_index, int saving_index)
+
+long get_valid_row_number(char *number, int allow_dash)
 {
+    if (compare_strings(number, "-") && allow_dash)
+        return 0;
+
     errno = 0;
-
     char *remaining_start;
-    long start_at = strtol(arguments[command_index + 1], &remaining_start, 10);
-    int should_contain_text_length = strlen(arguments[command_index + 2]);
+    long converted = strtol(number, &remaining_start, 10);
 
-    if (*remaining_start == '\0' && start_at > 0 &&
-        0 < should_contain_text_length && should_contain_text_length < CELL_SIZE &&
-        start_at != LONG_MIN && start_at != LONG_MAX && errno != ERANGE)
+    if ((number != remaining_start && converted > 0 && *remaining_start == '\0') &&
+        (converted != LONG_MIN && converted != LONG_MAX) && errno != ERANGE)
     {
-        commands[saving_index] = command_index;
+        return converted;
     }else{
-        printf("Invalid syntax of command. Usage: beginswith/contains [from row] [should contains]\n");
-        return 2;
+        return -1;
+    }
+}
+
+// function for parsing selection commands using strings (contains, beginswith)
+int process_string_selection_commands(struct SelectionRowCommand *command, char *row_match)
+{
+    int should_contain_text_length = strlen(row_match);
+
+    if (0 < should_contain_text_length && should_contain_text_length < CELL_SIZE)
+        strcpy(command->row_match, row_match);
+    else{
+        fprintf(stderr, "Invalid syntax of command. Usage: beginswith/contains [from row] [should contains]\n");
+        return 1;
     }
     return 0;
 }
 
-int get_selection_commands(int args_count, char *arguments[], int *commands)
+int get_selection_commands(int args_count, char *arguments[], struct SelectionRowCommand *commands)
 {
     bool started_with_selection_commands = false;
     for (int command_index = 0; command_index < args_count;)  // using custom incrementing to skip command values
     {
-        int saving_index = -1;  // dont need to make sure it could overflow, it is used in "if (saving_index)" only
+        int saving_index;
         if (compare_strings(arguments[command_index], "rows"))
             saving_index = 0;
         else if (compare_strings(arguments[command_index], "beginswith"))
             saving_index = 1;
         else if (compare_strings(arguments[command_index], "contains"))
             saving_index = 2;
+        else{
+            if (started_with_selection_commands)
+                break;  // prevent to parse not row selection commands, it is useless here
+            command_index++;
+            continue;
+        }
+
+        if (!started_with_selection_commands)  // mark that, program is parsing selection commands at this moment
+            started_with_selection_commands = true;
+
+        int starting_row = get_valid_row_number(arguments[command_index + 1], !saving_index);  // "rows" has saving_index 0 so !0 is 1
+        commands[saving_index].starting_row = starting_row;
+
+        if (starting_row == -1)
+        {
+            fprintf(stderr, "Invalid syntax of command!\n");
+            return 1;
+        }
 
         if (saving_index == 0)
         {
-            started_with_selection_commands = true;
-            errno = 0;
+            int ending_row = get_valid_row_number(arguments[command_index + 2], 1);
+            commands[saving_index].ending_row = ending_row;
 
-            char *remaining_start;
-            char *remaining_end;
-            long starts_with = strtol(arguments[command_index + 1], &remaining_start, 10);
-            long ends_with = strtol(arguments[command_index + 2], &remaining_end, 10);
-
-            if ((compare_strings(remaining_start, "-") || (arguments[command_index + 1] != remaining_start && starts_with > 0 && *remaining_start == '\0')) && (starts_with != LONG_MIN && starts_with != LONG_MAX) && errno != ERANGE)
-                if ((compare_strings(remaining_end, "-") || (arguments[command_index + 2] != remaining_end && ends_with > 0 && *remaining_end == '\0' && !compare_strings(remaining_start, "-") && ends_with > starts_with)) && (ends_with != LONG_MIN && ends_with != LONG_MAX) && errno != ERANGE)
-                    commands[saving_index] = command_index;
-
-            if (commands[saving_index] != command_index)
+            if ((starting_row > ending_row && ending_row != 0) ||   // check it only if ending row is not "-"
+                ending_row == -1 ||                                 // invalid ending_row index
+                (starting_row == 0 && ending_row > 0))              // "-" in starting row input but valid ending row index is set
             {
-                printf("Invalid syntax of row command! Usage: rows [from] [to]\n");
+                fprintf(stderr, "Invalid ending row index!\n");
                 return 1;
             }
-            command_index += 2;  // 2 because there is 2 of values for rows command
         }else if(saving_index == 1 || saving_index == 2){
-            int result = process_string_selection_commands(arguments, commands, command_index, saving_index);
-            if (result > 0) {
+            int result = process_string_selection_commands(&commands[saving_index], arguments[command_index + 2]);
+            if (result > 0)
                 return result;
-            }
-
-            started_with_selection_commands = true;
-            command_index += 2;
-        }else if (started_with_selection_commands)
-            break;  // prevent to parse not row selection commands, it is useless here
-
-        command_index++;
+        }
+        command_index += 3;  // +3 to move to next selection commands, every selection command has 1 command and 2 values
     }
     return 0;
 }
@@ -217,8 +241,12 @@ int main(int args_count, char *arguments[])
     else
         strcpy(cells_delimiter, " ");
 
-    int selection_commands_indexes[3] = {0};  // indexes of commands in *arguments[]
-    int selection_commands_parsing_result = get_selection_commands(args_count, arguments, selection_commands_indexes);
+    struct SelectionRowCommand selection_commands[] = {
+        {"rows", -1, -1, {0}},
+        {"beginswith", -1, -1, ""},
+        {"contains", -1, -1, ""}
+    };
+    int selection_commands_parsing_result = get_selection_commands(args_count, arguments, selection_commands);
     if (selection_commands_parsing_result != 0)
         return selection_commands_parsing_result;
 
