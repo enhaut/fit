@@ -11,6 +11,14 @@
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
 
+// error codes
+#define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
+#define ERROR_MAXIMUM_COLUMN_LIMIT_REACHED 2
+#define ERROR_INCONSISTENT_COLUMNS 3
+#define ERROR_INVALID_COMMAND_USAGE 4
+#define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
+
+
 struct SelectionRowCommand{
     char command[10 + 1];       // 10 is length of longest command, + 1 for \0
     long starting_row;          // -1 is unused command or invalid input, 0 is reserved for "rows" and means "-" in input
@@ -79,14 +87,14 @@ int check_column_requirements(int column_size, int column_index, int column_coun
     if (column_size > CELL_SIZE - 1)  // 1 bite is reserved for \0, -1 because of that
     {
         printf("Column is bigger than allowed!\n");
-        return_code = -1;
+        return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
     }else if (column_index > MAX_COLUMNS){
         printf("You are trying to use more columns than allowed!\n");
-        return_code = -2;
+        return_code = ERROR_MAXIMUM_COLUMN_LIMIT_REACHED;
     }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){
         // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
         printf("You have inconsistent column count!\n");
-        return_code = -3;
+        return_code = ERROR_INCONSISTENT_COLUMNS;
     }
     return return_code;
 }
@@ -170,7 +178,7 @@ int process_string_selection_commands(struct SelectionRowCommand *command, char 
         strcpy(command->row_match, row_match);
     else{
         fprintf(stderr, "Invalid syntax of command. Usage: beginswith/contains [from row] [should contains]\n");
-        return 1;
+        return ERROR_INVALID_COMMAND_USAGE;
     }
     return 0;
 }
@@ -203,7 +211,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
         if (starting_row == -1)
         {
             fprintf(stderr, "Invalid syntax of command!\n");
-            return 1;
+            return ERROR_INVALID_COMMAND_USAGE;
         }
 
         if (saving_index == 0)
@@ -216,7 +224,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
                 (starting_row == 0 && ending_row > 0))              // "-" in starting row input but valid ending row index is set
             {
                 fprintf(stderr, "Invalid ending row index!\n");
-                return 1;
+                return ERROR_INVALID_COMMAND_USAGE;
             }
         }else if(saving_index == 1 || saving_index == 2){
             int result = process_string_selection_commands(&commands[saving_index], arguments[command_index + 2]);
@@ -271,7 +279,7 @@ int main(int args_count, char *arguments[])
             if (row_buffer_position == 10240)
             {
                 printf("Row is too big!");
-                return -3;
+                return ERROR_MAXIMUM_ROW_SIZE_REACHED;
             }
             row_buffer[row_buffer_position] = character;
             row_buffer_position++;
