@@ -278,7 +278,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
                 fprintf(stderr, "Invalid ending row index!\n");
                 return ERROR_INVALID_COMMAND_USAGE;
             }
-        }else if(saving_index == 1 || saving_index == 2){
+        }else{
             int result = process_string_selection_commands(&commands[saving_index], arguments[command_index + 2]);
             if (result > 0)
                 return result;
