@@ -102,8 +102,6 @@ int check_column_requirements(int column_size, int column_index, int column_coun
 
 bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[MAX_COLUMNS][CELL_SIZE], bool last_row)
 {
-    last_row = false;
-
     bool can_process = true;
 
     for (int command_index = 0; command_index < 3; command_index++)
@@ -139,7 +137,7 @@ bool can_process_row(struct SelectionRowCommand *selection_commands, long row_in
     return can_process;
 }
 
-int process_row(char *row, char *delimiter, int row_index, int *columns_count, struct SelectionRowCommand *selection_commands)
+int process_row(char *row, char *delimiter, int row_index, int *columns_count, struct SelectionRowCommand *selection_commands, bool last_row)
 {
     int delimiter_size = strlen(delimiter);
     char *remaining_row = row;
@@ -152,7 +150,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count, s
         selection_commands[1].starting_row < 0 &&
         selection_commands[2].starting_row < 0)  // in case, that is defined rows range only, we can check if row can be processed before processing
     {
-        if (!can_process_row(selection_commands, row_index, columns, (bool)true))
+        if (!can_process_row(selection_commands, row_index, columns, last_row))
             return 0;
 
     }
@@ -194,7 +192,7 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count, s
         *columns_count = column_index;
 
     if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
-        if (!can_process_row(selection_commands, row_index, columns, (bool)true))
+        if (!can_process_row(selection_commands, row_index, columns, last_row))
             return 0;
 
     print_row(columns, delimiter, *columns_count);
@@ -313,6 +311,7 @@ int main(int args_count, char *arguments[])
     int character;
     unsigned long row_index = 0;  // using ulong because max number of rows is not defined
     int column_count = 0;
+    bool last_row = false;
 
     char row_buffer[MAX_COLUMNS * CELL_SIZE];
     int row_buffer_position = 0;
@@ -321,8 +320,10 @@ int main(int args_count, char *arguments[])
     {
         if ((character == '\n' || character == '\r' || character == EOF) && row_buffer_position > 0)
         {
+            if (character == EOF)  // TODO: support last row detection at last used row
+                last_row = true;
             row_buffer[row_buffer_position] = '\0';
-            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count, selection_commands);
+            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count, selection_commands, last_row);
             if (result_of_processing != 0)
                 return result_of_processing;
             row_index++;
