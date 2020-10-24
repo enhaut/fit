@@ -310,7 +310,7 @@ int main(int args_count, char *arguments[])
 
     int character;
     unsigned long row_index = 0;  // using ulong because max number of rows is not defined
-    int column_count = 0;
+    int column_count = 0;    // TODO: check if column count is valid in selection commands
     bool last_row = false;
 
     char row_buffer[MAX_COLUMNS * CELL_SIZE];
