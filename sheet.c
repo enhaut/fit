@@ -100,7 +100,46 @@ int check_column_requirements(int column_size, int column_index, int column_coun
 }
 
 
-int process_row(char *row, char *delimiter, int row_index, int *columns_count)
+bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[MAX_COLUMNS][CELL_SIZE], bool last_row)
+{
+    last_row = false;
+
+    bool can_process = true;
+
+    for (int command_index = 0; command_index < 3; command_index++)
+    {
+        if (selection_commands[command_index].starting_row < 0)  // valid starting row is required in every command
+            continue;
+
+        if (compare_strings(selection_commands[command_index].command, "rows"))
+        {
+            if (!selection_commands[command_index].starting_row && !selection_commands[command_index].ending_row && last_row)  // row indexes are "-"
+                can_process = true;
+            else if (selection_commands[command_index].starting_row && selection_commands[command_index].starting_row <= row_index &&
+                    (!selection_commands[command_index].ending_row || selection_commands[command_index].ending_row >= row_index))
+                can_process = true;
+            else
+                can_process = false;
+        }else{
+            char *remaining;
+            remaining = strstr(parsed_row[selection_commands[command_index].starting_row - 1], selection_commands[command_index].row_match);  // -1 because parsed_row is indexing from 0
+
+            if (remaining != NULL)
+            {
+                if (compare_strings(selection_commands[command_index].command, "contains") ||
+                    (compare_strings(selection_commands[command_index].command, "beginswith") &&
+                     strlen(remaining) == strlen(parsed_row[selection_commands[command_index].starting_row -1])))
+                    can_process = can_process == true ? true : false;
+                else
+                    can_process = false;
+            }else
+                can_process = false;
+        }
+    }
+    return can_process;
+}
+
+int process_row(char *row, char *delimiter, int row_index, int *columns_count, struct SelectionRowCommand *selection_commands)
 {
     int delimiter_size = strlen(delimiter);
     char *remaining_row = row;
@@ -108,6 +147,15 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
     char columns[MAX_COLUMNS][CELL_SIZE] = {0};
     int column_index = 0;
 
+    if (row_index &&  // let 0. row pass to set columns count
+        selection_commands[0].starting_row > -1 &&
+        selection_commands[1].starting_row < 0 &&
+        selection_commands[2].starting_row < 0)  // in case, that is defined rows range only, we can check if row can be processed before processing
+    {
+        if (!can_process_row(selection_commands, row_index, columns, (bool)true))
+            return 0;
+
+    }
 
     while (remaining_row != NULL)
     {
@@ -144,6 +192,10 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count)
 
     if (row_index == 0)  // set column count from first row
         *columns_count = column_index;
+
+    if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
+        if (!can_process_row(selection_commands, row_index, columns, (bool)true))
+            return 0;
 
     print_row(columns, delimiter, *columns_count);
 
@@ -270,7 +322,7 @@ int main(int args_count, char *arguments[])
         if ((character == '\n' || character == '\r' || character == EOF) && row_buffer_position > 0)
         {
             row_buffer[row_buffer_position] = '\0';
-            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count);
+            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count, selection_commands);
             if (result_of_processing != 0)
                 return result_of_processing;
             row_index++;
