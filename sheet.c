@@ -10,6 +10,7 @@
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
+#define ROW_BUFFER_SIZE 10240 + 2    // +2 for \n and \0
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
@@ -162,9 +163,8 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
 
         remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
         if (remaining_row == NULL)
-        {
             column_size = (int)strlen(original_row);
-        }else{
+        else{
             column_size = (int)strlen(original_row) - (int)strlen(remaining_row);
             remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter, behind actual column
         }
@@ -177,9 +177,9 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
         {
             strcpy(columns[column_index], "");  // clear first \0 from array to mark column as used
             column_size = 1;
-        }else{
+        }else
             strncpy(columns[column_index], original_row, column_size);
-        }
+
         columns[column_index][column_size] = '\0';
         column_index++;
 
@@ -211,9 +211,8 @@ long get_valid_row_number(char *number, int allow_dash)
         (converted != LONG_MIN && converted != LONG_MAX) && errno != ERANGE)
     {
         return converted;
-    }else{
+    }else
         return -1;
-    }
 }
 
 // function for parsing selection commands using strings (contains, beginswith)
@@ -285,6 +284,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
 
 int main(int args_count, char *arguments[])
 {
+    /* GET DELIMITER */
     int delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
     if (defined_custom_delimiter)
@@ -296,6 +296,7 @@ int main(int args_count, char *arguments[])
     else
         strcpy(cells_delimiter, " ");
 
+    /* PREPARE SELECTION COMMANDS */
     struct SelectionRowCommand selection_commands[] = {
         {"rows", -1, -1, {0}},
         {"beginswith", -1, -1, ""},
@@ -306,11 +307,11 @@ int main(int args_count, char *arguments[])
         return selection_commands_parsing_result;
 
     int character;
-    long row_index = 0;  // using ulong because max number of rows is not defined
+    long row_index = 0;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
     bool last_row = false;
 
-    char row_buffer[MAX_COLUMNS * CELL_SIZE];
+    char row_buffer[ROW_BUFFER_SIZE];
     int row_buffer_position = 0;
 
     while ((character = getchar()))
