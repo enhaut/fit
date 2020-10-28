@@ -34,7 +34,7 @@ bool compare_strings(char *first, char *second)
 
 void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
-    int raw_delimiter_size = strlen(raw_delimiter);
+    int raw_delimiter_size = (int)strlen(raw_delimiter);
     int free_position = 0;
 
     for(int i=0; i < raw_delimiter_size; i++)
@@ -46,7 +46,6 @@ void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimit
         }
     }
     delimiter[free_position] = '\0';
-    return;
 }
 
 bool is_defined_delimiter(int args_count, char **arguments)
@@ -58,11 +57,10 @@ bool is_defined_delimiter(int args_count, char **arguments)
     return is_defined_delimiter;
 }
 
-void get_printable_delimiter(char *table_delimiter, char *printable_delimiter)
+void get_printable_delimiter(const char *table_delimiter, char *printable_delimiter)
 {
     printable_delimiter[0] = table_delimiter[0];
     printable_delimiter[1] = '\0';
-    return;
 }
 
 void print_row(char parsed_row[MAX_COLUMNS][CELL_SIZE], char *delimiter, int columns_count)
@@ -81,7 +79,7 @@ void print_row(char parsed_row[MAX_COLUMNS][CELL_SIZE], char *delimiter, int col
 
 }
 
-int check_column_requirements(int column_size, int column_index, int column_count, int row_index, char *remaining_row)
+int check_column_requirements(int column_size, int column_index, int column_count, long row_index, const char *remaining_row)
 {
     int return_code = 0;
     if (column_size > CELL_SIZE - 1)  // 1 bite is reserved for \0, -1 because of that
@@ -111,10 +109,9 @@ bool can_process_row(struct SelectionRowCommand *selection_commands, long row_in
 
         if (compare_strings(selection_commands[command_index].command, "rows"))
         {
-            if (!selection_commands[command_index].starting_row && !selection_commands[command_index].ending_row && last_row)  // row indexes are "-"
-                can_process = true;
-            else if (selection_commands[command_index].starting_row && selection_commands[command_index].starting_row <= row_index &&
-                    (!selection_commands[command_index].ending_row || selection_commands[command_index].ending_row >= row_index))
+            if ((!selection_commands[command_index].starting_row && !selection_commands[command_index].ending_row && last_row) ||   // row indexes are "-"
+                (selection_commands[command_index].starting_row && selection_commands[command_index].starting_row <= row_index &&   // checking starting row
+                (!selection_commands[command_index].ending_row || selection_commands[command_index].ending_row >= row_index)))      // checking ending row
                 can_process = true;
             else
                 can_process = false;
@@ -137,9 +134,9 @@ bool can_process_row(struct SelectionRowCommand *selection_commands, long row_in
     return can_process;
 }
 
-int process_row(char *row, char *delimiter, int row_index, int *columns_count, struct SelectionRowCommand *selection_commands, bool last_row)
+int process_row(char *row, char *delimiter, long row_index, int *columns_count, struct SelectionRowCommand *selection_commands, bool last_row)
 {
-    int delimiter_size = strlen(delimiter);
+    int delimiter_size = (int)strlen(delimiter);
     char *remaining_row = row;
 
     char columns[MAX_COLUMNS][CELL_SIZE] = {0};
@@ -157,8 +154,8 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count, s
 
     while (remaining_row != NULL)
     {
-        int column_size = 0;
-        int remaining_row_length = strlen(remaining_row);
+        int column_size;  // value is initialized later
+        int remaining_row_length = (int)strlen(remaining_row);
         char original_row[remaining_row_length + 1];  // +1 for \0 at the end
         original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
@@ -166,9 +163,9 @@ int process_row(char *row, char *delimiter, int row_index, int *columns_count, s
         remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
         if (remaining_row == NULL)
         {
-            column_size = strlen(original_row);
+            column_size = (int)strlen(original_row);
         }else{
-            column_size = strlen(original_row) - strlen(remaining_row);
+            column_size = (int)strlen(original_row) - (int)strlen(remaining_row);
             remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter, behind actual column
         }
 
@@ -222,7 +219,7 @@ long get_valid_row_number(char *number, int allow_dash)
 // function for parsing selection commands using strings (contains, beginswith)
 int process_string_selection_commands(struct SelectionRowCommand *command, char *row_match)
 {
-    int should_contain_text_length = strlen(row_match);
+    int should_contain_text_length = (int)strlen(row_match);
 
     if (0 < should_contain_text_length && should_contain_text_length < CELL_SIZE)
         strcpy(command->row_match, row_match);
@@ -255,7 +252,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
         if (!started_with_selection_commands)  // mark that, program is parsing selection commands at this moment
             started_with_selection_commands = true;
 
-        int starting_row = get_valid_row_number(arguments[command_index + 1], !saving_index);  // "rows" has saving_index 0 so !0 is 1
+        long starting_row = get_valid_row_number(arguments[command_index + 1], !saving_index);  // "rows" has saving_index 0 so !0 is 1
         commands[saving_index].starting_row = starting_row;
 
         if (starting_row == -1)
@@ -266,7 +263,7 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
 
         if (saving_index == 0)
         {
-            int ending_row = get_valid_row_number(arguments[command_index + 2], 1);
+            long ending_row = get_valid_row_number(arguments[command_index + 2], 1);
             commands[saving_index].ending_row = ending_row;
 
             if ((starting_row > ending_row && ending_row != 0) ||   // check it only if ending row is not "-"
@@ -291,7 +288,7 @@ int main(int args_count, char *arguments[])
     int delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
     if (defined_custom_delimiter)
-        delimiter_size = strlen(arguments[2]);
+        delimiter_size = (int)strlen(arguments[2]);
 
     char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
     if (defined_custom_delimiter)
@@ -309,7 +306,7 @@ int main(int args_count, char *arguments[])
         return selection_commands_parsing_result;
 
     int character;
-    unsigned long row_index = 0;  // using ulong because max number of rows is not defined
+    long row_index = 0;  // using ulong because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
     bool last_row = false;
 
@@ -334,7 +331,7 @@ int main(int args_count, char *arguments[])
                 printf("Row is too big!");
                 return ERROR_MAXIMUM_ROW_SIZE_REACHED;
             }
-            row_buffer[row_buffer_position] = character;
+            row_buffer[row_buffer_position] = (char)character;
             row_buffer_position++;
         }
 
