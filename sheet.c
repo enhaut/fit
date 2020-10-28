@@ -27,6 +27,12 @@ struct SelectionRowCommand{
     char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
 };
 
+struct TableEditCommand{
+    char command[5 + 1];    // 5 is length of longest command, +1 for \0
+    long start_at;          // using long because start_at can be used for row indexes
+    long end_at;
+};
+
 
 bool compare_strings(char *first, char *second)
 {
@@ -282,6 +288,72 @@ int get_selection_commands(int args_count, char *arguments[], struct SelectionRo
     return 0;
 }
 
+
+int get_count_table_edit_commands(int args_count, char *arguments[])
+{
+    int count = 0;
+    for (int arg_index = 0; arg_index < args_count; arg_index++)
+    {
+        char *command = arguments[arg_index];
+        if (compare_strings(command, "irow") || compare_strings(command, "arow") ||
+            compare_strings(command, "drow") || compare_strings(command, "drows") ||
+            compare_strings(command, "icol") || compare_strings(command, "acol") ||
+            compare_strings(command, "dcol") || compare_strings(command, "dcols"))
+            count++;
+    }
+    return count;
+}
+
+
+int get_table_edit_commands(int args_count, char *arguments[], struct TableEditCommand *commands)
+{
+    bool started_with_edit_commands = false;
+    (void)started_with_edit_commands;
+    int edit_command_index = 0;
+
+    for (int command_index = 0; command_index < args_count;)
+    {
+        char *command = arguments[command_index];
+        char *table_edit_command = NULL;
+        long start_at;
+        long end_at = -1;
+
+        if (compare_strings(command, "irow") || compare_strings(command, "drow") ||     // commands with 1 argument
+            compare_strings(command, "icol") || compare_strings(command, "dcol"))
+        {
+            table_edit_command = command;
+            start_at = get_valid_row_number(arguments[command_index + 1], false);
+            command_index++;  // this command have 2 args, so skipping the second one
+
+        }else if (compare_strings(command, "arow") || compare_strings(command, "acol")){  // commands with no arguments
+            table_edit_command = command;
+            start_at = 0;
+
+        }else if (compare_strings(command, "drows") || compare_strings(command, "dcols")){  // commands with 2 arguments
+            table_edit_command = command;
+            start_at = get_valid_row_number(arguments[command_index + 1], false);
+            end_at = get_valid_row_number(arguments[command_index + 2], false);
+            if (start_at > end_at)
+            {
+                fprintf(stderr, "Invalid syntax of command!\n");
+                return ERROR_INVALID_COMMAND_USAGE;
+            }
+            command_index += 2;
+        }
+
+        if (table_edit_command)
+        {
+            strcpy(commands[edit_command_index].command, table_edit_command);
+            commands[edit_command_index].start_at = start_at;
+            commands[edit_command_index].end_at = end_at;
+            edit_command_index++;
+        }
+        command_index++;
+    }
+    return 0;
+}
+
+
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
@@ -304,6 +376,13 @@ int main(int args_count, char *arguments[])
     };
     int selection_commands_parsing_result = get_selection_commands(args_count, arguments, selection_commands);
     if (selection_commands_parsing_result != 0)
+        return selection_commands_parsing_result;
+
+    /*  PREPARE TABLE EDITING COMMANDS  */
+    int edit_commands_count = get_count_table_edit_commands(args_count, arguments);
+    struct TableEditCommand edit_commands[edit_commands_count];
+    int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
+    if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
     int character;
