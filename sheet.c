@@ -86,7 +86,7 @@ void print_row(char parsed_row[MAX_COLUMNS][CELL_SIZE], char *delimiter, int col
 
 }
 
-int check_column_requirements(int column_size, int column_index, int column_count, long row_index, const char *remaining_row)
+int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
 {
     int return_code = 0;
     if (column_size > CELL_SIZE - 1)  // 1 bite is reserved for \0, -1 because of that
