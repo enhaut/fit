@@ -179,7 +179,7 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
         }
 
         int column_requirements = check_column_requirements(column_size, column_index, *columns_count, row_index, remaining_row);
-        if (column_requirements < 0)
+        if (column_requirements > 0)
             return column_requirements;
 
         if (column_size <= 0)
