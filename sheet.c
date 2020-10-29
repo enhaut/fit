@@ -113,24 +113,28 @@ bool can_process_row(struct SelectionRowCommand *selection_commands, long row_in
     {
         if (selection_commands[command_index].starting_row < 0)  // valid starting row is required in every command
             continue;
+        
+        long starting_row = selection_commands[command_index].starting_row;
+        long ending_row = selection_commands[command_index].ending_row;
+        char *command_name = selection_commands[command_index].command;
 
         if (compare_strings(selection_commands[command_index].command, "rows"))
         {
-            if ((!selection_commands[command_index].starting_row && !selection_commands[command_index].ending_row && last_row) ||   // row indexes are "-"
-                (selection_commands[command_index].starting_row && selection_commands[command_index].starting_row <= row_index &&   // checking starting row
-                (!selection_commands[command_index].ending_row || selection_commands[command_index].ending_row >= row_index)))      // checking ending row
+            if ((!starting_row && !ending_row && last_row) ||   // row indexes are "-"
+                (starting_row && starting_row <= row_index &&   // checking starting row
+                (!ending_row || ending_row >= row_index)))      // checking ending row
                 can_process = true;
             else
                 can_process = false;
         }else{
             char *remaining;
-            remaining = strstr(parsed_row[selection_commands[command_index].starting_row - 1], selection_commands[command_index].row_match);  // -1 because parsed_row is indexing from 0
+            remaining = strstr(parsed_row[starting_row - 1], selection_commands[command_index].row_match);  // -1 because parsed_row is indexing from 0
 
             if (remaining != NULL)
             {
-                if (compare_strings(selection_commands[command_index].command, "contains") ||
-                    (compare_strings(selection_commands[command_index].command, "beginswith") &&
-                     strlen(remaining) == strlen(parsed_row[selection_commands[command_index].starting_row -1])))
+                if (compare_strings(command_name, "contains") ||
+                    (compare_strings(command_name, "beginswith") &&
+                     strlen(remaining) == strlen(parsed_row[starting_row -1])))
                     can_process = can_process == true ? true : false;
                 else
                     can_process = false;
