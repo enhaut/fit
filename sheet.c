@@ -160,7 +160,6 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
     {
         if (!can_process_row(selection_commands, row_index, columns, last_row))
             return 0;
-
     }
 
     while (remaining_row != NULL)
@@ -171,12 +170,12 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
         original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
-        remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
-        if (remaining_row == NULL)
+        remaining_row = strstr(remaining_row, delimiter);
+        if (remaining_row == NULL)  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
             column_size = strlen(original_row);
         else{
             column_size = strlen(original_row) - strlen(remaining_row);
-            remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter, behind actual column
+            remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter behind actual column
         }
 
         int column_requirements = check_column_requirements(column_size, column_index, *columns_count, row_index, remaining_row);
@@ -192,7 +191,6 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
 
         columns[column_index][column_size] = '\0';
         column_index++;
-
     }
 
     if (row_index == 0)  // set column count from first row
