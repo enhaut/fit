@@ -145,22 +145,12 @@ bool can_process_row(struct SelectionRowCommand *selection_commands, long row_in
     return can_process;
 }
 
-int process_row(char *row, char *delimiter, long row_index, int *columns_count, struct SelectionRowCommand *selection_commands, bool last_row)
+int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, long row_index, int *columns_count)
 {
     int delimiter_size = (int)strlen(delimiter);
-    char *remaining_row = row;
+    char *remaining_row = raw_line;
 
-    char columns[MAX_COLUMNS][CELL_SIZE] = {0};
     int column_index = 0;
-
-    if (row_index &&  // let 0. row pass to set columns count
-        selection_commands[0].starting_row > -1 &&
-        selection_commands[1].starting_row < 0 &&
-        selection_commands[2].starting_row < 0)  // in case, that is defined rows range only, we can check if row can be processed before processing
-    {
-        if (!can_process_row(selection_commands, row_index, columns, last_row))
-            return 0;
-    }
 
     while (remaining_row != NULL)
     {
@@ -184,23 +174,17 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
 
         if (column_size <= 0)
         {
-            strcpy(columns[column_index], "");  // clear first \0 from array to mark column as used
+            strcpy(parsed_line[column_index], "");  // clear first \0 from array to mark column as used
             column_size = 1;
         }else
-            strncpy(columns[column_index], original_row, column_size);
+            strncpy(parsed_line[column_index], original_row, column_size);
 
-        columns[column_index][column_size] = '\0';
+        parsed_line[column_index][column_size] = '\0';
         column_index++;
     }
 
     if (row_index == 0)  // set column count from first row
         *columns_count = column_index;
-
-    if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
-        if (!can_process_row(selection_commands, row_index, columns, last_row))
-            return 0;
-
-    print_row(columns, delimiter, *columns_count);
 
     return 0;
 }
@@ -356,6 +340,14 @@ int get_table_edit_commands(int args_count, char *arguments[], struct TableEditC
 }
 
 
+void remove_ending_newline_character(char *line)
+{
+    char *newline_character;
+    if (line != NULL && (newline_character = strchr(line, '\n')) != NULL)
+        *newline_character = '\0';
+}
+
+
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
@@ -387,39 +379,44 @@ int main(int args_count, char *arguments[])
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
-    int character;
     long row_index = 0;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
     bool last_row = false;
 
     char row_buffer[ROW_BUFFER_SIZE];
-    int row_buffer_position = 0;
+    char next_row_buffer[ROW_BUFFER_SIZE];  // loading 2 lines to detect that next line is only \nEOF
+    char *reading_result; // result of reading
 
-    while ((character = getchar()))
+    reading_result = fgets(next_row_buffer, ROW_BUFFER_SIZE, stdin);  // load first line
+
+    while (reading_result != NULL)
     {
-        if ((character == '\n' || character == '\r' || character == EOF) && row_buffer_position > 0)
+        strcpy(row_buffer, next_row_buffer);  // TODO: optimalization - switching pointers of row buffer and next_row_buffer
+        reading_result = fgets(next_row_buffer, ROW_BUFFER_SIZE, stdin);
+        if (reading_result == NULL)
+            last_row = true;
+
+        char columns[MAX_COLUMNS][CELL_SIZE] = {0};
+
+        /* in case, that is defined "rows" range only, we can check if row can be processed before line processing */
+        if (row_index &&  // let 0. row pass to set columns count
+            selection_commands[0].starting_row > -1 &&
+            selection_commands[1].starting_row < 0 &&
+            selection_commands[2].starting_row < 0)
         {
-            if (character == EOF)  // TODO: support last row detection at last used row
-                last_row = true;
-            row_buffer[row_buffer_position] = '\0';
-            int result_of_processing = process_row(row_buffer, cells_delimiter, row_index, &column_count, selection_commands, last_row);
-            if (result_of_processing != 0)
-                return result_of_processing;
-            row_index++;
-            row_buffer_position = 0;
-        }else{
-            if (row_buffer_position == 10240)
-            {
-                printf("Row is too big!");
-                return ERROR_MAXIMUM_ROW_SIZE_REACHED;
-            }
-            row_buffer[row_buffer_position] = (char)character;
-            row_buffer_position++;
+            if (!can_process_row(selection_commands, row_index, columns, last_row))
+                continue;
         }
 
-        if (character == EOF)
-            break;
-    }
+        remove_ending_newline_character(row_buffer);
+        parse_line(row_buffer, columns, cells_delimiter, row_index, &column_count);
 
+        if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
+            if (!can_process_row(selection_commands, row_index, columns, last_row))
+                continue;
+
+        print_row(columns, cells_delimiter, column_count);
+        row_index++;
+    }
     return 0;
 }
