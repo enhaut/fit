@@ -70,7 +70,7 @@ void get_printable_delimiter(const char *table_delimiter, char *printable_delimi
     printable_delimiter[1] = '\0';
 }
 
-void print_row(char parsed_row[MAX_COLUMNS][CELL_SIZE], char *delimiter, int columns_count)
+void print_row(char parsed_row[][CELL_SIZE], char *delimiter, int columns_count)
 {
     char delimiter_to_print[2];
     get_printable_delimiter(delimiter, delimiter_to_print);
@@ -105,7 +105,7 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
 }
 
 
-bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[MAX_COLUMNS][CELL_SIZE], bool last_row)
+bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
 {
     bool can_process = true;
 
