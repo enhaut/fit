@@ -165,7 +165,7 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
 
     while (remaining_row != NULL)
     {
-        int column_size;  // value is initialized later
+        size_t column_size;  // value is initialized later
         int remaining_row_length = (int)strlen(remaining_row);
         char original_row[remaining_row_length + 1];  // +1 for \0 at the end
         original_row[remaining_row_length] = '\0';
@@ -173,9 +173,9 @@ int process_row(char *row, char *delimiter, long row_index, int *columns_count, 
 
         remaining_row = strstr(remaining_row, delimiter);  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
         if (remaining_row == NULL)
-            column_size = (int)strlen(original_row);
+            column_size = strlen(original_row);
         else{
-            column_size = (int)strlen(original_row) - (int)strlen(remaining_row);
+            column_size = strlen(original_row) - strlen(remaining_row);
             remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter, behind actual column
         }
 
