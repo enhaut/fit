@@ -379,7 +379,7 @@ int main(int args_count, char *arguments[])
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
-    long row_index = 0;  // using long because max number of rows is not defined
+    long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
     bool last_row = false;
 
@@ -397,6 +397,7 @@ int main(int args_count, char *arguments[])
             last_row = true;
 
         char columns[MAX_COLUMNS][CELL_SIZE] = {0};
+        row_index++;
 
         /* in case, that is defined "rows" range only, we can check if row can be processed before line processing */
         if (row_index &&  // let 0. row pass to set columns count
@@ -404,8 +405,9 @@ int main(int args_count, char *arguments[])
             selection_commands[1].starting_row < 0 &&
             selection_commands[2].starting_row < 0)
         {
-            if (!can_process_row(selection_commands, row_index, columns, last_row))
+            if (!can_process_row(selection_commands, row_index, columns, last_row)) {
                 continue;
+            }
         }
 
         remove_ending_newline_character(row_buffer);
@@ -416,7 +418,6 @@ int main(int args_count, char *arguments[])
                 continue;
 
         print_row(columns, cells_delimiter, column_count);
-        row_index++;
     }
     return 0;
 }
