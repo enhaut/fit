@@ -77,10 +77,15 @@ void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 
     for (int column_index = 0; column_index < MAX_COLUMNS; column_index++)
     {
-        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != 0x1F)  // 1F is hex number of unit separator
+        if (parsed_row[column_index][CELL_SIZE -1] == 0x03) // ETX is used as mark of deleted column
+            continue;
+
+        /* 1F is hex number of unit separator it is used for marking column as used */
+        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != 0x1F)
             break;
 
-        if (column_index)
+        /* make sure, delimiter wont print after deleting first (0.) column */
+        if (column_index  && !(column_index == 1 && parsed_row[column_index - 1][CELL_SIZE - 1] == 0x03))
             printf("%s", delimiter);
 
         printf("%s", parsed_row[column_index]);
@@ -353,6 +358,34 @@ void remove_ending_newline_character(char *line)
 }
 
 
+void process_table_edit_column_commands(char row[][CELL_SIZE], struct TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
+{
+    for (int command_index = 0; command_index < edit_commands_count; command_index++)
+    {
+        char *command = edit_commands[command_index].command;
+        if (compare_strings(command, "acol"))
+        {
+            if (*columns_count == MAX_COLUMNS - 1)
+                continue;
+            if (!row_index)
+            {
+                row[*columns_count][CELL_SIZE - 1] = 0x1F;
+                (*columns_count)++;
+            }else{
+                /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
+                if (row[*columns_count][CELL_SIZE - 1] == 0x1F)
+                    continue;
+                for (int adding_column_index = original_column_count; adding_column_index < *columns_count; adding_column_index++)
+                    row[adding_column_index][CELL_SIZE - 1] = 0x1F;
+            }
+        }else if (compare_strings(command, "dcol")){
+            row[edit_commands[command_index].start_at][CELL_SIZE - 1] = 0x03;  // 03 is hex of ETX, used as mark column as deleted
+            command_index++;  // skipping dcol command value
+        }
+    }
+}
+
+
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
@@ -386,6 +419,7 @@ int main(int args_count, char *arguments[])
 
     long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
+    int original_column_count = 0;
     bool last_row = false;
 
     char row_buffer[ROW_BUFFER_SIZE];
@@ -416,7 +450,10 @@ int main(int args_count, char *arguments[])
         }
 
         remove_ending_newline_character(row_buffer);
-        parse_line(row_buffer, columns, cells_delimiter, row_index, &column_count);
+        parse_line(row_buffer, columns, cells_delimiter, row_index, !row_index ? &column_count : &original_column_count);
+        if (!row_index)
+            original_column_count = column_count;
+        process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
 
         if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
             if (!can_process_row(selection_commands, row_index, columns, last_row))
