@@ -64,17 +64,8 @@ bool is_defined_delimiter(int args_count, char **arguments)
     return is_defined_delimiter;
 }
 
-void get_printable_delimiter(const char *table_delimiter, char *printable_delimiter)
-{
-    printable_delimiter[0] = table_delimiter[0];
-    printable_delimiter[1] = '\0';
-}
-
 void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 {
-    char delimiter_to_print[2];
-    get_printable_delimiter(delimiter, delimiter_to_print);
-
     for (int column_index = 0; column_index < MAX_COLUMNS; column_index++)
     {
         if (parsed_row[column_index][CELL_SIZE -1] == 0x03) // ETX is used as mark of deleted column
@@ -86,14 +77,12 @@ void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 
         /* make sure, delimiter wont print after deleting first (0.) column */
         if (column_index  && !(column_index == 1 && parsed_row[column_index - 1][CELL_SIZE - 1] == 0x03))
-            printf("%s", delimiter);
+            printf("%c", delimiter[0]);
 
         printf("%s", parsed_row[column_index]);
 
     }
-
     printf("\n");
-
 }
 
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
