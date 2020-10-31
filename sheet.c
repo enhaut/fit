@@ -351,10 +351,10 @@ void remove_ending_newline_character(char *line)
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
-    int delimiter_size = 1;
+    size_t delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
     if (defined_custom_delimiter)
-        delimiter_size = (int)strlen(arguments[2]);
+        delimiter_size = strlen(arguments[2]);
 
     char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
     if (defined_custom_delimiter)
