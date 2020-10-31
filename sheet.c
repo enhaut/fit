@@ -20,18 +20,18 @@
 #define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
 
 
-struct SelectionRowCommand{
+typedef struct{
     char command[10 + 1];       // 10 is length of longest command, + 1 for \0
     long starting_row;          // -1 is unused command or invalid input, 0 is reserved for "rows" and means "-" in input
     long ending_row;            // used in "rows" command only, can contains value, -1 for invalid or unused, 0 means "-" in input
     char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
-};
+}SelectionRowCommand;
 
-struct TableEditCommand{
+typedef struct{
     char command[5 + 1];    // 5 is length of longest command, +1 for \0
     long start_at;          // using long because start_at can be used for row indexes
     long end_at;
-};
+}TableEditCommand;
 
 
 bool compare_strings(char *first, char *second)
@@ -104,7 +104,7 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
 }
 
 
-bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
+bool can_process_row(SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
 {
     bool can_process = true;
 
@@ -207,7 +207,7 @@ long get_valid_row_number(char *number, int allow_dash)
 }
 
 // function for parsing selection commands using strings (contains, beginswith)
-int process_string_selection_commands(struct SelectionRowCommand *command, char *row_match)
+int process_string_selection_commands(SelectionRowCommand *command, char *row_match)
 {
     int should_contain_text_length = (int)strlen(row_match);
 
@@ -220,7 +220,7 @@ int process_string_selection_commands(struct SelectionRowCommand *command, char 
     return 0;
 }
 
-int get_selection_commands(int args_count, char *arguments[], struct SelectionRowCommand *commands)
+int get_selection_commands(int args_count, char *arguments[], SelectionRowCommand *commands)
 {
     bool started_with_selection_commands = false;
     for (int command_index = 0; command_index < args_count;)  // using custom incrementing to skip command values
@@ -290,7 +290,7 @@ int get_count_table_edit_commands(int args_count, char *arguments[])
 }
 
 
-int get_table_edit_commands(int args_count, char *arguments[], struct TableEditCommand *commands)
+int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand *commands)
 {
     bool started_with_edit_commands = false;
     (void)started_with_edit_commands;
@@ -347,7 +347,7 @@ void remove_ending_newline_character(char *line)
 }
 
 
-void process_table_edit_column_commands(char row[][CELL_SIZE], struct TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
+void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
@@ -390,7 +390,7 @@ int main(int args_count, char *arguments[])
         strcpy(cells_delimiter, " ");
 
     /* PREPARE SELECTION COMMANDS */
-    struct SelectionRowCommand selection_commands[] = {
+    SelectionRowCommand selection_commands[] = {
         {"rows", -1, -1, {0}},
         {"beginswith", -1, -1, ""},
         {"contains", -1, -1, ""}
@@ -401,7 +401,7 @@ int main(int args_count, char *arguments[])
 
     /*  PREPARE TABLE EDITING COMMANDS  */
     int edit_commands_count = get_count_table_edit_commands(args_count, arguments);
-    struct TableEditCommand edit_commands[edit_commands_count];
+    TableEditCommand edit_commands[edit_commands_count];
     int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
