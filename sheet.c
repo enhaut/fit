@@ -70,16 +70,21 @@ void get_printable_delimiter(const char *table_delimiter, char *printable_delimi
     printable_delimiter[1] = '\0';
 }
 
-void print_row(char parsed_row[][CELL_SIZE], char *delimiter, int columns_count)
+void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 {
     char delimiter_to_print[2];
     get_printable_delimiter(delimiter, delimiter_to_print);
 
-    for (int column_index = 0; column_index < columns_count; column_index++)
+    for (int column_index = 0; column_index < MAX_COLUMNS; column_index++)
     {
-        printf("%s", parsed_row[column_index]);
-        if (column_index < columns_count - 1)  // prevent adding delimiter to end of row
+        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != 0x1F)  // 1F is hex number of unit separator
+            break;
+
+        if (column_index)
             printf("%s", delimiter);
+
+        printf("%s", parsed_row[column_index]);
+
     }
 
     printf("\n");
@@ -174,7 +179,7 @@ int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, l
 
         if (column_size <= 0)
         {
-            strcpy(parsed_line[column_index], "");  // clear first \0 from array to mark column as used
+            parsed_line[column_index][CELL_SIZE - 1] = 0x1F;  // using last unused bite to mark column as used, 1F is hex number of unit separator
             column_size = 1;
         }else
             strncpy(parsed_line[column_index], original_row, column_size);
@@ -417,7 +422,7 @@ int main(int args_count, char *arguments[])
             if (!can_process_row(selection_commands, row_index, columns, last_row))
                 continue;
 
-        print_row(columns, cells_delimiter, column_count);
+        print_row(columns, cells_delimiter);
     }
     return 0;
 }
