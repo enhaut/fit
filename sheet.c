@@ -313,7 +313,7 @@ int get_table_edit_commands(int args_count, char *arguments[], struct TableEditC
             compare_strings(command, "icol") || compare_strings(command, "dcol"))
         {
             table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false);
+            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // -1 because of indexing from 1
             command_index++;  // this command have 2 args, so skipping the second one
 
         }else if (compare_strings(command, "arow") || compare_strings(command, "acol")){  // commands with no arguments
@@ -322,8 +322,8 @@ int get_table_edit_commands(int args_count, char *arguments[], struct TableEditC
 
         }else if (compare_strings(command, "drows") || compare_strings(command, "dcols")){  // commands with 2 arguments
             table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false);
-            end_at = get_valid_row_number(arguments[command_index + 2], false);
+            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // - 1 because of indexing from 1
+            end_at = get_valid_row_number(arguments[command_index + 2], false) - 1;     // same
             if (start_at > end_at)
             {
                 fprintf(stderr, "Invalid syntax of command!\n");
