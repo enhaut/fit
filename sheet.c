@@ -154,7 +154,7 @@ bool can_process_row(SelectionRowCommand *selection_commands, long row_index, ch
 
 int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, long row_index, int *columns_count)
 {
-    int delimiter_size = (int)strlen(delimiter);
+    size_t delimiter_size = strlen(delimiter);
     char *remaining_row = raw_line;
 
     int column_index = 0;
@@ -217,7 +217,7 @@ long get_valid_row_number(char *number, int allow_dash)
 // function for parsing selection commands using strings (contains, beginswith)
 int process_string_selection_commands(SelectionRowCommand *command, char *row_match)
 {
-    int should_contain_text_length = (int)strlen(row_match);
+    size_t should_contain_text_length = strlen(row_match);
 
     if (0 < should_contain_text_length && should_contain_text_length < CELL_SIZE)
         strcpy(command->row_match, row_match);
