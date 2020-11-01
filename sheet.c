@@ -98,14 +98,14 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
     int return_code = 0;
     if (column_size > CELL_SIZE - 1)  // 1 bite is reserved for \0, -1 because of that
     {
-        printf("Column is bigger than allowed!\n");
+        fprintf(stderr, "Column is bigger than allowed!\n");
         return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
     }else if (column_index > MAX_COLUMNS){
-        printf("You are trying to use more columns than allowed!\n");
+        fprintf(stderr, "You are trying to use more columns than allowed!\n");
         return_code = ERROR_MAXIMUM_COLUMN_LIMIT_REACHED;
     }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){
         // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
-        printf("You have inconsistent column count!\n");
+        fprintf(stderr, "You have inconsistent column count!\n");
         return_code = ERROR_INCONSISTENT_COLUMNS;
     }
     return return_code;
