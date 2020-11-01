@@ -9,7 +9,7 @@
 #include <errno.h>
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
-#define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
+#define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE 10240 + 2    // +2 for \n and \0
 
 // error codes
