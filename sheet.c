@@ -281,10 +281,8 @@ int get_selection_commands(int args_count, char *arguments[], SelectionRowComman
     return 0;
 }
 
-
-int get_count_table_edit_commands(int args_count, char *arguments[])
+void get_command_groups_count(int args_count, char *arguments[], int *table_edit_cmds, int *data_processing_cmds)   // TODO: add selection commands
 {
-    int count = 0;
     for (int arg_index = 0; arg_index < args_count; arg_index++)
     {
         char *command = arguments[arg_index];
@@ -292,30 +290,22 @@ int get_count_table_edit_commands(int args_count, char *arguments[])
             compare_strings(command, "drow") || compare_strings(command, "drows") ||
             compare_strings(command, "icol") || compare_strings(command, "acol") ||
             compare_strings(command, "dcol") || compare_strings(command, "dcols"))
-            count++;
+        {
+            (*table_edit_cmds)++;
+        }else if(compare_strings(command, "cset") || compare_strings(command, "tolower") ||
+                 compare_strings(command, "toupper") || compare_strings(command, "drows") ||
+                 compare_strings(command, "round") || compare_strings(command, "int") ||
+                 compare_strings(command, "copy") || compare_strings(command, "swap") ||
+                 compare_strings(command, "move") || compare_strings(command, "csum") ||
+                 compare_strings(command, "cavg") || compare_strings(command, "cmin") ||
+                 compare_strings(command, "cmax") || compare_strings(command, "ccount") ||
+                 compare_strings(command, "rseq") || compare_strings(command, "rsum") ||
+                 compare_strings(command, "ravg") || compare_strings(command, "rmin") ||
+                 compare_strings(command, "rmax") || compare_strings(command, "rcount"))
+        {
+            (*data_processing_cmds)++;
+        }
     }
-    return count;
-}
-
-int get_data_processing_commands_count(int args_count, char *arguments[])
-{
-    int count = 0;
-    for (int arg_index = 0; arg_index < args_count; arg_index++)
-    {
-        char *command = arguments[arg_index];
-        if (compare_strings(command, "cset") || compare_strings(command, "tolower") ||
-            compare_strings(command, "toupper") || compare_strings(command, "drows") ||
-            compare_strings(command, "round") || compare_strings(command, "int") ||
-            compare_strings(command, "copy") || compare_strings(command, "swap") ||
-            compare_strings(command, "move") || compare_strings(command, "csum") ||
-            compare_strings(command, "cavg") || compare_strings(command, "cmin") ||
-            compare_strings(command, "cmax") || compare_strings(command, "ccount") ||
-            compare_strings(command, "rseq") || compare_strings(command, "rsum") ||
-            compare_strings(command, "ravg") || compare_strings(command, "rmin") ||
-            compare_strings(command, "rmax") || compare_strings(command, "rcount"))
-            count++;
-    }
-    return count;
 }
 
 
@@ -457,6 +447,8 @@ bool delete_rows_by_index(TableEditCommand *edit_commands, int edit_commands_cou
     return false;
 }
 
+//bool add_new_rows(TableEditCommand *editCommand)
+
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
@@ -481,15 +473,19 @@ int main(int args_count, char *arguments[])
     if (selection_commands_parsing_result != 0)
         return selection_commands_parsing_result;
 
+    /* COMMANDS COUNT */
+    int edit_commands_count = 0;
+    int processing_commands_count = 0;
+    get_command_groups_count(args_count, arguments, &edit_commands_count, &processing_commands_count);
+
     /*  PREPARE TABLE EDITING COMMANDS  */
-    int edit_commands_count = get_count_table_edit_commands(args_count, arguments);
     TableEditCommand edit_commands[edit_commands_count];
     int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
     /* PREPARE DATA PROCESSING COMMANDS */
-    int processing_commands_count = get_data_processing_commands_count(args_count, arguments);
+
     TableDataProcessingCommand processing_commands[processing_commands_count];
     int processing_commands_parsing_result = 0; // TODO: not implemented yet
     if (processing_commands_parsing_result)
