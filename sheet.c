@@ -33,6 +33,14 @@ typedef struct{
     long end_at;
 }TableEditCommand;
 
+typedef struct{
+    char command[7 + 1];    // 7 is length of longest command
+    int start;
+    int end;
+    int value;             // some commands needs third column
+    char text_value[CELL_SIZE]; // some commands needs text value
+}TableDataProcessingCommand;
+
 
 bool compare_strings(char *first, char *second)
 {
@@ -289,6 +297,27 @@ int get_count_table_edit_commands(int args_count, char *arguments[])
     return count;
 }
 
+int get_data_processing_commands_count(int args_count, char *arguments[])
+{
+    int count = 0;
+    for (int arg_index = 0; arg_index < args_count; arg_index++)
+    {
+        char *command = arguments[arg_index];
+        if (compare_strings(command, "cset") || compare_strings(command, "tolower") ||
+            compare_strings(command, "toupper") || compare_strings(command, "drows") ||
+            compare_strings(command, "round") || compare_strings(command, "int") ||
+            compare_strings(command, "copy") || compare_strings(command, "swap") ||
+            compare_strings(command, "move") || compare_strings(command, "csum") ||
+            compare_strings(command, "cavg") || compare_strings(command, "cmin") ||
+            compare_strings(command, "cmax") || compare_strings(command, "ccount") ||
+            compare_strings(command, "rseq") || compare_strings(command, "rsum") ||
+            compare_strings(command, "ravg") || compare_strings(command, "rmin") ||
+            compare_strings(command, "rmax") || compare_strings(command, "rcount"))
+            count++;
+    }
+    return count;
+}
+
 
 int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand *commands)
 {
@@ -458,6 +487,13 @@ int main(int args_count, char *arguments[])
     int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
+
+    /* PREPARE DATA PROCESSING COMMANDS */
+    int processing_commands_count = get_data_processing_commands_count(args_count, arguments);
+    TableDataProcessingCommand processing_commands[processing_commands_count];
+    int processing_commands_parsing_result = 0; // TODO: not implemented yet
+    if (processing_commands_parsing_result)
+        return processing_commands_parsing_result;
 
     long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
