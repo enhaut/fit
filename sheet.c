@@ -346,6 +346,45 @@ void remove_ending_newline_character(char *line)
         *newline_character = '\0';
 }
 
+bool acol(char row[][CELL_SIZE], long row_index, int *real_columns_count, int original_columns_count)
+{
+    if (*real_columns_count == MAX_COLUMNS - 1)
+        return true;
+
+    if (!row_index)
+    {
+        row[*real_columns_count][CELL_SIZE - 1] = 0x1F;
+        (*real_columns_count)++;
+    }else{
+        /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
+        if (row[*real_columns_count][CELL_SIZE - 1] == 0x1F)
+            return true;
+        for (int adding_column_index = original_columns_count; adding_column_index < *real_columns_count; adding_column_index++)
+            row[adding_column_index][CELL_SIZE - 1] = 0x1F;
+    }
+    return false;
+}
+
+void dcol(char row[][CELL_SIZE], long column)
+{
+    row[column][CELL_SIZE - 1] = 0x03;  // 03 is hex of ETX, used as mark column as deleted
+}
+
+void dcols(char row[][CELL_SIZE], TableEditCommand *edit_command)
+{
+    for (long column = edit_command->start_at; column <= edit_command->end_at; column++)
+        dcol(row, column);
+}
+
+void icol(char row[][CELL_SIZE], long column, int *columns_count, long row_index)
+{
+    memmove(row[column + 1], row[column], CELL_SIZE * MAX_COLUMNS - (column + 1) * CELL_SIZE);
+    row[column][0] = '\0';
+    row[column][CELL_SIZE - 1] = 0x1F;  // mark column as used, but empty
+    if (!row_index)
+        (*columns_count)++;
+}
+
 
 void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
 {
@@ -354,22 +393,15 @@ void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand 
         char *command = edit_commands[command_index].command;
         if (compare_strings(command, "acol"))
         {
-            if (*columns_count == MAX_COLUMNS - 1)
+            bool skip_row = acol(row, row_index, columns_count, original_column_count);
+            if (!skip_row)
                 continue;
-            if (!row_index)
-            {
-                row[*columns_count][CELL_SIZE - 1] = 0x1F;
-                (*columns_count)++;
-            }else{
-                /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
-                if (row[*columns_count][CELL_SIZE - 1] == 0x1F)
-                    continue;
-                for (int adding_column_index = original_column_count; adding_column_index < *columns_count; adding_column_index++)
-                    row[adding_column_index][CELL_SIZE - 1] = 0x1F;
-            }
         }else if (compare_strings(command, "dcol")){
-            row[edit_commands[command_index].start_at][CELL_SIZE - 1] = 0x03;  // 03 is hex of ETX, used as mark column as deleted
-            command_index++;  // skipping dcol command value
+            dcol(row, edit_commands[command_index].start_at);
+        }else if (compare_strings(command, "dcols")){
+            dcols(row, &edit_commands[command_index]);
+        }else if (compare_strings(command, "icol")){
+            icol(row, edit_commands[command_index].start_at, columns_count, row_index);
         }
     }
 }
