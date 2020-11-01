@@ -406,6 +406,27 @@ void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand 
     }
 }
 
+/* implementation od drow and drows commands */
+bool drow_s(long row_index, TableEditCommand edit_command)
+{
+    if ((row_index == edit_command.start_at && edit_command.end_at == -1) ||        // drow command
+        (row_index >= edit_command.start_at && row_index <= edit_command.end_at))   // drows command
+        return true;
+    return false;
+}
+
+bool delete_rows_by_index(TableEditCommand *edit_commands, int edit_commands_count, long row_index)
+{
+
+    for (int command_index = 0; command_index < edit_commands_count; command_index++)
+    {
+        char *command = edit_commands->command;
+        if ((compare_strings(command, "drow") || compare_strings(command, "drows")) &&
+            drow_s(row_index - 1, edit_commands[command_index]))    // -1 because rows are indexed from 1 and commands from 0
+            return true;
+    }
+    return false;
+}
 
 int main(int args_count, char *arguments[])
 {
@@ -470,16 +491,19 @@ int main(int args_count, char *arguments[])
             }
         }
 
+        if (row_index && delete_rows_by_index(edit_commands, edit_commands_count, row_index))
+            continue;
+
         remove_ending_newline_character(row_buffer);
         parse_line(row_buffer, columns, cells_delimiter, row_index, !row_index ? &column_count : &original_column_count);
         if (!row_index)
             original_column_count = column_count;
-        process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
 
         if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
             if (!can_process_row(selection_commands, row_index, columns, last_row))
                 continue;
 
+        process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
         print_row(columns, cells_delimiter);
     }
     return 0;
