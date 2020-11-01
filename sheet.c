@@ -311,8 +311,6 @@ void get_command_groups_count(int args_count, char *arguments[], int *table_edit
 
 int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand *commands)
 {
-    bool started_with_edit_commands = false;
-    (void)started_with_edit_commands;
     int edit_command_index = 0;
 
     for (int command_index = 0; command_index < args_count;)
