@@ -408,7 +408,7 @@ int main(int args_count, char *arguments[])
 
     long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
-    int original_column_count = 0;
+    int original_column_count = column_count;
     bool last_row = false;
 
     char row_buffer[ROW_BUFFER_SIZE];
