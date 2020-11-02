@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
@@ -37,8 +38,8 @@ typedef struct{
     char command[7 + 1];    // 7 is length of longest command
     int start;
     int end;
-    int value;             // some commands needs third column
-    char text_value[CELL_SIZE]; // some commands needs text value
+    int value;              // some commands needs third column
+    char *text_value;     // some commands needs text value
 }TableDataProcessingCommand;
 
 
@@ -355,6 +356,46 @@ int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand 
     return 0;
 }
 
+int get_data_processing_commands(int args_count, char *arguments[], TableDataProcessingCommand *commands)
+{
+    int processing_command_index = 0;
+    for (int arg_index = 0; arg_index < args_count;)
+    {
+        char *command = arguments[arg_index];
+        int start = -1;
+        int end = -1;
+        int value = -1;
+        char *text_value = NULL;
+        if (compare_strings(command, "cset"))
+        {
+            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
+            if (start > -1 && strlen(arguments[arg_index + 2]) < CELL_SIZE)
+                text_value = arguments[arg_index + 2];
+            else
+                start = -1;
+        }else if (compare_strings(command, "tolower") || compare_strings(command, "toupper") ||
+                    compare_strings(command, "round") || compare_strings(command, "int"))
+        {
+            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
+        }else if (compare_strings(command, "swap") || compare_strings(command, "move")){
+            start = (int)get_valid_row_number(arguments[arg_index + 1], false);     // icol will calculate correct index by itself, dont need to -1 value
+            end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
+        }
+
+        if (start > -1)
+        {
+            strcpy(commands[processing_command_index].command, command);
+            commands[processing_command_index].start = start;
+            commands[processing_command_index].end = end;
+            commands[processing_command_index].value = value;
+            commands[processing_command_index].text_value = text_value;
+            processing_command_index++;
+        }
+        arg_index++;
+    }
+    return 0;
+}
+
 
 void remove_ending_newline_character(char *line)
 {
@@ -423,6 +464,101 @@ void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand 
     }
 }
 
+void column_tolower(char *column)
+{
+    for (size_t character_index = 0; character_index < strlen(column); character_index++)
+        column[character_index] = (char)tolower(column[character_index]);
+}
+
+void column_toupper(char *column)
+{
+    for (size_t character_index = 0; character_index < strlen(column); character_index++)
+        column[character_index] = (char)toupper(column[character_index]);
+}
+
+void column_round(char *column)
+{
+    double to_round;
+    char *remaining = NULL;
+    errno = 0;
+
+    to_round = strtod(column, &remaining);
+    if (errno != 0 || *remaining != '\0')
+        return;
+
+    int rounded = (int)(to_round + (to_round > 0.0 ? 0.5 : -0.5));
+    sprintf(column, "%d", rounded);
+}
+
+void column_int(char *column)
+{
+    char *decimal_delimiter_position = NULL;
+    decimal_delimiter_position = strchr(column, *".");
+    if (decimal_delimiter_position == NULL)
+        return;
+    size_t dot_position = strlen(column) - strlen(decimal_delimiter_position);
+    column[dot_position] = '\0';
+}
+
+void copy(char *from, char *to)
+{
+    strcpy(to, from);
+}
+
+void swap(char *what, char *with)
+{
+    char temp[CELL_SIZE];
+    strcpy(temp, what);
+    strcpy(what, with);
+    strcpy(with, temp);
+
+    /* MARK EMPTY COLUMNS AS USED */
+    if (!strlen(what))
+        what[CELL_SIZE - 1] = 0x1F;
+    if (!strlen(with))
+        with[CELL_SIZE - 1] = 0x1F;
+}
+
+void move(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    int move_from = command.end;
+    int column_to_move = command.start;
+    icol(row, move_from, 0, 1);     // icol moves columns by 1 to right
+    strcpy(row[move_from], row[column_to_move]);
+    row[column_to_move][CELL_SIZE - 1] = 0x03;
+}
+
+void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count)
+{
+    for (int command_index = 0; command_index < commands_count; command_index++)
+    {
+        char *command = processing_commands[command_index].command;
+        int start_index = processing_commands[command_index].start;
+
+        if (row[processing_commands[command_index].start][CELL_SIZE - 1] == 0x03)   // skip deleted columns
+            continue;
+
+        if (compare_strings(command, "cset"))
+        {
+            copy(processing_commands[command_index].text_value, row[start_index]);
+        }else if (compare_strings(command, "tolower")){
+            column_tolower(row[start_index]);
+        }else if (compare_strings(command, "toupper")){
+            column_toupper(row[start_index]);
+        }else if (compare_strings(command, "round")){
+            column_round(row[start_index]);
+        }else if (compare_strings(command, "int")){
+            column_int(row[start_index]);
+        }else if (compare_strings(command, "copy")){
+            copy(row[start_index], row[processing_commands[command_index].end]);
+        }else if (compare_strings(command, "swap")){
+            swap(row[start_index], row[processing_commands[command_index].end]);
+        }else if (compare_strings(command, "move")){
+            move(row, processing_commands[command_index]);
+        }
+    }
+}
+
 /* implementation od drow and drows commands */
 bool drow_s(long row_index, TableEditCommand edit_command)
 {
@@ -483,9 +619,8 @@ int main(int args_count, char *arguments[])
         return selection_commands_parsing_result;
 
     /* PREPARE DATA PROCESSING COMMANDS */
-
     TableDataProcessingCommand processing_commands[processing_commands_count];
-    int processing_commands_parsing_result = 0; // TODO: not implemented yet
+    int processing_commands_parsing_result = get_data_processing_commands(args_count, arguments, processing_commands);
     if (processing_commands_parsing_result)
         return processing_commands_parsing_result;
 
@@ -534,6 +669,7 @@ int main(int args_count, char *arguments[])
                 continue;
 
         process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
+        process_data_processing_commands(columns, processing_commands, processing_commands_count);
         print_row(columns, cells_delimiter);
     }
     return 0;
