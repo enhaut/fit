@@ -20,6 +20,9 @@
 #define ERROR_INVALID_COMMAND_USAGE 4
 #define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
 
+#define USED_COLUMN_BITE 0x1F
+#define DELETED_COLUMN_BITE 0x03
+
 
 typedef struct{
     char command[10 + 1];       // 10 is length of longest command, + 1 for \0
@@ -77,15 +80,15 @@ void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 {
     for (int column_index = 0; column_index < MAX_COLUMNS; column_index++)
     {
-        if (parsed_row[column_index][CELL_SIZE -1] == 0x03) // ETX is used as mark of deleted column
+        if (parsed_row[column_index][CELL_SIZE -1] == DELETED_COLUMN_BITE) // ETX is used as mark of deleted column
             continue;
 
         /* 1F is hex number of unit separator it is used for marking column as used */
-        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != 0x1F)
+        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != USED_COLUMN_BITE)
             break;
 
         /* make sure, delimiter wont print after deleting first (0.) column */
-        if (column_index  && !(column_index == 1 && parsed_row[column_index - 1][CELL_SIZE - 1] == 0x03))
+        if (column_index  && !(column_index == 1 && parsed_row[column_index - 1][CELL_SIZE - 1] == DELETED_COLUMN_BITE))
             printf("%c", delimiter[0]);
 
         printf("%s", parsed_row[column_index]);
@@ -182,7 +185,7 @@ int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, l
 
         if (column_size <= 0)
         {
-            parsed_line[column_index][CELL_SIZE - 1] = 0x1F;  // using last unused bite to mark column as used, 1F is hex number of unit separator
+            parsed_line[column_index][CELL_SIZE - 1] = USED_COLUMN_BITE;  // using last unused bite to mark column as used, 1F is hex number of unit separator
             column_size = 1;
         }else
             strncpy(parsed_line[column_index], original_row, column_size);
@@ -411,21 +414,21 @@ bool acol(char row[][CELL_SIZE], long row_index, int *real_columns_count, int or
 
     if (!row_index)
     {
-        row[*real_columns_count][CELL_SIZE - 1] = 0x1F;
+        row[*real_columns_count][CELL_SIZE - 1] = USED_COLUMN_BITE;
         (*real_columns_count)++;
     }else{
         /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
-        if (row[*real_columns_count][CELL_SIZE - 1] == 0x1F)
+        if (row[*real_columns_count][CELL_SIZE - 1] == USED_COLUMN_BITE)
             return true;
         for (int adding_column_index = original_columns_count; adding_column_index < *real_columns_count; adding_column_index++)
-            row[adding_column_index][CELL_SIZE - 1] = 0x1F;
+            row[adding_column_index][CELL_SIZE - 1] = USED_COLUMN_BITE;
     }
     return false;
 }
 
 void dcol(char row[][CELL_SIZE], long column)
 {
-    row[column][CELL_SIZE - 1] = 0x03;  // 03 is hex of ETX, used as mark column as deleted
+    row[column][CELL_SIZE - 1] = DELETED_COLUMN_BITE;  // 03 is hex of ETX, used as mark column as deleted
 }
 
 void dcols(char row[][CELL_SIZE], TableEditCommand *edit_command)
@@ -438,7 +441,7 @@ void icol(char row[][CELL_SIZE], long column, int *columns_count, long row_index
 {
     memmove(row[column + 1], row[column], CELL_SIZE * MAX_COLUMNS - (column + 1) * CELL_SIZE);
     row[column][0] = '\0';
-    row[column][CELL_SIZE - 1] = 0x1F;  // mark column as used, but empty
+    row[column][CELL_SIZE - 1] = USED_COLUMN_BITE;  // mark column as used, but empty
     if (!row_index)
         (*columns_count)++;
 }
@@ -514,9 +517,9 @@ void swap(char *what, char *with)
 
     /* MARK EMPTY COLUMNS AS USED */
     if (!strlen(what))
-        what[CELL_SIZE - 1] = 0x1F;
+        what[CELL_SIZE - 1] = USED_COLUMN_BITE;
     if (!strlen(with))
-        with[CELL_SIZE - 1] = 0x1F;
+        with[CELL_SIZE - 1] = USED_COLUMN_BITE;
 }
 
 void move(char row[][CELL_SIZE], TableDataProcessingCommand command)
@@ -525,7 +528,7 @@ void move(char row[][CELL_SIZE], TableDataProcessingCommand command)
     int column_to_move = command.start;
     icol(row, move_from, 0, 1);     // icol moves columns by 1 to right
     strcpy(row[move_from], row[column_to_move]);
-    row[column_to_move][CELL_SIZE - 1] = 0x03;
+    row[column_to_move][CELL_SIZE - 1] = DELETED_COLUMN_BITE;
 }
 
 void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count)
@@ -535,7 +538,7 @@ void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessing
         char *command = processing_commands[command_index].command;
         int start_index = processing_commands[command_index].start;
 
-        if (row[processing_commands[command_index].start][CELL_SIZE - 1] == 0x03)   // skip deleted columns
+        if (row[processing_commands[command_index].start][CELL_SIZE - 1] == DELETED_COLUMN_BITE)   // skip deleted columns
             continue;
 
         if (compare_strings(command, "cset"))
