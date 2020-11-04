@@ -305,7 +305,8 @@ void get_command_groups_count(int args_count, char *arguments[], int *table_edit
                  compare_strings(command, "cmax") || compare_strings(command, "ccount") ||
                  compare_strings(command, "rseq") || compare_strings(command, "rsum") ||
                  compare_strings(command, "ravg") || compare_strings(command, "rmin") ||
-                 compare_strings(command, "rmax") || compare_strings(command, "rcount"))
+                 compare_strings(command, "rmax") || compare_strings(command, "rcount") ||
+                 compare_strings(command, "cseq"))
         {
             (*data_processing_cmds)++;
         }
@@ -383,10 +384,16 @@ int get_data_processing_commands(int args_count, char *arguments[], TableDataPro
         }else if (compare_strings(command, "swap") || compare_strings(command, "move")){
             start = (int)get_valid_row_number(arguments[arg_index + 1], false);     // icol will calculate correct index by itself, dont need to -1 value
             end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
-        }else if (compare_strings(command, "csum") || compare_strings(command, "cavg")){
+        }else if (compare_strings(command, "csum") || compare_strings(command, "cavg") ||
+                    compare_strings(command, "cmin") || compare_strings(command, "cmax") ||
+                    compare_strings(command, "ccount")){
             value = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
             start = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
             end = (int)get_valid_row_number(arguments[arg_index + 3], false) - 1;
+        }else if (compare_strings(command, "cseq")){
+            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
+            end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
+            value = (int)get_valid_row_number(arguments[arg_index + 3], false);
         }
 
         if (start > -1)
@@ -579,6 +586,57 @@ void cavg(char row[][CELL_SIZE], TableDataProcessingCommand command)
     sprintf(row[command.value], "%g", (sum/valid_columns));
 }
 
+void cmin(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    float min = 0;
+    float cell_value;
+
+    for (int column = command.start; column <= command.end; column++)
+    {
+        bool valid_number = get_numeric_cell_value(row[column], &cell_value);
+        if (!valid_number)
+            continue;
+        if (cell_value < min || column == command.start)    // first iteration, initialized 0 have to be rewrited
+            min = cell_value;
+    }
+    sprintf(row[command.value], "%g", min);
+}
+void cmax(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    float max = 0;
+    float cell_value;
+
+    for (int column = command.start; column <= command.end; column++)
+    {
+        bool valid_number = get_numeric_cell_value(row[column], &cell_value);
+        if (!valid_number)
+            continue;
+        if (cell_value > max || column == command.start)   // first iteration, initialized 0 have to be rewrited
+            max = cell_value;
+    }
+    sprintf(row[command.value], "%g", max);
+}
+
+void ccount(char row[][CELL_SIZE], TableDataProcessingCommand command)  // TODO: tu ma byt asi pocet stlpcov, ktore obsahuju cislo
+{
+    int filled_cells = 0;
+
+    for (int column = command.start; column <= command.end; column++)
+    {
+        if (strlen(row[column]) == 0)
+            continue;
+        filled_cells++;
+    }
+    sprintf(row[command.value], "%d", filled_cells);
+}
+
+void cseq(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    int number_to_increment = command.value;
+    for (int column = command.start; column <= command.end; column++, number_to_increment++)
+        sprintf(row[column], "%d", number_to_increment);
+}
+
 void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count, long row_index)
 {
     for (int command_index = 0; command_index < commands_count; command_index++)
@@ -609,6 +667,14 @@ void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessing
             csum(row, processing_commands[command_index]);
         else if (compare_strings(command, "cavg") && row_index)
             cavg(row, processing_commands[command_index]);
+        else if (compare_strings(command, "cmin") && row_index)
+            cmin(row, processing_commands[command_index]);
+        else if (compare_strings(command, "cmax") && row_index)
+            cmax(row, processing_commands[command_index]);
+        else if (compare_strings(command, "ccount"))
+            ccount(row, processing_commands[command_index]);
+        else if (compare_strings(command, "cseq"))
+            cseq(row, processing_commands[command_index]);
     }
 }
 
