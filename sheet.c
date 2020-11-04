@@ -383,6 +383,10 @@ int get_data_processing_commands(int args_count, char *arguments[], TableDataPro
         }else if (compare_strings(command, "swap") || compare_strings(command, "move")){
             start = (int)get_valid_row_number(arguments[arg_index + 1], false);     // icol will calculate correct index by itself, dont need to -1 value
             end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
+        }else if (compare_strings(command, "csum") || compare_strings(command, "cavg")){
+            value = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
+            start = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
+            end = (int)get_valid_row_number(arguments[arg_index + 3], false) - 1;
         }
 
         if (start > -1)
@@ -531,7 +535,51 @@ void move(char row[][CELL_SIZE], TableDataProcessingCommand command)
     row[column_to_move][CELL_SIZE - 1] = DELETED_COLUMN_BITE;
 }
 
-void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count)
+bool get_numeric_cell_value(char *column, float *value)
+{
+    errno = 0;
+    char *result;
+    *value = strtof(column, &result);
+
+    if (errno != 0 || (result != NULL && result[0] != '\0'))
+        return false;
+    return true;
+}
+
+void csum(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    float sum = 0;
+    float number_to_add;
+
+    for (int column = command.start; column <= command.end; column++)
+    {
+        bool valid_number = get_numeric_cell_value(row[column], &number_to_add);
+        if (!valid_number)
+            continue;
+        sum += number_to_add;
+    }
+    sprintf(row[command.value], "%g", sum);
+}
+
+void cavg(char row[][CELL_SIZE], TableDataProcessingCommand command)
+{
+    float sum = 0;
+    float valid_columns = 0;
+    float number_to_add;
+
+    for (int column = command.start; column <= command.end; column++)
+    {
+        bool valid_number = get_numeric_cell_value(row[column], &number_to_add);
+        if (!valid_number)
+            continue;
+        sum += number_to_add;
+        valid_columns++;
+    }
+    valid_columns = valid_columns > 0 ? valid_columns : 1;  // set 1 to avoid divide by zero
+    sprintf(row[command.value], "%g", (sum/valid_columns));
+}
+
+void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count, long row_index)
 {
     for (int command_index = 0; command_index < commands_count; command_index++)
     {
@@ -542,23 +590,25 @@ void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessing
             continue;
 
         if (compare_strings(command, "cset"))
-        {
             copy(processing_commands[command_index].text_value, row[start_index]);
-        }else if (compare_strings(command, "tolower")){
+        else if (compare_strings(command, "tolower"))
             column_tolower(row[start_index]);
-        }else if (compare_strings(command, "toupper")){
+        else if (compare_strings(command, "toupper"))
             column_toupper(row[start_index]);
-        }else if (compare_strings(command, "round")){
+        else if (compare_strings(command, "round"))
             column_round(row[start_index]);
-        }else if (compare_strings(command, "int")){
+        else if (compare_strings(command, "int"))
             column_int(row[start_index]);
-        }else if (compare_strings(command, "copy")){
+        else if (compare_strings(command, "copy"))
             copy(row[start_index], row[processing_commands[command_index].end]);
-        }else if (compare_strings(command, "swap")){
+        else if (compare_strings(command, "swap"))
             swap(row[start_index], row[processing_commands[command_index].end]);
-        }else if (compare_strings(command, "move")){
+        else if (compare_strings(command, "move"))
             move(row, processing_commands[command_index]);
-        }
+        else if (compare_strings(command, "csum") && row_index) // csum wont be performed at 0. row - it is row with names of columns
+            csum(row, processing_commands[command_index]);
+        else if (compare_strings(command, "cavg") && row_index)
+            cavg(row, processing_commands[command_index]);
     }
 }
 
@@ -672,7 +722,7 @@ int main(int args_count, char *arguments[])
                 continue;
 
         process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
-        process_data_processing_commands(columns, processing_commands, processing_commands_count);
+        process_data_processing_commands(columns, processing_commands, processing_commands_count, row_index);
         print_row(columns, cells_delimiter);
     }
     return 0;
