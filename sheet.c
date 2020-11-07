@@ -382,7 +382,7 @@ int get_data_processing_commands(int args_count, char *arguments[], TableDataPro
         {
             start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
         }else if (compare_strings(command, "swap") || compare_strings(command, "move")){
-            start = (int)get_valid_row_number(arguments[arg_index + 1], false);     // icol will calculate correct index by itself, dont need to -1 value
+            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;     // icol will calculate correct index by itself, dont need to -1 value
             end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
         }else if (compare_strings(command, "csum") || compare_strings(command, "cavg") ||
                     compare_strings(command, "cmin") || compare_strings(command, "cmax") ||
@@ -478,20 +478,23 @@ void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand 
     }
 }
 
-void column_tolower(char *column)
+void column_tolower(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
+    char *column = row[command.start];
     for (size_t character_index = 0; character_index < strlen(column); character_index++)
         column[character_index] = (char)tolower(column[character_index]);
 }
 
-void column_toupper(char *column)
+void column_toupper(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
+    char *column = row[command.start];
     for (size_t character_index = 0; character_index < strlen(column); character_index++)
         column[character_index] = (char)toupper(column[character_index]);
 }
 
-void column_round(char *column)
+void column_round(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
+    char *column = row[command.start];
     double to_round;
     char *remaining = NULL;
     errno = 0;
@@ -504,8 +507,9 @@ void column_round(char *column)
     sprintf(column, "%d", rounded);
 }
 
-void column_int(char *column)
+void column_int(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
+    char *column = row[command.start];
     char *decimal_delimiter_position = NULL;
     decimal_delimiter_position = strchr(column, *".");
     if (decimal_delimiter_position == NULL)
@@ -514,13 +518,15 @@ void column_int(char *column)
     column[dot_position] = '\0';
 }
 
-void copy(char *from, char *to)
+void copy(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
-    strcpy(to, from);
+    strcpy(row[command.start], row[command.end]);
 }
 
-void swap(char *what, char *with)
+void swap(char row[][CELL_SIZE], TableDataProcessingCommand command)
 {
+    char *what = row[command.start];
+    char *with = row[command.end];
     char temp[CELL_SIZE];
     strcpy(temp, what);
     strcpy(what, with);
@@ -648,19 +654,19 @@ void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessing
             continue;
 
         if (compare_strings(command, "cset"))
-            copy(processing_commands[command_index].text_value, row[start_index]);
+            strcpy(row[start_index], processing_commands[command_index].text_value);
         else if (compare_strings(command, "tolower"))
-            column_tolower(row[start_index]);
+            column_tolower(row, processing_commands[command_index]);
         else if (compare_strings(command, "toupper"))
-            column_toupper(row[start_index]);
+            column_toupper(row, processing_commands[command_index]);
         else if (compare_strings(command, "round"))
-            column_round(row[start_index]);
+            column_round(row, processing_commands[command_index]);
         else if (compare_strings(command, "int"))
-            column_int(row[start_index]);
+            column_int(row, processing_commands[command_index]);
         else if (compare_strings(command, "copy"))
-            copy(row[start_index], row[processing_commands[command_index].end]);
+            copy(row, processing_commands[command_index]);
         else if (compare_strings(command, "swap"))
-            swap(row[start_index], row[processing_commands[command_index].end]);
+            swap(row, processing_commands[command_index]);
         else if (compare_strings(command, "move"))
             move(row, processing_commands[command_index]);
         else if (compare_strings(command, "csum") && row_index) // csum wont be performed at 0. row - it is row with names of columns
