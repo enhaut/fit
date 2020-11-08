@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <float.h>
 #include <errno.h>
 #include <ctype.h>
 
@@ -551,7 +552,7 @@ void cavg(char row[][CELL_SIZE], CommandData *command)
 
 void cmin(char row[][CELL_SIZE], CommandData *command)
 {
-    float min = 0;
+    float min = FLT_MAX;
     float cell_value;
 
     for (int column = (int)command->end; column <= command->value; column++)
@@ -566,7 +567,7 @@ void cmin(char row[][CELL_SIZE], CommandData *command)
 }
 void cmax(char row[][CELL_SIZE], CommandData *command)
 {
-    float max = 0;
+    float max = FLT_MIN;
     float cell_value;
 
     for (int column = (int)command->end; column <= command->value; column++)
