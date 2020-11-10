@@ -61,20 +61,19 @@ bool compare_strings(char *first, char *second)
     return strcmp(first, second) == 0 ? true : false;
 }
 
-void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
+char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
-    int raw_delimiter_size = (int)strlen(raw_delimiter);
-    int free_position = 0;
+    char cell_delimiter = 0;
 
-    for(int i=0; i < raw_delimiter_size; i++)
+    int position = 0;
+    while (cell_delimiter == 0 && position < remaining_lenght && remaining_lenght > 0)
     {
-        if (strchr(delimiter, raw_delimiter[i]) == NULL)
-        {
-            delimiter[free_position] = raw_delimiter[i];
-            free_position++;
-        }
+        if (strchr(delimiters, row[position]) != NULL)
+            cell_delimiter = row[position];
+        position++;
     }
-    delimiter[free_position] = '\0';
+
+    return cell_delimiter;
 }
 
 bool is_defined_delimiter(int args_count, char **arguments)
@@ -168,39 +167,36 @@ bool can_process_row(SelectionRowCommand *selection_commands, long row_index, ch
 
 int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, long row_index, int *columns_count)
 {
-    size_t delimiter_size = strlen(delimiter);
     char *remaining_row = raw_line;
-
     int column_index = 0;
+    int remaining_row_length = 0;
 
-    while (remaining_row != NULL)
+    while ((remaining_row_length = (int)strlen(remaining_row)))
     {
-        size_t column_size;  // value is initialized later
-        int remaining_row_length = (int)strlen(remaining_row);
-        char original_row[remaining_row_length + 1];  // +1 for \0 at the end
+        char next_cell_delimiter = get_cells_delimiter(remaining_row, delimiter, remaining_row_length);
+        char original_row[remaining_row_length + 1];    // +1 for \0 at the end
+        size_t cell_length;                             // value is initialized later
         original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
-        remaining_row = strstr(remaining_row, delimiter);
-        if (remaining_row == NULL)  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
-            column_size = strlen(original_row);
+        remaining_row = strchr(remaining_row, next_cell_delimiter);
+        if (!strlen(remaining_row))  // at the end of row is no delimiter, strchr will return NULL so we cant calculate size of column
+            cell_length = strlen(original_row);
         else{
-            column_size = strlen(original_row) - strlen(remaining_row);
-            remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter behind actual column
+            cell_length = strlen(original_row) - strlen(remaining_row);
+            remaining_row += 1;  // move pointer behind the delimiter to force looking for delimiter behind actual column
         }
 
-        int column_requirements = check_column_requirements(column_size, column_index, *columns_count, row_index, remaining_row);
+        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index, remaining_row);
         if (column_requirements > 0)
             return column_requirements;
 
-        if (column_size <= 0)
-        {
+        if (cell_length <= 0)
             parsed_line[column_index][CELL_SIZE - 1] = USED_COLUMN_BITE;  // using last unused bite to mark column as used, 1F is hex number of unit separator
-            column_size = 1;
-        }else
-            strncpy(parsed_line[column_index], original_row, column_size);
+        else
+            strncpy(parsed_line[column_index], original_row, cell_length);
 
-        parsed_line[column_index][column_size] = '\0';
+        parsed_line[column_index][cell_length] = '\0';
         column_index++;
     }
 
@@ -674,16 +670,12 @@ void get_all_commands(CommandDefinition *commands)
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
-    size_t delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
+    char default_delimiter[] = {" "};
+    char *cells_delimiter = default_delimiter;
     if (defined_custom_delimiter)
-        delimiter_size = strlen(arguments[2]);
+        cells_delimiter = arguments[2];
 
-    char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
-    if (defined_custom_delimiter)
-        get_cells_delimiter(arguments[2], cells_delimiter);
-    else
-        strcpy(cells_delimiter, " ");
 
     CommandDefinition command_definitions[COMMANDS_COUNT];
     get_all_commands(command_definitions);
