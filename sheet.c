@@ -9,7 +9,7 @@
 #include <errno.h>
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
-#define CELL_SIZE 100 + 1  // + 1 because we need to set \0 to the end
+#define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE 10240 + 2    // +2 for \n and \0
 
 // error codes
@@ -20,18 +20,18 @@
 #define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
 
 
-struct SelectionRowCommand{
+typedef struct{
     char command[10 + 1];       // 10 is length of longest command, + 1 for \0
     long starting_row;          // -1 is unused command or invalid input, 0 is reserved for "rows" and means "-" in input
     long ending_row;            // used in "rows" command only, can contains value, -1 for invalid or unused, 0 means "-" in input
     char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
-};
+}SelectionRowCommand;
 
-struct TableEditCommand{
+typedef struct{
     char command[5 + 1];    // 5 is length of longest command, +1 for \0
     long start_at;          // using long because start_at can be used for row indexes
     long end_at;
-};
+}TableEditCommand;
 
 
 bool compare_strings(char *first, char *second)
@@ -64,26 +64,25 @@ bool is_defined_delimiter(int args_count, char **arguments)
     return is_defined_delimiter;
 }
 
-void get_printable_delimiter(const char *table_delimiter, char *printable_delimiter)
+void print_row(char parsed_row[][CELL_SIZE], char *delimiter)
 {
-    printable_delimiter[0] = table_delimiter[0];
-    printable_delimiter[1] = '\0';
-}
-
-void print_row(char parsed_row[][CELL_SIZE], char *delimiter, int columns_count)
-{
-    char delimiter_to_print[2];
-    get_printable_delimiter(delimiter, delimiter_to_print);
-
-    for (int column_index = 0; column_index < columns_count; column_index++)
+    for (int column_index = 0; column_index < MAX_COLUMNS; column_index++)
     {
+        if (parsed_row[column_index][CELL_SIZE -1] == 0x03) // ETX is used as mark of deleted column
+            continue;
+
+        /* 1F is hex number of unit separator it is used for marking column as used */
+        if (parsed_row[column_index][0] == '\0' && parsed_row[column_index][CELL_SIZE - 1] != 0x1F)
+            break;
+
+        /* make sure, delimiter wont print after deleting first (0.) column */
+        if (column_index  && !(column_index == 1 && parsed_row[column_index - 1][CELL_SIZE - 1] == 0x03))
+            printf("%c", delimiter[0]);
+
         printf("%s", parsed_row[column_index]);
-        if (column_index < columns_count - 1)  // prevent adding delimiter to end of row
-            printf("%s", delimiter);
+
     }
-
     printf("\n");
-
 }
 
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
@@ -105,7 +104,7 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
 }
 
 
-bool can_process_row(struct SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
+bool can_process_row(SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
 {
     bool can_process = true;
 
@@ -174,7 +173,7 @@ int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, l
 
         if (column_size <= 0)
         {
-            strcpy(parsed_line[column_index], "");  // clear first \0 from array to mark column as used
+            parsed_line[column_index][CELL_SIZE - 1] = 0x1F;  // using last unused bite to mark column as used, 1F is hex number of unit separator
             column_size = 1;
         }else
             strncpy(parsed_line[column_index], original_row, column_size);
@@ -208,7 +207,7 @@ long get_valid_row_number(char *number, int allow_dash)
 }
 
 // function for parsing selection commands using strings (contains, beginswith)
-int process_string_selection_commands(struct SelectionRowCommand *command, char *row_match)
+int process_string_selection_commands(SelectionRowCommand *command, char *row_match)
 {
     int should_contain_text_length = (int)strlen(row_match);
 
@@ -221,7 +220,7 @@ int process_string_selection_commands(struct SelectionRowCommand *command, char 
     return 0;
 }
 
-int get_selection_commands(int args_count, char *arguments[], struct SelectionRowCommand *commands)
+int get_selection_commands(int args_count, char *arguments[], SelectionRowCommand *commands)
 {
     bool started_with_selection_commands = false;
     for (int command_index = 0; command_index < args_count;)  // using custom incrementing to skip command values
@@ -291,7 +290,7 @@ int get_count_table_edit_commands(int args_count, char *arguments[])
 }
 
 
-int get_table_edit_commands(int args_count, char *arguments[], struct TableEditCommand *commands)
+int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand *commands)
 {
     bool started_with_edit_commands = false;
     (void)started_with_edit_commands;
@@ -308,7 +307,7 @@ int get_table_edit_commands(int args_count, char *arguments[], struct TableEditC
             compare_strings(command, "icol") || compare_strings(command, "dcol"))
         {
             table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false);
+            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // -1 because of indexing from 1
             command_index++;  // this command have 2 args, so skipping the second one
 
         }else if (compare_strings(command, "arow") || compare_strings(command, "acol")){  // commands with no arguments
@@ -317,8 +316,8 @@ int get_table_edit_commands(int args_count, char *arguments[], struct TableEditC
 
         }else if (compare_strings(command, "drows") || compare_strings(command, "dcols")){  // commands with 2 arguments
             table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false);
-            end_at = get_valid_row_number(arguments[command_index + 2], false);
+            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // - 1 because of indexing from 1
+            end_at = get_valid_row_number(arguments[command_index + 2], false) - 1;     // same
             if (start_at > end_at)
             {
                 fprintf(stderr, "Invalid syntax of command!\n");
@@ -347,14 +346,95 @@ void remove_ending_newline_character(char *line)
         *newline_character = '\0';
 }
 
+bool acol(char row[][CELL_SIZE], long row_index, int *real_columns_count, int original_columns_count)
+{
+    if (*real_columns_count == MAX_COLUMNS - 1)
+        return true;
+
+    if (!row_index)
+    {
+        row[*real_columns_count][CELL_SIZE - 1] = 0x1F;
+        (*real_columns_count)++;
+    }else{
+        /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
+        if (row[*real_columns_count][CELL_SIZE - 1] == 0x1F)
+            return true;
+        for (int adding_column_index = original_columns_count; adding_column_index < *real_columns_count; adding_column_index++)
+            row[adding_column_index][CELL_SIZE - 1] = 0x1F;
+    }
+    return false;
+}
+
+void dcol(char row[][CELL_SIZE], long column)
+{
+    row[column][CELL_SIZE - 1] = 0x03;  // 03 is hex of ETX, used as mark column as deleted
+}
+
+void dcols(char row[][CELL_SIZE], TableEditCommand *edit_command)
+{
+    for (long column = edit_command->start_at; column <= edit_command->end_at; column++)
+        dcol(row, column);
+}
+
+void icol(char row[][CELL_SIZE], long column, int *columns_count, long row_index)
+{
+    memmove(row[column + 1], row[column], CELL_SIZE * MAX_COLUMNS - (column + 1) * CELL_SIZE);
+    row[column][0] = '\0';
+    row[column][CELL_SIZE - 1] = 0x1F;  // mark column as used, but empty
+    if (!row_index)
+        (*columns_count)++;
+}
+
+
+void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
+{
+    for (int command_index = 0; command_index < edit_commands_count; command_index++)
+    {
+        char *command = edit_commands[command_index].command;
+        if (compare_strings(command, "acol"))
+        {
+            bool skip_row = acol(row, row_index, columns_count, original_column_count);
+            if (!skip_row)
+                continue;
+        }else if (compare_strings(command, "dcol")){
+            dcol(row, edit_commands[command_index].start_at);
+        }else if (compare_strings(command, "dcols")){
+            dcols(row, &edit_commands[command_index]);
+        }else if (compare_strings(command, "icol")){
+            icol(row, edit_commands[command_index].start_at, columns_count, row_index);
+        }
+    }
+}
+
+/* implementation od drow and drows commands */
+bool drow_s(long row_index, TableEditCommand edit_command)
+{
+    if ((row_index == edit_command.start_at && edit_command.end_at == -1) ||        // drow command
+        (row_index >= edit_command.start_at && row_index <= edit_command.end_at))   // drows command
+        return true;
+    return false;
+}
+
+bool delete_rows_by_index(TableEditCommand *edit_commands, int edit_commands_count, long row_index)
+{
+
+    for (int command_index = 0; command_index < edit_commands_count; command_index++)
+    {
+        char *command = edit_commands->command;
+        if ((compare_strings(command, "drow") || compare_strings(command, "drows")) &&
+            drow_s(row_index - 1, edit_commands[command_index]))    // -1 because rows are indexed from 1 and commands from 0
+            return true;
+    }
+    return false;
+}
 
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
-    int delimiter_size = 1;
+    size_t delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
     if (defined_custom_delimiter)
-        delimiter_size = (int)strlen(arguments[2]);
+        delimiter_size = strlen(arguments[2]);
 
     char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
     if (defined_custom_delimiter)
@@ -363,7 +443,7 @@ int main(int args_count, char *arguments[])
         strcpy(cells_delimiter, " ");
 
     /* PREPARE SELECTION COMMANDS */
-    struct SelectionRowCommand selection_commands[] = {
+    SelectionRowCommand selection_commands[] = {
         {"rows", -1, -1, {0}},
         {"beginswith", -1, -1, ""},
         {"contains", -1, -1, ""}
@@ -374,13 +454,14 @@ int main(int args_count, char *arguments[])
 
     /*  PREPARE TABLE EDITING COMMANDS  */
     int edit_commands_count = get_count_table_edit_commands(args_count, arguments);
-    struct TableEditCommand edit_commands[edit_commands_count];
+    TableEditCommand edit_commands[edit_commands_count];
     int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
-    long row_index = 0;  // using long because max number of rows is not defined
+    long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;    // TODO: check if column count is valid in selection commands
+    int original_column_count = column_count;
     bool last_row = false;
 
     char row_buffer[ROW_BUFFER_SIZE];
@@ -397,6 +478,7 @@ int main(int args_count, char *arguments[])
             last_row = true;
 
         char columns[MAX_COLUMNS][CELL_SIZE] = {0};
+        row_index++;
 
         /* in case, that is defined "rows" range only, we can check if row can be processed before line processing */
         if (row_index &&  // let 0. row pass to set columns count
@@ -404,19 +486,25 @@ int main(int args_count, char *arguments[])
             selection_commands[1].starting_row < 0 &&
             selection_commands[2].starting_row < 0)
         {
-            if (!can_process_row(selection_commands, row_index, columns, last_row))
+            if (!can_process_row(selection_commands, row_index, columns, last_row)) {
                 continue;
+            }
         }
 
+        if (row_index && delete_rows_by_index(edit_commands, edit_commands_count, row_index))
+            continue;
+
         remove_ending_newline_character(row_buffer);
-        parse_line(row_buffer, columns, cells_delimiter, row_index, &column_count);
+        parse_line(row_buffer, columns, cells_delimiter, row_index, !row_index ? &column_count : &original_column_count);
+        if (!row_index)
+            original_column_count = column_count;
 
         if (row_index && (selection_commands[1].starting_row || selection_commands[2].starting_row))
             if (!can_process_row(selection_commands, row_index, columns, last_row))
                 continue;
 
-        print_row(columns, cells_delimiter, column_count);
-        row_index++;
+        process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
+        print_row(columns, cells_delimiter);
     }
     return 0;
 }
