@@ -664,6 +664,14 @@ void get_all_command_definitions(CommandDefinition *commands)
         commands[command_index] = base_commands[command_index];
 }
 
+void print_row(char *row)
+{
+    size_t row_length = strlen(row);
+    if (row_length == 1 && row[0] == '\n')
+        return;
+    printf("%s", row);
+}
+
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
@@ -719,7 +727,7 @@ int main(int args_count, char *arguments[])
 
         process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0], row_index);
         process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0], row_index);
-        printf("%s", row_buffer);
+        print_row(row_buffer);
     }
     return 0;
 }
