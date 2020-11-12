@@ -1,8 +1,8 @@
-Article Quantity Price
-Apple 1 5
-Banana 1 7
-Bread 1 30
-Water 5 44
-Tea 10 20
-Nothing 0 0
-Pen 1 40
+Article Quantity Price Sum
+Apple 1 5 0
+Banana 1 7 0
+Bread 1 30 0
+Water 5 44 0
+Tea 10 20 0
+Nothing 0 0 0
+Pen 1 40 0
