@@ -7,13 +7,15 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
-#define COMMANDS_COUNT 13
+#define COMMANDS_COUNT 26
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
+#define ERROR_MAXIMUM_COLUMN_LIMIT_REACHED 2
 #define ERROR_INCONSISTENT_COLUMNS 3
 #define ERROR_INVALID_COMMAND_USAGE 4
 #define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
@@ -408,7 +410,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
     return minimal_arguments;
 }
 
-void cset(char *row, CommandData *command, char *delimiter)
+void cset(char *row, CommandData *command, const char *delimiter)
 {
     char *actual_column;
     int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
@@ -421,13 +423,207 @@ void cset(char *row, CommandData *command, char *delimiter)
     strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
 }
 
-void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter)
+/* implementation od drow and drows commands */
+void drow_s(char *row, CommandData *command_data, long row_index)
+{
+    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
+        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
+        row[0] = '\0';
+}
+
+void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
         function_ptr edit_function = edit_commands[command_index].processing_function;
-        edit_function(row, &edit_commands[command_index].data, &delimiter);
+        if (edit_function != drow_s)
+            edit_function(row, &edit_commands[command_index].data, &delimiter);
+        else
+            edit_function(row, &edit_commands[command_index].data, row_index);
     }
+}
+
+/* common function for commands tolower and toupper, they are almost same */
+void column_case(char *row, CommandData *commandData, const char *delimiter, bool lower)
+{
+    char *start;
+    int column_length = get_cell_borders(row, &start, *delimiter, (int)commandData->start);
+    for (int position = 0; position < column_length; position++)
+        start[position] = (char)(lower ? tolower(start[position]) : toupper(start[position]));
+}
+
+void column_tolower(char *row, CommandData *command, char *delimiter)
+{
+    column_case(row, command, delimiter, true);
+}
+
+void column_toupper(char *row, CommandData *command, char *delimiter)
+{
+    column_case(row, command, delimiter, false);
+}
+
+void copy(char *row, CommandData *command, const char *delimiter)
+{
+    char *copy_from;
+    int cell_length = get_cell_borders(row, &copy_from, *delimiter, (int)(command->start));
+    char to_copy[cell_length + 1];
+    to_copy[cell_length] = '\0';
+    strncpy(to_copy, copy_from, cell_length);
+
+    CommandData data = {0};
+    data.text_value = to_copy;
+    data.start = command->end;
+
+    cset(row, &data, delimiter);
+}
+
+void swap(char *row, CommandData *command, char *delimtier)
+{
+    char *what;
+    char *with;
+    int what_size = get_cell_borders(row, &what, *delimtier, (int)(command->start));
+    int with_size = get_cell_borders(row, &with, *delimtier, (int)(command->end));
+
+    char what_temp[what_size + 1];
+    strncpy(what_temp, what, what_size);
+    what_temp[what_size] = '\0';
+
+    char with_temp[with_size + 1];
+    strncpy(with_temp, with, with_size);
+    with_temp[with_size] = '\0';
+
+    if (what_temp[what_size - 1] == '\n')
+        what_temp[what_size - 1] = '\0';
+    if (with_temp[with_size - 1] == '\n')
+        with_temp[with_size - 1] = '\0';
+
+    CommandData with_data = {0};
+    with_data.start = command->start;
+    with_data.text_value = with_temp;
+    cset(row, &with_data, delimtier);
+
+    CommandData what_data = {0};
+    what_data.start = command->end;
+    what_data.text_value = what_temp;
+    cset(row, &what_data, delimtier);
+
+}
+
+void move(char *row, CommandData *command, char *delimiter)
+{
+    char *dest_cell;
+    get_cell_borders(row, &dest_cell, *delimiter, (int)(command->end));
+
+    char *cell_source;
+    int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
+
+    char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
+    strncpy(temp_cell, cell_source, source_cell_length);
+    temp_cell[source_cell_length] = '\0';
+
+    CommandData to_delete_col = {0};
+    to_delete_col.start = command->start;
+    dcol(row, &to_delete_col, delimiter);
+
+    CommandData to_add_col = {0};
+    to_add_col.start = command->end;
+    icol(row, &to_add_col, delimiter);
+
+    memmove(dest_cell + source_cell_length, dest_cell, strlen(dest_cell));
+    strncpy(dest_cell + 1, temp_cell, source_cell_length);  // +1 to move behind delimiter
+}
+
+bool get_numeric_cell_value(char *column, float *value)
+{
+    errno = 0;
+    char *result;
+    *value = strtof(column, &result);
+
+    if (errno != 0 || (result != NULL && result[0] != '\0'))
+        return false;
+    return true;
+}
+
+void set_numeric_value_to_cell(float value, long cell_index, const char *delimiter, char *row)
+{
+    char *cell_to_set_start;
+    get_cell_borders(row, &cell_to_set_start, *delimiter, (int)cell_index);
+
+    int no_of_digits = snprintf(NULL, 0, "%f", value);
+    char result[no_of_digits];
+    result[no_of_digits + 1] = '\0';
+    sprintf(result,"%g", value);
+
+    CommandData to_set = {0};
+    to_set.start = cell_index;
+    to_set.text_value = result;
+    cset(row, &to_set, delimiter);
+}
+
+/* Common function for csum, cavg, cmin, cmax functions. Function has parameter "what_to_do" which defines what to do with numbers */
+void cx_commands(char *row, CommandData *command, const char *delimiter, int what_to_do)
+{
+    float result = 0;
+    float number_to_add = 0;
+    float valid_columns = 0;
+
+    for (int column = (int)command->end; column <= command->value; column++)
+    {
+        char *column_start;
+        int column_length = get_cell_borders(row, &column_start, *delimiter, column);
+        char cell[column_length + 1];
+        strncpy(cell, column_start, column_length);
+        cell[column_length] = '\0';
+
+        bool valid_number = get_numeric_cell_value(cell, &number_to_add);
+        if (!valid_number)
+            continue;
+
+        if (what_to_do <= 2)
+            result += number_to_add;
+        else if ((what_to_do == 3 && number_to_add < result) || (what_to_do == 4 && number_to_add > result))
+            result = number_to_add;
+
+        valid_columns++;
+    }
+    if (what_to_do == 2)
+        result /= valid_columns ? valid_columns : 1;    // prevent / by 0
+    else if (what_to_do == 5)
+        result = valid_columns;
+
+    set_numeric_value_to_cell(result, command->start, delimiter, row);
+}
+
+void csum(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 1);
+}
+
+void cavg(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 2);
+}
+
+void cmin(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 3);
+}
+void cmax(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 4);
+}
+
+void ccount(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 5);
+}
+
+void cseq(char *row, CommandData *command, const char *delimiter)
+{
+    int seq_start = command->value + 1; // +1 because parsing decreased it by 1
+    int starting_column = (int)command->start;
+    for (int column = starting_column; column <= command->end; column++)
+        set_numeric_value_to_cell((float)(seq_start+column-starting_column), column, delimiter, row); // add # of iteration to seq_start, to increase it
 }
 
 void get_all_command_definitions(CommandDefinition *commands)
@@ -436,12 +632,25 @@ void get_all_command_definitions(CommandDefinition *commands)
             /* TABLE EDIT COMMANDS */
             {"irow",    1, 1, empty_function},
             {"arow",    0, 1, empty_function},
+            {"drow",    1, 1, drow_s},
+            {"drows",   2, 1, drow_s},
             {"icol",    1, 1, icol},
             {"acol",    0, 1, acol},
             {"dcol",    1, 1, dcol},
             {"dcols",   2, 1, dcols},
             /* DATA PROCESSING COMMANDS */
             {"cset",    2, 2, cset},
+            {"tolower", 1, 2, column_tolower},
+            {"toupper", 1, 2, column_toupper},
+            {"copy",    2, 2, copy},
+            {"swap",    2, 2, swap},
+            {"move",    2, 2, move},
+            {"csum",    3, 2, csum},
+            {"cavg",    3, 2, cavg},
+            {"cmin",    3, 2, cmin},
+            {"cmax",    3, 2, cmax},
+            {"ccount",  3, 2, ccount},
+            {"cseq",    3, 2, cseq},
             {"rseq",    4, 2, empty_function},
             {"rsum",    3, 2, empty_function},
             {"ravg",    3, 2, empty_function},
@@ -508,8 +717,8 @@ int main(int args_count, char *arguments[])
         if (!row_index)
             original_column_count = column_count;
 
-        process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0]);
-        process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0]);
+        process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0], row_index);
+        process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0], row_index);
         printf("%s", row_buffer);
     }
     return 0;
