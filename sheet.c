@@ -6,12 +6,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <float.h>
 #include <errno.h>
 #include <ctype.h>
 
 #define MAX_COLUMNS 103  // 103 because of maximum_row_size/maximum_cell_size = 102.5
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
-#define ROW_BUFFER_SIZE 10240 + 2    // +2 for \n and \0
+#define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
+#define COMMANDS_COUNT 28
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
@@ -31,19 +33,27 @@ typedef struct{
     char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
 }SelectionRowCommand;
 
-typedef struct{
-    char command[5 + 1];    // 5 is length of longest command, +1 for \0
-    long start_at;          // using long because start_at can be used for row indexes
-    long end_at;
-}TableEditCommand;
+typedef void (*function_ptr)(); // pointer to function with no strict arguments
 
 typedef struct{
-    char command[7 + 1];    // 7 is length of longest command
-    int start;
-    int end;
-    int value;              // some commands needs third column
-    char *text_value;     // some commands needs text value
-}TableDataProcessingCommand;
+    long start;
+    long end;
+    int value;
+    char *text_value;
+}CommandData;
+
+typedef struct{
+    char *name;
+    CommandData data;
+    function_ptr processing_function;   // saving pointer to function
+}Command;
+
+typedef struct {
+    char *name;
+    int arguments;
+    int command_category;   // type of command (table edit/row selection/data processing)
+    function_ptr processing_function;
+}CommandDefinition;
 
 
 bool compare_strings(char *first, char *second)
@@ -51,20 +61,19 @@ bool compare_strings(char *first, char *second)
     return strcmp(first, second) == 0 ? true : false;
 }
 
-void get_cells_delimiter(char *raw_delimiter, char *delimiter)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
+char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
-    int raw_delimiter_size = (int)strlen(raw_delimiter);
-    int free_position = 0;
+    char cell_delimiter = 0;
 
-    for(int i=0; i < raw_delimiter_size; i++)
+    int position = 0;
+    while (cell_delimiter == 0 && position < remaining_lenght && remaining_lenght > 0)
     {
-        if (strchr(delimiter, raw_delimiter[i]) == NULL)
-        {
-            delimiter[free_position] = raw_delimiter[i];
-            free_position++;
-        }
+        if (strchr(delimiters, row[position]) != NULL)
+            cell_delimiter = row[position];
+        position++;
     }
-    delimiter[free_position] = '\0';
+
+    return cell_delimiter;
 }
 
 bool is_defined_delimiter(int args_count, char **arguments)
@@ -158,39 +167,36 @@ bool can_process_row(SelectionRowCommand *selection_commands, long row_index, ch
 
 int parse_line(char *raw_line, char parsed_line[][CELL_SIZE], char *delimiter, long row_index, int *columns_count)
 {
-    size_t delimiter_size = strlen(delimiter);
     char *remaining_row = raw_line;
-
     int column_index = 0;
+    int remaining_row_length = 0;
 
-    while (remaining_row != NULL)
+    while ((remaining_row_length = (int)strlen(remaining_row)))
     {
-        size_t column_size;  // value is initialized later
-        int remaining_row_length = (int)strlen(remaining_row);
-        char original_row[remaining_row_length + 1];  // +1 for \0 at the end
+        char next_cell_delimiter = get_cells_delimiter(remaining_row, delimiter, remaining_row_length);
+        char original_row[remaining_row_length + 1];    // +1 for \0 at the end
+        size_t cell_length;                             // value is initialized later
         original_row[remaining_row_length] = '\0';
         strncpy(original_row, remaining_row, strlen(remaining_row));
 
-        remaining_row = strstr(remaining_row, delimiter);
-        if (remaining_row == NULL)  // at the end of row is no delimiter, strstr will return NULL so we cant calculate size of column
-            column_size = strlen(original_row);
+        remaining_row = strchr(remaining_row, next_cell_delimiter);
+        if (!strlen(remaining_row))  // at the end of row is no delimiter, strchr will return NULL so we cant calculate size of column
+            cell_length = strlen(original_row);
         else{
-            column_size = strlen(original_row) - strlen(remaining_row);
-            remaining_row += delimiter_size;  // move pointer behind the delimiter to force looking for delimiter behind actual column
+            cell_length = strlen(original_row) - strlen(remaining_row);
+            remaining_row += 1;  // move pointer behind the delimiter to force looking for delimiter behind actual column
         }
 
-        int column_requirements = check_column_requirements(column_size, column_index, *columns_count, row_index, remaining_row);
+        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index, remaining_row);
         if (column_requirements > 0)
             return column_requirements;
 
-        if (column_size <= 0)
-        {
+        if (cell_length <= 0)
             parsed_line[column_index][CELL_SIZE - 1] = USED_COLUMN_BITE;  // using last unused bite to mark column as used, 1F is hex number of unit separator
-            column_size = 1;
-        }else
-            strncpy(parsed_line[column_index], original_row, column_size);
+        else
+            strncpy(parsed_line[column_index], original_row, cell_length);
 
-        parsed_line[column_index][column_size] = '\0';
+        parsed_line[column_index][cell_length] = '\0';
         column_index++;
     }
 
@@ -285,131 +291,27 @@ int get_selection_commands(int args_count, char *arguments[], SelectionRowComman
     return 0;
 }
 
-void get_command_groups_count(int args_count, char *arguments[], int *table_edit_cmds, int *data_processing_cmds)   // TODO: add selection commands
+int get_command_definition(char *command_name, CommandDefinition *command_definitions)
+{
+    for (int command_def_index = 0; command_def_index < COMMANDS_COUNT; command_def_index++) {
+        if (compare_strings(command_name, command_definitions[command_def_index].name))
+            return command_def_index;
+    }
+    return -1;
+}
+
+void get_command_counts(int args_count, char **arguments, int *table_edit_cmds, int *data_processing_cmds, CommandDefinition *commands)   // TODO: add selection commands
 {
     for (int arg_index = 0; arg_index < args_count; arg_index++)
     {
-        char *command = arguments[arg_index];
-        if (compare_strings(command, "irow") || compare_strings(command, "arow") ||
-            compare_strings(command, "drow") || compare_strings(command, "drows") ||
-            compare_strings(command, "icol") || compare_strings(command, "acol") ||
-            compare_strings(command, "dcol") || compare_strings(command, "dcols"))
-        {
-            (*table_edit_cmds)++;
-        }else if(compare_strings(command, "cset") || compare_strings(command, "tolower") ||
-                 compare_strings(command, "toupper") || compare_strings(command, "drows") ||
-                 compare_strings(command, "round") || compare_strings(command, "int") ||
-                 compare_strings(command, "copy") || compare_strings(command, "swap") ||
-                 compare_strings(command, "move") || compare_strings(command, "csum") ||
-                 compare_strings(command, "cavg") || compare_strings(command, "cmin") ||
-                 compare_strings(command, "cmax") || compare_strings(command, "ccount") ||
-                 compare_strings(command, "rseq") || compare_strings(command, "rsum") ||
-                 compare_strings(command, "ravg") || compare_strings(command, "rmin") ||
-                 compare_strings(command, "rmax") || compare_strings(command, "rcount") ||
-                 compare_strings(command, "cseq"))
-        {
-            (*data_processing_cmds)++;
-        }
+        int command_def_index = get_command_definition(arguments[arg_index], commands);
+        if (command_def_index == -1)
+            continue;
+        int category = commands[command_def_index].command_category;
+        int *commands_counter = category == 1 ? table_edit_cmds : data_processing_cmds;
+        (*commands_counter)++;
     }
 }
-
-
-int get_table_edit_commands(int args_count, char *arguments[], TableEditCommand *commands)
-{
-    int edit_command_index = 0;
-
-    for (int command_index = 0; command_index < args_count;)
-    {
-        char *command = arguments[command_index];
-        char *table_edit_command = NULL;
-        long start_at;
-        long end_at = -1;
-
-        if (compare_strings(command, "irow") || compare_strings(command, "drow") ||     // commands with 1 argument
-            compare_strings(command, "icol") || compare_strings(command, "dcol"))
-        {
-            table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // -1 because of indexing from 1
-            command_index++;  // this command have 2 args, so skipping the second one
-
-        }else if (compare_strings(command, "arow") || compare_strings(command, "acol")){  // commands with no arguments
-            table_edit_command = command;
-            start_at = 0;
-
-        }else if (compare_strings(command, "drows") || compare_strings(command, "dcols")){  // commands with 2 arguments
-            table_edit_command = command;
-            start_at = get_valid_row_number(arguments[command_index + 1], false) - 1;   // - 1 because of indexing from 1
-            end_at = get_valid_row_number(arguments[command_index + 2], false) - 1;     // same
-            if (start_at > end_at)
-            {
-                fprintf(stderr, "Invalid syntax of command!\n");
-                return ERROR_INVALID_COMMAND_USAGE;
-            }
-            command_index += 2;
-        }
-
-        if (table_edit_command)
-        {
-            strcpy(commands[edit_command_index].command, table_edit_command);
-            commands[edit_command_index].start_at = start_at;
-            commands[edit_command_index].end_at = end_at;
-            edit_command_index++;
-        }
-        command_index++;
-    }
-    return 0;
-}
-
-int get_data_processing_commands(int args_count, char *arguments[], TableDataProcessingCommand *commands)
-{
-    int processing_command_index = 0;
-    for (int arg_index = 0; arg_index < args_count;)
-    {
-        char *command = arguments[arg_index];
-        int start = -1;
-        int end = -1;
-        int value = -1;
-        char *text_value = NULL;
-        if (compare_strings(command, "cset"))
-        {
-            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
-            if (start > -1 && strlen(arguments[arg_index + 2]) < CELL_SIZE)
-                text_value = arguments[arg_index + 2];
-            else
-                start = -1;
-        }else if (compare_strings(command, "tolower") || compare_strings(command, "toupper") ||
-                    compare_strings(command, "round") || compare_strings(command, "int"))
-        {
-            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
-        }else if (compare_strings(command, "swap") || compare_strings(command, "move")){
-            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;     // icol will calculate correct index by itself, dont need to -1 value
-            end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
-        }else if (compare_strings(command, "csum") || compare_strings(command, "cavg") ||
-                    compare_strings(command, "cmin") || compare_strings(command, "cmax") ||
-                    compare_strings(command, "ccount")){
-            value = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
-            start = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
-            end = (int)get_valid_row_number(arguments[arg_index + 3], false) - 1;
-        }else if (compare_strings(command, "cseq")){
-            start = (int)get_valid_row_number(arguments[arg_index + 1], false) - 1;
-            end = (int)get_valid_row_number(arguments[arg_index + 2], false) - 1;
-            value = (int)get_valid_row_number(arguments[arg_index + 3], false);
-        }
-
-        if (start > -1)
-        {
-            strcpy(commands[processing_command_index].command, command);
-            commands[processing_command_index].start = start;
-            commands[processing_command_index].end = end;
-            commands[processing_command_index].value = value;
-            commands[processing_command_index].text_value = text_value;
-            processing_command_index++;
-        }
-        arg_index++;
-    }
-    return 0;
-}
-
 
 void remove_ending_newline_character(char *line)
 {
@@ -418,83 +320,133 @@ void remove_ending_newline_character(char *line)
         *newline_character = '\0';
 }
 
-bool acol(char row[][CELL_SIZE], long row_index, int *real_columns_count, int original_columns_count)
+void acol(char row[][CELL_SIZE], CommandData *command_data)
 {
-    if (*real_columns_count == MAX_COLUMNS - 1)
-        return true;
+    int last_column = 0;
+    if (command_data->value > -1 && command_data->value <= MAX_COLUMNS)
+        last_column = command_data->value;
+    else
+        for (; last_column < MAX_COLUMNS; last_column++)
+            if (row[last_column][0] == '\0' && row[last_column][CELL_SIZE - 1] != USED_COLUMN_BITE)
+                break;
 
-    if (!row_index)
-    {
-        row[*real_columns_count][CELL_SIZE - 1] = USED_COLUMN_BITE;
-        (*real_columns_count)++;
-    }else{
-        /* cycle bellow will be called at first "acol" command only, it will add all the new columns */
-        if (row[*real_columns_count][CELL_SIZE - 1] == USED_COLUMN_BITE)
-            return true;
-        for (int adding_column_index = original_columns_count; adding_column_index < *real_columns_count; adding_column_index++)
-            row[adding_column_index][CELL_SIZE - 1] = USED_COLUMN_BITE;
+    row[last_column][CELL_SIZE - 1] = USED_COLUMN_BITE;
+    command_data->value = last_column;
+}
+
+void dcol(char row[][CELL_SIZE], CommandData *command_data)
+{
+    row[command_data->start][CELL_SIZE - 1] = DELETED_COLUMN_BITE;  // 03 is hex of ETX, used as mark column as deleted
+}
+
+void dcols(char row[][CELL_SIZE], CommandData *command_data)    // TODO: chova sa to inak pri ponechani 1. stlpca a pri ponechani posledneho
+{
+    CommandData changing_command_data = *command_data;
+    for (long column = command_data->start; column <= command_data->end; column++) {
+        dcol(row, &changing_command_data);
+        changing_command_data.start++;
     }
-    return false;
 }
 
-void dcol(char row[][CELL_SIZE], long column)
+void icol(char row[][CELL_SIZE], CommandData *command_data)
 {
-    row[column][CELL_SIZE - 1] = DELETED_COLUMN_BITE;  // 03 is hex of ETX, used as mark column as deleted
-}
-
-void dcols(char row[][CELL_SIZE], TableEditCommand *edit_command)
-{
-    for (long column = edit_command->start_at; column <= edit_command->end_at; column++)
-        dcol(row, column);
-}
-
-void icol(char row[][CELL_SIZE], long column, int *columns_count, long row_index)
-{
+    long column = command_data->start;
     memmove(row[column + 1], row[column], CELL_SIZE * MAX_COLUMNS - (column + 1) * CELL_SIZE);
     row[column][0] = '\0';
     row[column][CELL_SIZE - 1] = USED_COLUMN_BITE;  // mark column as used, but empty
-    if (!row_index)
-        (*columns_count)++;
 }
 
+void empty_function(char row[][CELL_SIZE], CommandData *command_data)   // function used to set some function to command so mark command as used and should be performed
+{
+    (void)row;
+    (void)command_data;
+}
 
-void process_table_edit_column_commands(char row[][CELL_SIZE], TableEditCommand *edit_commands, int edit_commands_count, int *columns_count, long row_index, int original_column_count)
+int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
+{
+    int number = -1;
+    return (int)get_valid_row_number(text_form, false) + number;
+}
+
+void set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
+{
+    int arg_count = command_definition->arguments;
+    long start = -1;
+    long end = -1;
+    int value = -1;
+    char *text_value = NULL;
+
+    if (arg_count >= 1)
+        start = get_valid_column_number(arguments[command_index + 1]);
+    if (arg_count >= 2)
+        end = get_valid_column_number(arguments[command_index + 2]);
+    if (end < 0 && arg_count == 2)
+        text_value = arguments[command_index + 2];  // at this place, will be saved text value
+
+    if (arg_count >= 3)
+        value = get_valid_column_number(arguments[command_index + 3]);
+
+    command_data->start = start;
+    command_data->end = end;
+    command_data->value = value;
+    command_data->text_value = text_value;
+}
+
+int get_commands(int args_count, char *arguments[], CommandDefinition *command_definitions, Command *commands, int processing_commands_category)
+{
+    int minimal_arguments = 0;
+    int edit_command_index = 0;
+    for (int command_index = 1; command_index < args_count;)    // starting at 1, 0. arg is program name
+    {
+        int command_def_index = get_command_definition(arguments[command_index], command_definitions);
+        if (command_def_index == -1 ||  // check command validity
+            (command_def_index > -1 && processing_commands_category != command_definitions[command_def_index].command_category)) {    // check command category
+            command_index++;
+            continue;
+        }
+
+        CommandDefinition command_definition = command_definitions[command_def_index];
+        int command_arguments = command_definition.arguments;
+        if (command_index + command_arguments > args_count) //ERROR DO MATKY PICI VACEJ ARGUMENTOV JAK MOZE KKT SPROSTY
+            return -ERROR_INVALID_COMMAND_USAGE;    // TODO: *-1 to error codes
+
+        CommandData data = {0};
+        set_command_data(arguments, command_index, &data, &command_definition);
+        Command command = {arguments[command_index], data, command_definition.processing_function};
+
+        commands[edit_command_index] = command;
+        command_index += command_arguments + 1;
+        edit_command_index++;
+    }
+    return minimal_arguments;
+}
+
+void process_commands(char row[][CELL_SIZE], Command *edit_commands, int edit_commands_count)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
-        char *command = edit_commands[command_index].command;
-        if (compare_strings(command, "acol"))
-        {
-            bool skip_row = acol(row, row_index, columns_count, original_column_count);
-            if (!skip_row)
-                continue;
-        }else if (compare_strings(command, "dcol")){
-            dcol(row, edit_commands[command_index].start_at);
-        }else if (compare_strings(command, "dcols")){
-            dcols(row, &edit_commands[command_index]);
-        }else if (compare_strings(command, "icol")){
-            icol(row, edit_commands[command_index].start_at, columns_count, row_index);
-        }
+        function_ptr edit_function = edit_commands[command_index].processing_function;
+        edit_function(row, &edit_commands[command_index].data);
     }
 }
 
-void column_tolower(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void column_tolower(char row[][CELL_SIZE], CommandData *command)
 {
-    char *column = row[command.start];
+    char *column = row[command->start];
     for (size_t character_index = 0; character_index < strlen(column); character_index++)
         column[character_index] = (char)tolower(column[character_index]);
 }
 
-void column_toupper(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void column_toupper(char row[][CELL_SIZE], CommandData *command)
 {
-    char *column = row[command.start];
+    char *column = row[command->start];
     for (size_t character_index = 0; character_index < strlen(column); character_index++)
         column[character_index] = (char)toupper(column[character_index]);
 }
 
-void column_round(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void column_round(char row[][CELL_SIZE], CommandData *command)
 {
-    char *column = row[command.start];
+    char *column = row[command->start];
     double to_round;
     char *remaining = NULL;
     errno = 0;
@@ -507,9 +459,9 @@ void column_round(char row[][CELL_SIZE], TableDataProcessingCommand command)
     sprintf(column, "%d", rounded);
 }
 
-void column_int(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void column_int(char row[][CELL_SIZE], CommandData *command)
 {
-    char *column = row[command.start];
+    char *column = row[command->start];
     char *decimal_delimiter_position = NULL;
     decimal_delimiter_position = strchr(column, *".");
     if (decimal_delimiter_position == NULL)
@@ -518,15 +470,15 @@ void column_int(char row[][CELL_SIZE], TableDataProcessingCommand command)
     column[dot_position] = '\0';
 }
 
-void copy(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void copy(char row[][CELL_SIZE], CommandData *command)
 {
-    strcpy(row[command.start], row[command.end]);
+    strcpy(row[command->end], row[command->start]);
 }
 
-void swap(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void swap(char row[][CELL_SIZE], CommandData *command)
 {
-    char *what = row[command.start];
-    char *with = row[command.end];
+    char *what = row[command->start];
+    char *with = row[command->end];
     char temp[CELL_SIZE];
     strcpy(temp, what);
     strcpy(what, with);
@@ -539,13 +491,15 @@ void swap(char row[][CELL_SIZE], TableDataProcessingCommand command)
         with[CELL_SIZE - 1] = USED_COLUMN_BITE;
 }
 
-void move(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void move(char row[][CELL_SIZE], CommandData *command)
 {
-    int move_from = command.end;
-    int column_to_move = command.start;
-    icol(row, move_from, 0, 1);     // icol moves columns by 1 to right
-    strcpy(row[move_from], row[column_to_move]);
-    row[column_to_move][CELL_SIZE - 1] = DELETED_COLUMN_BITE;
+    CommandData swapped_directions;         // icol is used with swapped directions, so i need to swap it
+    swapped_directions.start = command->end;
+    swapped_directions.end = command->start;
+
+    icol(row, &swapped_directions);                             // icol will move columns to right, to make space for new one
+    strcpy(row[command->end], row[command->start + 1]);     // +1 because icol moved that column to the right
+    row[command->start+1][CELL_SIZE - 1] = DELETED_COLUMN_BITE; // +1 for same reason
 }
 
 bool get_numeric_cell_value(char *column, float *value)
@@ -559,28 +513,28 @@ bool get_numeric_cell_value(char *column, float *value)
     return true;
 }
 
-void csum(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void csum(char row[][CELL_SIZE], CommandData *command)
 {
     float sum = 0;
-    float number_to_add;
+    float number_to_add = 0;
 
-    for (int column = command.start; column <= command.end; column++)
+    for (int column = (int)command->end; column <= command->value; column++)
     {
         bool valid_number = get_numeric_cell_value(row[column], &number_to_add);
         if (!valid_number)
             continue;
         sum += number_to_add;
     }
-    sprintf(row[command.value], "%g", sum);
+    sprintf(row[command->start], "%g", sum);
 }
 
-void cavg(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void cavg(char row[][CELL_SIZE], CommandData *command)
 {
     float sum = 0;
     float valid_columns = 0;
     float number_to_add;
 
-    for (int column = command.start; column <= command.end; column++)
+    for (int column = (int)command->end; column <= command->value; column++)
     {
         bool valid_number = get_numeric_cell_value(row[column], &number_to_add);
         if (!valid_number)
@@ -589,138 +543,142 @@ void cavg(char row[][CELL_SIZE], TableDataProcessingCommand command)
         valid_columns++;
     }
     valid_columns = valid_columns > 0 ? valid_columns : 1;  // set 1 to avoid divide by zero
-    sprintf(row[command.value], "%g", (sum/valid_columns));
+    sprintf(row[command->start], "%g", (sum/valid_columns));
 }
 
-void cmin(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void cmin(char row[][CELL_SIZE], CommandData *command)
 {
-    float min = 0;
+    float min = FLT_MAX;
     float cell_value;
 
-    for (int column = command.start; column <= command.end; column++)
+    for (int column = (int)command->end; column <= command->value; column++)
     {
         bool valid_number = get_numeric_cell_value(row[column], &cell_value);
         if (!valid_number)
             continue;
-        if (cell_value < min || column == command.start)    // first iteration, initialized 0 have to be rewrited
+        if (cell_value < min || column == command->end)    // first iteration, initialized 0 have to be rewrited
             min = cell_value;
     }
-    sprintf(row[command.value], "%g", min);
+    sprintf(row[command->start], "%g", min);
 }
-void cmax(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void cmax(char row[][CELL_SIZE], CommandData *command)
 {
-    float max = 0;
+    float max = FLT_MIN;
     float cell_value;
 
-    for (int column = command.start; column <= command.end; column++)
+    for (int column = (int)command->end; column <= command->value; column++)
     {
         bool valid_number = get_numeric_cell_value(row[column], &cell_value);
         if (!valid_number)
             continue;
-        if (cell_value > max || column == command.start)   // first iteration, initialized 0 have to be rewrited
+        if (cell_value > max || column == command->end)   // first iteration, initialized 0 have to be rewrited
             max = cell_value;
     }
-    sprintf(row[command.value], "%g", max);
+    sprintf(row[command->start], "%g", max);
 }
 
-void ccount(char row[][CELL_SIZE], TableDataProcessingCommand command)  // TODO: tu ma byt asi pocet stlpcov, ktore obsahuju cislo
+void ccount(char row[][CELL_SIZE], CommandData *command)  // TODO: tu ma byt asi pocet stlpcov, ktore obsahuju cislo
 {
     int filled_cells = 0;
 
-    for (int column = command.start; column <= command.end; column++)
+    for (int column = (int)command->end; column <= command->value; column++)
     {
         if (strlen(row[column]) == 0)
             continue;
         filled_cells++;
     }
-    sprintf(row[command.value], "%d", filled_cells);
+    sprintf(row[command->start], "%d", filled_cells);
 }
 
-void cseq(char row[][CELL_SIZE], TableDataProcessingCommand command)
+void cseq(char row[][CELL_SIZE], CommandData *command)
 {
-    int number_to_increment = command.value;
-    for (int column = command.start; column <= command.end; column++, number_to_increment++)
-        sprintf(row[column], "%d", number_to_increment);
+    int seq_start = command->value + 1; // +1 because parsing decreased it by 1
+    int starting_column = (int)command->start;
+    for (int column = starting_column; column <= command->end; column++)
+        sprintf(row[column], "%d", seq_start+(column-starting_column)); // add # of iteration to seq_start, to increase it
 }
 
-void process_data_processing_commands(char row[][CELL_SIZE], TableDataProcessingCommand *processing_commands, int commands_count, long row_index)
+void cset(char row[][CELL_SIZE], CommandData *command)
 {
-    for (int command_index = 0; command_index < commands_count; command_index++)
-    {
-        char *command = processing_commands[command_index].command;
-        int start_index = processing_commands[command_index].start;
-
-        if (row[processing_commands[command_index].start][CELL_SIZE - 1] == DELETED_COLUMN_BITE)   // skip deleted columns
-            continue;
-
-        if (compare_strings(command, "cset"))
-            strcpy(row[start_index], processing_commands[command_index].text_value);
-        else if (compare_strings(command, "tolower"))
-            column_tolower(row, processing_commands[command_index]);
-        else if (compare_strings(command, "toupper"))
-            column_toupper(row, processing_commands[command_index]);
-        else if (compare_strings(command, "round"))
-            column_round(row, processing_commands[command_index]);
-        else if (compare_strings(command, "int"))
-            column_int(row, processing_commands[command_index]);
-        else if (compare_strings(command, "copy"))
-            copy(row, processing_commands[command_index]);
-        else if (compare_strings(command, "swap"))
-            swap(row, processing_commands[command_index]);
-        else if (compare_strings(command, "move"))
-            move(row, processing_commands[command_index]);
-        else if (compare_strings(command, "csum") && row_index) // csum wont be performed at 0. row - it is row with names of columns
-            csum(row, processing_commands[command_index]);
-        else if (compare_strings(command, "cavg") && row_index)
-            cavg(row, processing_commands[command_index]);
-        else if (compare_strings(command, "cmin") && row_index)
-            cmin(row, processing_commands[command_index]);
-        else if (compare_strings(command, "cmax") && row_index)
-            cmax(row, processing_commands[command_index]);
-        else if (compare_strings(command, "ccount"))
-            ccount(row, processing_commands[command_index]);
-        else if (compare_strings(command, "cseq"))
-            cseq(row, processing_commands[command_index]);
-    }
+    strcpy(row[command->start], command->text_value);
 }
 
 /* implementation od drow and drows commands */
-bool drow_s(long row_index, TableEditCommand edit_command)
+void drow_s(long row_index, CommandData *command_data, bool *should_delete)
 {
-    if ((row_index == edit_command.start_at && edit_command.end_at == -1) ||        // drow command
-        (row_index >= edit_command.start_at && row_index <= edit_command.end_at))   // drows command
-        return true;
-    return false;
+    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
+        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
+        *should_delete = true;
 }
 
-bool delete_rows_by_index(TableEditCommand *edit_commands, int edit_commands_count, long row_index)
+bool delete_rows_by_index(Command *edit_commands, int edit_commands_count, long row_index)
 {
-
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
-        char *command = edit_commands->command;
-        if ((compare_strings(command, "drow") || compare_strings(command, "drows")) &&
-            drow_s(row_index - 1, edit_commands[command_index]))    // -1 because rows are indexed from 1 and commands from 0
+        if (edit_commands[command_index].processing_function != drow_s)
+            continue;
+
+        bool should_delete = false;
+        drow_s(row_index - 1, &edit_commands[command_index].data, &should_delete);   // -1 because rows are indexed from 1 and commands from 0
+
+        if (should_delete)
             return true;
     }
     return false;
 }
 
-//bool add_new_rows(TableEditCommand *editCommand)
+void get_all_commands(CommandDefinition *commands)
+{
+    CommandDefinition base_commands[COMMANDS_COUNT] = {
+            /* TABLE EDIT COMMANDS */
+            {"irow",    1, 1, empty_function},
+            {"arow",    0, 1, empty_function},
+            {"drow",    1, 1, drow_s},
+            {"drows",   2, 1, drow_s},
+            {"icol",    1, 1, icol},
+            {"acol",    0, 1, acol},
+            {"dcol",    1, 1, dcol},
+            {"dcols",   2, 1, dcols},
+            /* DATA PROCESSING COMMANDS */
+            {"cset",    2, 2, cset},
+            {"tolower", 1, 2, column_tolower},
+            {"toupper", 1, 2, column_toupper},
+            {"round",   1, 2, column_round},
+            {"int",     1, 2, column_int},
+            {"copy",    2, 2, copy},
+            {"swap",    2, 2, swap},
+            {"move",    2, 2, move},
+            {"cavg",    3, 2, cavg},
+            {"csum",    3, 2, csum},
+            {"cmin",    3, 2, cmin},
+            {"cmax",    3, 2, cmax},
+            {"ccount",  3, 2, ccount},
+            {"cseq",    3, 2, cseq},
+            {"rseq",    4, 2, empty_function},
+            {"rsum",    3, 2, empty_function},
+            {"ravg",    3, 2, empty_function},
+            {"rmin",    3, 2, empty_function},
+            {"rmax",    3, 2, empty_function},
+            {"rcount",  3, 2, empty_function},
+            /* ROW SELECTION COMMANDS */
+            // TODO
+    };
+    for (int command_index = 0; command_index < COMMANDS_COUNT; command_index++)
+        commands[command_index] = base_commands[command_index];
+}
 
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
-    size_t delimiter_size = 1;
     bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
+    char default_delimiter[] = {" "};
+    char *cells_delimiter = default_delimiter;
     if (defined_custom_delimiter)
-        delimiter_size = strlen(arguments[2]);
+        cells_delimiter = arguments[2];
 
-    char cells_delimiter[delimiter_size + 1];  // +1 for null at the end
-    if (defined_custom_delimiter)
-        get_cells_delimiter(arguments[2], cells_delimiter);
-    else
-        strcpy(cells_delimiter, " ");
+
+    CommandDefinition command_definitions[COMMANDS_COUNT];
+    get_all_commands(command_definitions);
 
     /* PREPARE SELECTION COMMANDS */
     SelectionRowCommand selection_commands[] = {
@@ -735,17 +693,17 @@ int main(int args_count, char *arguments[])
     /* COMMANDS COUNT */
     int edit_commands_count = 0;
     int processing_commands_count = 0;
-    get_command_groups_count(args_count, arguments, &edit_commands_count, &processing_commands_count);
+    get_command_counts(args_count, arguments, &edit_commands_count, &processing_commands_count, command_definitions);
 
     /*  PREPARE TABLE EDITING COMMANDS  */
-    TableEditCommand edit_commands[edit_commands_count];
-    int edit_commands_parsing_result = get_table_edit_commands(args_count, arguments, edit_commands);
+    Command edit_commands[edit_commands_count];
+    int edit_commands_parsing_result = get_commands(args_count, arguments, command_definitions, edit_commands, 1);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
     /* PREPARE DATA PROCESSING COMMANDS */
-    TableDataProcessingCommand processing_commands[processing_commands_count];
-    int processing_commands_parsing_result = get_data_processing_commands(args_count, arguments, processing_commands);
+    Command processing_commands[processing_commands_count];
+    int processing_commands_parsing_result = get_commands(args_count, arguments, command_definitions, processing_commands, 2);
     if (processing_commands_parsing_result)
         return processing_commands_parsing_result;
 
@@ -793,9 +751,9 @@ int main(int args_count, char *arguments[])
             if (!can_process_row(selection_commands, row_index, columns, last_row))
                 continue;
 
-        process_table_edit_column_commands(columns, edit_commands, edit_commands_count, &column_count, row_index, original_column_count);
-        process_data_processing_commands(columns, processing_commands, processing_commands_count, row_index);
-        print_row(columns, cells_delimiter);
+        process_commands(columns, edit_commands, edit_commands_count);
+        process_commands(columns, processing_commands, processing_commands_count);
+        print_row(columns, cells_delimiter);   // TODO: overit pri printe ci ten stlpec vobec nieco obsahuje
     }
     return 0;
 }
