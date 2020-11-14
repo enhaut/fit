@@ -681,7 +681,7 @@ int main(int args_count, char *arguments[])
         if (!row_index)
             original_column_count = column_count;
 
-        if (process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
+        if (!selection_commands_count || process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
         {
             process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0], row_index);
             process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0], row_index);
