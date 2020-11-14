@@ -332,6 +332,8 @@ void process_commands(char *row, Command *edit_commands, int edit_commands_count
             edit_function(row, &edit_commands[command_index].data, &delimiter);
         else
             edit_function(row, &edit_commands[command_index].data, row_index);
+        if (row[0] == '\0') // row has been deleted, dont need to process another commands
+            break;
     }
 }
 
