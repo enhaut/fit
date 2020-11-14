@@ -30,7 +30,7 @@ typedef void (*function_ptr)(); // pointer to function with no strict arguments
 typedef struct{
     long start;
     long end;
-    int value;
+    float value;
     char *text_value;
 }CommandData;
 
@@ -254,7 +254,7 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
     int arg_count = command_definition->arguments;
     long start = -1;
     long end = -1;
-    int value = -1;
+    float value = -1;
     char *text_value = NULL;
 
     if (arg_count >= 1)
@@ -265,7 +265,7 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
-        value = get_valid_column_number(arguments[command_index + 3]);
+        value = (float)get_valid_column_number(arguments[command_index + 3]);
 
     command_data->start = start;
     command_data->end = end;
@@ -460,8 +460,9 @@ void cx_commands(char *row, CommandData *command, const char *delimiter, int wha
     float result = 0;
     float number_to_add = 0;
     float valid_columns = 0;
+    int end_column_index = (int)command->value;
 
-    for (int column = (int)command->end; column <= command->value; column++)
+    for (int column = (int)command->end; column <= end_column_index; column++)
     {
         char *column_start;
         int column_length = get_cell_borders(row, &column_start, *delimiter, column);
@@ -514,7 +515,7 @@ void ccount(char *row, CommandData *command, const char *delimiter)
 
 void cseq(char *row, CommandData *command, const char *delimiter)
 {
-    int seq_start = command->value + 1; // +1 because parsing decreased it by 1
+    int seq_start = (int)command->value + 1; // +1 because parsing decreased it by 1
     int starting_column = (int)command->start;
     for (int column = starting_column; column <= command->end; column++)
         set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
@@ -561,7 +562,7 @@ void beginswith(char *row, CommandData *command, const char *delimiter, bool *ca
     *can_start = string_selection_commands(row, command, *delimiter, true);
 }
 
-void contains(char *row, CommandData *command, char *delimiter, bool *can_start)
+void contains(char *row, CommandData *command, const char *delimiter, bool *can_start)
 {
     *can_start = string_selection_commands(row, command, *delimiter, false);
 }
