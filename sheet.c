@@ -11,7 +11,7 @@
 
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
-#define COMMANDS_COUNT 28
+#define COMMANDS_COUNT 26
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
@@ -521,6 +521,26 @@ void cseq(char *row, CommandData *command, const char *delimiter)
         set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
 }
 
+void column_round(char *row, CommandData *command, const char *delimiter)
+{
+    char *column;
+    int cell_length = get_cell_borders(row, &column, *delimiter, (int)(command->start));
+    char cell[cell_length + 1];
+    strncpy(cell, column, cell_length);
+    cell[cell_length] = 0;
+
+    double to_round;
+    char *remaining = NULL;
+    errno = 0;
+
+    to_round = strtod(cell, &remaining);
+    if (errno != 0 || (remaining != NULL && *remaining != '\0'))
+        return;
+
+    int rounded = (int)(to_round + (to_round > 0.0 ? 0.5 : -0.5));
+    set_numeric_value_to_cell((float)rounded, (int)(command->start), delimiter, row);
+}
+
 void column_int(char *row, CommandData *command, const char *delimiter)
 {
     char *column_start;
@@ -666,7 +686,7 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"cset",    2, DATA_PROCESSING_COMMAND, cset},
             {"tolower", 1, DATA_PROCESSING_COMMAND, column_tolower},
             {"toupper", 1, DATA_PROCESSING_COMMAND, column_toupper},
-            /*{"round",   1, 2, column_round},*/
+            {"round",   1, DATA_PROCESSING_COMMAND, column_round},
             {"int",     1, DATA_PROCESSING_COMMAND, column_int},
             {"copy",    2, DATA_PROCESSING_COMMAND, copy},
             {"swap",    2, DATA_PROCESSING_COMMAND, swap},
