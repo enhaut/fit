@@ -11,7 +11,7 @@
 
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
-#define COMMANDS_COUNT 27
+#define COMMANDS_COUNT 28
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
@@ -596,6 +596,60 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
     return can_process;
 }
 
+int count_delimiters(char *row, char delimiter)
+{
+    int delims = 0;
+    int row_length = (int)strlen(row);
+    for (int position = 0; position < row_length; position++)
+        if (row[position] == delimiter)
+            delims++;
+
+    return delims;
+}
+
+void add_missing_columns(char *row, char delimiter, CommandData *command)
+{
+    size_t row_len = strlen(row) - 1;
+    size_t position = row_len;
+
+    long to_add;    // calculate how many delims needs to add for match delims count in first row
+    if (command->end != -1)
+        to_add = command->end - count_delimiters(row, delimiter);
+    else
+        to_add = ROW_BUFFER_SIZE - (CELL_SIZE + 1) - row_len;
+
+    for (; position < to_add + row_len; position++)
+        row[position] = delimiter;
+
+    row[position] = '\n';
+    row[position+1] = '\0';
+}
+
+void split(char *row, CommandData *command, const char *delimiter)
+{
+    /* In valid row could be in cell maximum of 100 (CELL_SIZE) new delimiters, so 100 last characters are reserved to keep column count in whole table same.
+     * Because in table could be added up to 100 new delimiters (columns splitted by splitting character). */
+    if (strlen(row) > (ROW_BUFFER_SIZE - CELL_SIZE + 1)) {  // CELL_SIZE have -1, so we need to add it
+        fprintf(stderr, "Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE + 1));
+        return;
+    }
+    char *cell_to_split;
+    int cell_length = get_cell_borders(row, &cell_to_split, *delimiter, (int)(command->start));
+    char splitter = command->text_value[0];
+
+    for (int position = 0; position < cell_length; position++)
+        if (cell_to_split[position] == splitter)
+            cell_to_split[position] = *delimiter;
+
+    add_missing_columns(row, *delimiter, command);  // add delimiters to set same column count for every line
+    if (command->end == -1)
+    {
+        int new_table_columns_count = count_delimiters(row, *delimiter);
+        command->end = new_table_columns_count;
+    }
+}
+
+
 void get_all_command_definitions(CommandDefinition *commands)
 {
     CommandDefinition base_commands[COMMANDS_COUNT] = {
@@ -633,6 +687,8 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"rows",        2, SELECTION_COMMAND, rows},
             {"beginswith",  2, SELECTION_COMMAND, beginswith},
             {"contains",    2, SELECTION_COMMAND, contains},
+            /* PREMIUM COMMANDS */
+            {"split", 2, DATA_PROCESSING_COMMAND, split}
     };
     for (int command_index = 0; command_index < COMMANDS_COUNT; command_index++)
         commands[command_index] = base_commands[command_index];
