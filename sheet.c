@@ -129,7 +129,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
 
 long get_valid_row_number(char *number, int allow_dash)
 {
-    if (compare_strings(number, "-") && allow_dash)
+    if (allow_dash && number != NULL && compare_strings(number, "-"))
         return 0;
 
     errno = 0;
