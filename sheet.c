@@ -11,7 +11,7 @@
 
 #define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
-#define COMMANDS_COUNT 29
+#define COMMANDS_COUNT 27
 
 // error codes
 #define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
@@ -521,6 +521,19 @@ void cseq(char *row, CommandData *command, const char *delimiter)
         set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
 }
 
+void column_int(char *row, CommandData *command, const char *delimiter)
+{
+    char *column_start;
+    int cell_length = get_cell_borders(row, &column_start, *delimiter, (int)(command->start));
+    char *cell_end = column_start + cell_length;
+
+    char *decimal_dot = strchr(column_start, '.');
+    if (decimal_dot > cell_end || !decimal_dot)   // dot found behind actual cell
+        return;
+
+    memmove(decimal_dot, cell_end, strlen(cell_end) + 1);
+}
+
 /* SELECTION COMMANDS - returns true in case, row could be processed */
 bool last_row()
 {
@@ -599,8 +612,8 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"cset",    2, DATA_PROCESSING_COMMAND, cset},
             {"tolower", 1, DATA_PROCESSING_COMMAND, column_tolower},
             {"toupper", 1, DATA_PROCESSING_COMMAND, column_toupper},
-            /*{"round",   1, 2, column_round},
-            {"int",     1, 2, column_int},*/
+            /*{"round",   1, 2, column_round},*/
+            {"int",     1, DATA_PROCESSING_COMMAND, column_int},
             {"copy",    2, DATA_PROCESSING_COMMAND, copy},
             {"swap",    2, DATA_PROCESSING_COMMAND, swap},
             {"move",    2, DATA_PROCESSING_COMMAND, move},
@@ -610,12 +623,12 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"cmax",    3, DATA_PROCESSING_COMMAND, cmax},
             {"ccount",  3, DATA_PROCESSING_COMMAND, ccount},
             {"cseq",    3, DATA_PROCESSING_COMMAND, cseq},
-            {"rseq",    4, DATA_PROCESSING_COMMAND, empty_function},
+            /*{"rseq",    4, DATA_PROCESSING_COMMAND, empty_function},
             {"rsum",    3, DATA_PROCESSING_COMMAND, empty_function},
             {"ravg",    3, DATA_PROCESSING_COMMAND, empty_function},
             {"rmin",    3, DATA_PROCESSING_COMMAND, empty_function},
             {"rmax",    3, DATA_PROCESSING_COMMAND, empty_function},
-            {"rcount",  3, DATA_PROCESSING_COMMAND, empty_function},
+            {"rcount",  3, DATA_PROCESSING_COMMAND, empty_function},*/
             /* ROW SELECTION COMMANDS */
             {"rows",        2, SELECTION_COMMAND, rows},
             {"beginswith",  2, SELECTION_COMMAND, beginswith},
