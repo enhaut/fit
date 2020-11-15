@@ -417,18 +417,20 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
     float value = -1;
     char *text_value = NULL;
 
+    function_ptr function = command_definition->processing_function;
+
     if (arg_count >= 1)
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if ((command_definition->processing_function == cset || (end < 0 && arg_count == 2)) && strlen(arguments[command_index + 2]) < CELL_SIZE)
+    if ((function == cset || (end < 0 && arg_count == 2)) && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
 
-    if (start == -1 && end == -1 && value == -1 && text_value == NULL &&
-        command_definition->processing_function != arow)    // arow could be empty, it's processing by another way
+    if ((start == -1 && end == -1 && value == -1 && text_value == NULL && function != arow) ||          // arow could be empty, it's processing by another way
+        (text_value == NULL && (function == contains || function == beginswith || function == cset)))  // functions that require text value
     {
         print_error("Invalid arguments!\n");
         return EXIT_FAILURE;
