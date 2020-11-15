@@ -297,7 +297,7 @@ int get_valid_column_number(char *text_form)    // will return -1 for invalid co
     return column_number + (column_number > -1 ? number : 0);
 }
 
-void set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
+int set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
 {
     int arg_count = command_definition->arguments;
     long start = -1;
@@ -315,10 +315,16 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
 
+    if (start == -1 && end == -1 && value == -1 && text_value == NULL) {
+        print_error("Invalid arguments!\n");
+        return EXIT_FAILURE;
+    }
+
     command_data->start = start;
     command_data->end = end;
     command_data->value = value;
     command_data->text_value = text_value;
+    return EXIT_SUCCESS;
 }
 
 int missing_command_arguments(int command_arguments, int args_count, int command_index)
@@ -347,11 +353,13 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
             return EXIT_FAILURE;
 
         CommandData data = {0};
-        set_command_data(arguments, command_index, &data, &command_definition);
+        int setting_data_result = set_command_data(arguments, command_index, &data, &command_definition);
+        if (setting_data_result)
+            return EXIT_FAILURE;
         Command command = {arguments[command_index], data, command_definition.processing_function};
 
         commands[edit_command_index] = command;
-        command_index += command_arguments + 1;
+        command_index += command_definition.arguments + 1;
         edit_command_index++;
     }
     return EXIT_SUCCESS;
