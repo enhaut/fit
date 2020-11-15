@@ -321,6 +321,15 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
     command_data->text_value = text_value;
 }
 
+int missing_command_arguments(int command_arguments, int args_count, int command_index)
+{
+    if (command_arguments > (args_count - command_index - 1)) {   // -1 because of actual processing command
+        print_error("Invalid arguments count!\n");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 int get_commands(int args_count, char *arguments[], CommandDefinition *command_definitions, Command *commands, int processing_commands_category)
 {
     int edit_command_index = 0;
@@ -334,8 +343,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         }
 
         CommandDefinition command_definition = command_definitions[command_def_index];
-        int command_arguments = command_definition.arguments;
-        if (command_arguments > (args_count - command_index - 1))   // -1 because of actual processing command
+        if (missing_command_arguments(command_definition.arguments, args_count, command_index))
             return EXIT_FAILURE;
 
         CommandData data = {0};
