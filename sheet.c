@@ -13,13 +13,6 @@
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
 #define COMMANDS_COUNT 26
 
-// error codes
-#define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
-#define ERROR_MAXIMUM_COLUMN_LIMIT_REACHED 2
-#define ERROR_INCONSISTENT_COLUMNS 3
-#define ERROR_INVALID_COMMAND_USAGE 4
-#define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
-
 /* COMMAND CATEGORIES */
 #define TABLE_EDIT_COMMAND 1
 #define DATA_PROCESSING_COMMAND 2
@@ -129,16 +122,14 @@ bool line_is_too_long(char *row)
 
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index)
 {
-    int return_code = 0;
-    if (column_size >= CELL_SIZE)
-    {
+    if (column_size >= CELL_SIZE) {
         print_error("Column is bigger than allowed!\n");
-        return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
-    }else if (row_index && column_index + 1 > column_count){    // +1 because column_index is increased after this check
+        return EXIT_FAILURE;
+    }else if (row_index && column_index + 1 > column_count){  // +1 because column_index is increased after this check
         print_error("You have inconsistent column count!\n");
-        return_code = ERROR_INCONSISTENT_COLUMNS;
+        return EXIT_FAILURE;
     }
-    return return_code;
+    return EXIT_SUCCESS;
 }
 
 int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_count)
@@ -158,7 +149,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
         int cell_length = (int)(cell_end - cell_start);
 
         int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index);
-        if (column_requirements > 0)
+        if (column_requirements)
             return column_requirements;
 
         if (cell_end == NULL || !strlen(cell_end))
@@ -172,7 +163,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
     if (!row_index)  // set column count from first row
         *columns_count = column_index;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -227,7 +218,6 @@ int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
 
     for (int position = 0; position < row_length; position++)
     {
-
         if ((!wanted_column || (wanted_column == (actual_column + 1) && row[position] == delimiter)) && cell_start_index == -1)
             cell_start_index = position + (!wanted_column ? 0 : 1);     // that condition won't move cell_start_index at first (0.) column behind first character
 
@@ -333,7 +323,6 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
 
 int get_commands(int args_count, char *arguments[], CommandDefinition *command_definitions, Command *commands, int processing_commands_category)
 {
-    int minimal_arguments = 0;
     int edit_command_index = 0;
     for (int command_index = 1; command_index < args_count;)    // starting at 1, 0. arg is program name
     {
@@ -347,7 +336,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         CommandDefinition command_definition = command_definitions[command_def_index];
         int command_arguments = command_definition.arguments;
         if (command_arguments > (args_count - command_index - 1))   // -1 because of actual processing command
-            return -ERROR_INVALID_COMMAND_USAGE;    // TODO: *-1 to error codes
+            return EXIT_FAILURE;
 
         CommandData data = {0};
         set_command_data(arguments, command_index, &data, &command_definition);
@@ -357,7 +346,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         command_index += command_arguments + 1;
         edit_command_index++;
     }
-    return minimal_arguments;
+    return EXIT_SUCCESS;
 }
 
 /* implementation od drow and drows commands */
@@ -786,7 +775,9 @@ int main(int args_count, char *arguments[])
     {
         row_index++;
 
-        parse_line(row_buffer, cells_delimiter, row_index, &column_count);
+        int parsing_result = parse_line(row_buffer, cells_delimiter, row_index, &column_count);
+        if (parsing_result)
+            return parsing_result;
 
         if (!selection_commands_count || process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
         {
@@ -799,5 +790,5 @@ int main(int args_count, char *arguments[])
         if (edit_commands[command].processing_function == arow)
             arow(row_buffer, &edit_commands[command].data, LONG_MAX, cells_delimiter);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
