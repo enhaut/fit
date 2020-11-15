@@ -25,6 +25,8 @@
 #define DATA_PROCESSING_COMMAND 2
 #define SELECTION_COMMAND 3
 
+#define print_error(...) fprintf(stderr, __VA_ARGS__)
+
 typedef void (*function_ptr)(); // pointer to function with no strict arguments
 
 typedef struct{
@@ -119,11 +121,11 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
     int return_code = 0;
     if (column_size > CELL_SIZE)
     {
-        fprintf(stderr, "Column is bigger than allowed!\n");
+        print_error("Column is bigger than allowed!\n");
         return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
     }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){      // TODO: fix!!!
         // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
-        fprintf(stderr, "You have inconsistent column count!\n");
+        print_error("You have inconsistent column count!\n");
         return_code = ERROR_INCONSISTENT_COLUMNS;
     }
     return return_code;
@@ -661,7 +663,7 @@ void split(char *row, CommandData *command, const char *delimiter)
     /* In valid row could be in cell maximum of 100 (CELL_SIZE) new delimiters, so 100 last characters are reserved to keep column count in whole table same.
      * Because in table could be added up to 100 new delimiters (columns splitted by splitting character). */
     if (strlen(row) > (ROW_BUFFER_SIZE - CELL_SIZE + 1)) {  // CELL_SIZE have -1, so we need to add it
-        fprintf(stderr, "Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE + 1));
+        print_error("Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE + 1));
         return;
     }
     char *cell_to_split;
