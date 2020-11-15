@@ -764,6 +764,8 @@ void split(char *row, CommandData *command, const char *delimiter)
     }
 }
 
+/* In case user wants to add new command, you have to just add it bellow, add processing function
+ * and increase COMMANDS_COUNT counter. Thats all. */
 void get_all_command_definitions(CommandDefinition *commands)
 {
     CommandDefinition base_commands[COMMANDS_COUNT] = {
