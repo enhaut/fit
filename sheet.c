@@ -1,6 +1,12 @@
-//
-// Created by Samuel Dobroň on 10. 10. 2020.
-//
+/***********************************************************/
+/*             1. project - Table processor                */
+/*                                                         */
+/*               Samuel Dobroň - xdobro23                  */
+/*                                                         */
+/*  There is no segfaults, errors or unexpected behaviour, */
+/*               just dont try it. Please :(               */
+/*                                              15.11.2020 */
+/***********************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -758,7 +764,7 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"dcol",    1, TABLE_EDIT_COMMAND, dcol},
             {"dcols",   2, TABLE_EDIT_COMMAND, dcols},
             /* DATA PROCESSING COMMANDS */
-            {"cset",    2, DATA_PROCESSING_COMMAND, cset},
+            {"cset",    2, DATA_PROCESSING_COMMAND, cset},      // TODO: setting empty to end
             {"tolower", 1, DATA_PROCESSING_COMMAND, column_tolower},
             {"toupper", 1, DATA_PROCESSING_COMMAND, column_toupper},
             {"round",   1, DATA_PROCESSING_COMMAND, column_round},
