@@ -202,16 +202,25 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
     return can_process;
 }
 
-int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index)
+int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, bool last_column)
 {
     if (column_size >= CELL_SIZE) {
         print_error("Column is bigger than allowed!\n");
         return EXIT_FAILURE;
-    }else if (row_index && column_index + 1 > column_count){  // +1 because column_index is increased after this check
+    }else if (last_column && row_index && column_index + 1 != column_count){  // +1 because column_index is increased after this check
         print_error("You have inconsistent column count!\n");
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
+}
+
+bool last_cell(char *cell_start, int cell_size)
+{
+    char *cell_end = cell_start + cell_size;
+    char *n_position = strchr(cell_start, '\n');
+    if (n_position != NULL && n_position <= cell_end)
+        return true;
+    return false;
 }
 
 int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_count)
@@ -220,26 +229,26 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
     int column_index = 0;
     int remaining_row_length;
 
-    while ((remaining_row_length = (int)strlen(cell_end)) > 1)
+    while ((remaining_row_length = (int)strlen(cell_end)) > 0)
     {
         char *cell_start = cell_end;      // set end of cell before as start of actual cell
         char actual_delimiter = get_cells_delimiter(cell_end, delimiter, remaining_row_length);
-        if (actual_delimiter == 0)
-            break;
 
         cell_end = strchr(cell_end, actual_delimiter);
         int cell_length = (int)(cell_end - cell_start);
 
-        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index);
+        bool last_column = last_cell(cell_start, cell_length);
+
+        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index, last_column);
         if (column_requirements)
             return column_requirements;
 
-        if (cell_end == NULL || !strlen(cell_end))
+        column_index++;
+        if (!actual_delimiter || cell_end == NULL || !strlen(cell_end))
             break;
 
         cell_end[0] = delimiter[0];     // replace delimiter with correct one
         cell_end++;                     // move pointer behind delimiter
-        column_index++;
     }
 
     if (!row_index)  // set column count from first row
