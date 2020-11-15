@@ -357,7 +357,7 @@ void cset(char *row, CommandData *command, const char *delimiter)
     int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
     char *actual_column_end = actual_column + actual_column_length;
 
-    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column));
+    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column) + 1);  // +1 for copy ending 0
     strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
 }
 
