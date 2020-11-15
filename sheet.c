@@ -20,20 +20,19 @@
 #define ERROR_INVALID_COMMAND_USAGE 4
 #define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
 
+/* COMMAND CATEGORIES */
+#define TABLE_EDIT_COMMAND 1
+#define DATA_PROCESSING_COMMAND 2
+#define SELECTION_COMMAND 3
 
-typedef struct{
-    char command[10 + 1];       // 10 is length of longest command, + 1 for \0
-    long starting_row;          // -1 is unused command or invalid input, 0 is reserved for "rows" and means "-" in input
-    long ending_row;            // used in "rows" command only, can contains value, -1 for invalid or unused, 0 means "-" in input
-    char row_match[CELL_SIZE];  // used in "beginswith" and "contains" commands only
-}SelectionRowCommand;
+#define print_error(...) fprintf(stderr, __VA_ARGS__)
 
 typedef void (*function_ptr)(); // pointer to function with no strict arguments
 
 typedef struct{
     long start;
     long end;
-    int value;
+    float value;
     char *text_value;
 }CommandData;
 
@@ -56,6 +55,43 @@ bool compare_strings(char *first, char *second)
     return strcmp(first, second) == 0 ? true : false;
 }
 
+int count_delimiters(char *row, char delimiter)
+{
+    int delims = 0;
+    int row_length = (int)strlen(row);
+    for (int position = 0; position < row_length; position++)
+        if (row[position] == delimiter)
+            delims++;
+
+    return delims;
+}
+
+bool last_row()
+{
+    int next_character = getc(stdin);
+    if (next_character == EOF)
+        return true;
+    else
+        ungetc(next_character, stdin);  // returns loaded character back to stdin
+    return false;
+}
+
+void copy_to_array(char *dest, char *source, int how_many_characters)
+{
+    strncpy(dest, source, how_many_characters);
+    dest[how_many_characters] = 0;
+}
+
+// Function caller will call function in the same way as commands from user are called
+void function_caller(char *row, long start, char *text, char delimiter, function_ptr function)
+{
+    CommandData data = {0};
+    data.start = start;
+    data.end = -1;
+    data.text_value = text;
+    function(row, &data, &delimiter);
+}
+
 char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
     char cell_delimiter = 0;
@@ -71,7 +107,7 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // 
     return cell_delimiter;
 }
 
-bool is_defined_delimiter(int args_count, char **arguments)
+bool is_defined_delimiter(int args_count, char *arguments[])
 {
     bool is_defined_delimiter = false;
     if (args_count >= 3 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
@@ -80,60 +116,30 @@ bool is_defined_delimiter(int args_count, char **arguments)
     return is_defined_delimiter;
 }
 
+bool line_is_too_long(char *row)
+{
+    char *found_new_line = strchr(row, '\n');
+    if (found_new_line == NULL)
+    {
+        print_error("Line is too long! Maximum size: %d\n", (ROW_BUFFER_SIZE - 2));   // -2 because of \n\0
+        return true;
+    }
+    return false;
+}
+
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
 {
     int return_code = 0;
     if (column_size > CELL_SIZE)
     {
-        fprintf(stderr, "Column is bigger than allowed!\n");
+        print_error("Column is bigger than allowed!\n");
         return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
     }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){      // TODO: fix!!!
         // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
-        fprintf(stderr, "You have inconsistent column count!\n");
+        print_error("You have inconsistent column count!\n");
         return_code = ERROR_INCONSISTENT_COLUMNS;
     }
     return return_code;
-}
-
-
-bool can_process_row(SelectionRowCommand *selection_commands, long row_index, char parsed_row[][CELL_SIZE], bool last_row)
-{
-    bool can_process = true;
-
-    for (int command_index = 0; command_index < 3; command_index++)
-    {
-        if (selection_commands[command_index].starting_row < 0)  // valid starting row is required in every command
-            continue;
-        
-        long starting_row = selection_commands[command_index].starting_row;
-        long ending_row = selection_commands[command_index].ending_row;
-        char *command_name = selection_commands[command_index].command;
-
-        if (compare_strings(selection_commands[command_index].command, "rows"))
-        {
-            if ((!starting_row && !ending_row && last_row) ||   // row indexes are "-"
-                (starting_row && starting_row <= row_index &&   // checking starting row
-                (!ending_row || ending_row >= row_index)))      // checking ending row
-                can_process = true;
-            else
-                can_process = false;
-        }else{
-            char *remaining;
-            remaining = strstr(parsed_row[starting_row - 1], selection_commands[command_index].row_match);  // -1 because parsed_row is indexing from 0
-
-            if (remaining != NULL)
-            {
-                if (compare_strings(command_name, "contains") ||
-                    (compare_strings(command_name, "beginswith") &&
-                     strlen(remaining) == strlen(parsed_row[starting_row -1])))
-                    can_process = can_process == true ? true : false;
-                else
-                    can_process = false;
-            }else
-                can_process = false;
-        }
-    }
-    return can_process;
 }
 
 int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_count)
@@ -164,7 +170,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
         column_index++;
     }
 
-    if (row_index == 0)  // set column count from first row
+    if (!row_index)  // set column count from first row
         *columns_count = column_index;
 
     return 0;
@@ -173,7 +179,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
 
 long get_valid_row_number(char *number, int allow_dash)
 {
-    if (compare_strings(number, "-") && allow_dash)
+    if (allow_dash && number != NULL && compare_strings(number, "-"))
         return 0;
 
     errno = 0;
@@ -188,73 +194,6 @@ long get_valid_row_number(char *number, int allow_dash)
         return -1;
 }
 
-// function for parsing selection commands using strings (contains, beginswith)
-int process_string_selection_commands(SelectionRowCommand *command, char *row_match)
-{
-    size_t should_contain_text_length = strlen(row_match);
-
-    if (0 < should_contain_text_length && should_contain_text_length < CELL_SIZE)
-        strcpy(command->row_match, row_match);
-    else{
-        fprintf(stderr, "Invalid syntax of command. Usage: beginswith/contains [from row] [should contains]\n");
-        return ERROR_INVALID_COMMAND_USAGE;
-    }
-    return 0;
-}
-
-int get_selection_commands(int args_count, char *arguments[], SelectionRowCommand *commands)
-{
-    bool started_with_selection_commands = false;
-    for (int command_index = 0; command_index < args_count;)  // using custom incrementing to skip command values
-    {
-        int saving_index;
-        if (compare_strings(arguments[command_index], "rows"))
-            saving_index = 0;
-        else if (compare_strings(arguments[command_index], "beginswith"))
-            saving_index = 1;
-        else if (compare_strings(arguments[command_index], "contains"))
-            saving_index = 2;
-        else{
-            if (started_with_selection_commands)
-                break;  // prevent to parse not row selection commands, it is useless here
-            command_index++;
-            continue;
-        }
-
-        if (!started_with_selection_commands)  // mark that, program is parsing selection commands at this moment
-            started_with_selection_commands = true;
-
-        long starting_row = get_valid_row_number(arguments[command_index + 1], !saving_index);  // "rows" has saving_index 0 so !0 is 1
-        commands[saving_index].starting_row = starting_row;
-
-        if (starting_row == -1)
-        {
-            fprintf(stderr, "Invalid syntax of command!\n");
-            return ERROR_INVALID_COMMAND_USAGE;
-        }
-
-        if (saving_index == 0)
-        {
-            long ending_row = get_valid_row_number(arguments[command_index + 2], 1);
-            commands[saving_index].ending_row = ending_row;
-
-            if ((starting_row > ending_row && ending_row != 0) ||   // check it only if ending row is not "-"
-                ending_row == -1 ||                                 // invalid ending_row index
-                (starting_row == 0 && ending_row > 0))              // "-" in starting row input but valid ending row index is set
-            {
-                fprintf(stderr, "Invalid ending row index!\n");
-                return ERROR_INVALID_COMMAND_USAGE;
-            }
-        }else{
-            int result = process_string_selection_commands(&commands[saving_index], arguments[command_index + 2]);
-            if (result > 0)
-                return result;
-        }
-        command_index += 3;  // +3 to move to next selection commands, every selection command has 1 command and 2 values
-    }
-    return 0;
-}
-
 int get_command_definition(char *command_name, CommandDefinition *command_definitions)
 {
     for (int command_def_index = 0; command_def_index < COMMANDS_COUNT; command_def_index++) {
@@ -264,17 +203,19 @@ int get_command_definition(char *command_name, CommandDefinition *command_defini
     return -1;
 }
 
-void get_command_counts(int args_count, char **arguments, int *table_edit_cmds, int *data_processing_cmds, CommandDefinition *commands)   // TODO: add selection commands
+int get_commands_count(char *arguments[], int args_count, CommandDefinition *definitions, int command_category)
 {
+    int count = 0;
     for (int arg_index = 0; arg_index < args_count; arg_index++)
     {
-        int command_def_index = get_command_definition(arguments[arg_index], commands);
+        int command_def_index = get_command_definition(arguments[arg_index], definitions);
         if (command_def_index == -1)
             continue;
-        int category = commands[command_def_index].command_category;
-        int *commands_counter = category == 1 ? table_edit_cmds : data_processing_cmds;
-        (*commands_counter)++;
+        int category = definitions[command_def_index].command_category;
+        if (category == command_category)
+            count++;
     }
+    return count;
 }
 
 /* function will set pointers cell_start and cell_end at N cell start and cell end in row array */
@@ -345,16 +286,11 @@ void icol(char *row, CommandData *command_data, const char *delimiter)
     *cell_start = *delimiter;
 }
 
-void empty_function(const char *row, CommandData *command_data)   // function used to set some function to command so mark command as used and should be performed
-{
-    (void)row;
-    (void)command_data;
-}
-
 int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
     int number = -1;
-    return (int)get_valid_row_number(text_form, false) + number;
+    int column_number = (int)get_valid_row_number(text_form, false);
+    return column_number + (column_number > -1 ? number : 0);
 }
 
 void set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
@@ -362,18 +298,18 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
     int arg_count = command_definition->arguments;
     long start = -1;
     long end = -1;
-    int value = -1;
+    float value = -1;
     char *text_value = NULL;
 
     if (arg_count >= 1)
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if (end < 0 && arg_count == 2)
+    if (end < 0 && arg_count == 2 && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
-        value = get_valid_column_number(arguments[command_index + 3]);
+        value = (float)get_valid_column_number(arguments[command_index + 3]);
 
     command_data->start = start;
     command_data->end = end;
@@ -396,7 +332,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
 
         CommandDefinition command_definition = command_definitions[command_def_index];
         int command_arguments = command_definition.arguments;
-        if (command_index + command_arguments > args_count)
+        if (command_arguments > (args_count - command_index - 1))   // -1 because of actual processing command
             return -ERROR_INVALID_COMMAND_USAGE;    // TODO: *-1 to error codes
 
         CommandData data = {0};
@@ -431,15 +367,43 @@ void drow_s(char *row, CommandData *command_data, long row_index)
         row[0] = '\0';
 }
 
+void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (command_data->start != row_index)
+        return;
+
+    int columns_count = count_delimiters(row, *delimiter);
+    for (int delimiters = 0; delimiters < columns_count; delimiters++)
+        printf("%c", *delimiter);
+
+    printf("\n");
+}
+
+void arow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (!last_row())
+        return;
+    (void)command_data;
+    CommandData data = {0};
+    data.start = row_index;
+    irow(row, &data, row_index, delimiter);
+}
+
 void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
         function_ptr edit_function = edit_commands[command_index].processing_function;
-        if (edit_function != drow_s)
-            edit_function(row, &edit_commands[command_index].data, &delimiter);
-        else
+        if (edit_function == arow)  // arow has custom calling
+            continue;
+        if (edit_function == drow_s)
             edit_function(row, &edit_commands[command_index].data, row_index);
+        else if (edit_function == irow)
+            edit_function(row, &edit_commands[command_index].data, row_index, &delimiter);
+        else
+            edit_function(row, &edit_commands[command_index].data, &delimiter);
+        if (row[0] == '\0') // row has been deleted, dont need to process another commands
+            break;
     }
 }
 
@@ -467,49 +431,34 @@ void copy(char *row, CommandData *command, const char *delimiter)
     char *copy_from;
     int cell_length = get_cell_borders(row, &copy_from, *delimiter, (int)(command->start));
     char to_copy[cell_length + 1];
-    to_copy[cell_length] = '\0';
-    strncpy(to_copy, copy_from, cell_length);
+    copy_to_array(to_copy, copy_from, cell_length);
 
-    CommandData data = {0};
-    data.text_value = to_copy;
-    data.start = command->end;
-
-    cset(row, &data, delimiter);
+    function_caller(row, command->end, to_copy, *delimiter, cset);
 }
 
-void swap(char *row, CommandData *command, char *delimtier)
+void swap(char *row, CommandData *command, const char *delimiter)
 {
     char *what;
     char *with;
-    int what_size = get_cell_borders(row, &what, *delimtier, (int)(command->start));
-    int with_size = get_cell_borders(row, &with, *delimtier, (int)(command->end));
+    int what_size = get_cell_borders(row, &what, *delimiter, (int)(command->start));
+    int with_size = get_cell_borders(row, &with, *delimiter, (int)(command->end));
 
     char what_temp[what_size + 1];
-    strncpy(what_temp, what, what_size);
-    what_temp[what_size] = '\0';
+    copy_to_array(what_temp, what, what_size);
 
     char with_temp[with_size + 1];
-    strncpy(with_temp, with, with_size);
-    with_temp[with_size] = '\0';
+    copy_to_array(with_temp, with, with_size);
 
     if (what_temp[what_size - 1] == '\n')
         what_temp[what_size - 1] = '\0';
     if (with_temp[with_size - 1] == '\n')
         with_temp[with_size - 1] = '\0';
 
-    CommandData with_data = {0};
-    with_data.start = command->start;
-    with_data.text_value = with_temp;
-    cset(row, &with_data, delimtier);
-
-    CommandData what_data = {0};
-    what_data.start = command->end;
-    what_data.text_value = what_temp;
-    cset(row, &what_data, delimtier);
-
+    function_caller(row, command->start, with_temp, *delimiter, cset);
+    function_caller(row, command->end, what_temp, *delimiter, cset);
 }
 
-void move(char *row, CommandData *command, char *delimiter)
+void move(char *row, CommandData *command, const char *delimiter)
 {
     char *dest_cell;
     get_cell_borders(row, &dest_cell, *delimiter, (int)(command->end));
@@ -518,16 +467,10 @@ void move(char *row, CommandData *command, char *delimiter)
     int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
 
     char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
-    strncpy(temp_cell, cell_source, source_cell_length);
-    temp_cell[source_cell_length] = '\0';
+    copy_to_array(temp_cell, cell_source, source_cell_length);
 
-    CommandData to_delete_col = {0};
-    to_delete_col.start = command->start;
-    dcol(row, &to_delete_col, delimiter);
-
-    CommandData to_add_col = {0};
-    to_add_col.start = command->end;
-    icol(row, &to_add_col, delimiter);
+    function_caller(row, command->start, NULL, *delimiter, dcol);
+    function_caller(row, command->end, NULL, *delimiter, icol);
 
     memmove(dest_cell + source_cell_length, dest_cell, strlen(dest_cell));
     strncpy(dest_cell + 1, temp_cell, source_cell_length);  // +1 to move behind delimiter
@@ -554,10 +497,7 @@ void set_numeric_value_to_cell(float value, long cell_index, const char *delimit
     result[no_of_digits + 1] = '\0';
     sprintf(result,"%g", value);
 
-    CommandData to_set = {0};
-    to_set.start = cell_index;
-    to_set.text_value = result;
-    cset(row, &to_set, delimiter);
+    function_caller(row, cell_index, result, *delimiter, cset);
 }
 
 /* Common function for csum, cavg, cmin, cmax functions. Function has parameter "what_to_do" which defines what to do with numbers */
@@ -566,14 +506,14 @@ void cx_commands(char *row, CommandData *command, const char *delimiter, int wha
     float result = 0;
     float number_to_add = 0;
     float valid_columns = 0;
+    int end_column_index = (int)command->value;
 
-    for (int column = (int)command->end; column <= command->value; column++)
+    for (int column = (int)command->end; column <= end_column_index; column++)
     {
         char *column_start;
         int column_length = get_cell_borders(row, &column_start, *delimiter, column);
         char cell[column_length + 1];
-        strncpy(cell, column_start, column_length);
-        cell[column_length] = '\0';
+        copy_to_array(cell, column_start, column_length);
 
         bool valid_number = get_numeric_cell_value(cell, &number_to_add);
         if (!valid_number)
@@ -620,45 +560,172 @@ void ccount(char *row, CommandData *command, const char *delimiter)
 
 void cseq(char *row, CommandData *command, const char *delimiter)
 {
-    int seq_start = command->value + 1; // +1 because parsing decreased it by 1
+    int seq_start = (int)command->value + 1; // +1 because parsing decreased it by 1
     int starting_column = (int)command->start;
     for (int column = starting_column; column <= command->end; column++)
-        set_numeric_value_to_cell((float)(seq_start+column-starting_column), column, delimiter, row); // add # of iteration to seq_start, to increase it
+        set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
+}
+
+void column_round(char *row, CommandData *command, const char *delimiter)
+{
+    char *column;
+    int cell_length = get_cell_borders(row, &column, *delimiter, (int)(command->start));
+    char cell[cell_length + 1];
+    copy_to_array(cell, column, cell_length);
+
+    double to_round;
+    char *remaining = NULL;
+    errno = 0;
+
+    to_round = strtod(cell, &remaining);
+    if (errno != 0 || (remaining != NULL && *remaining != '\0'))
+        return;
+
+    int rounded = (int)(to_round + (to_round > 0.0 ? 0.5 : -0.5));
+    set_numeric_value_to_cell((float)rounded, (int)(command->start), delimiter, row);
+}
+
+void column_int(char *row, CommandData *command, const char *delimiter)
+{
+    char *column_start;
+    int cell_length = get_cell_borders(row, &column_start, *delimiter, (int)(command->start));
+    char *cell_end = column_start + cell_length;
+
+    char *decimal_dot = strchr(column_start, '.');
+    if (decimal_dot > cell_end || !decimal_dot)   // dot found behind actual cell
+        return;
+
+    memmove(decimal_dot, cell_end, strlen(cell_end) + 1);
+}
+
+/* SELECTION COMMANDS - returns true in case, row could be processed */
+void rows(long row_index, CommandData command, bool *can_process)
+{
+    if ((command.start > -1 && row_index >= command.start &&        // starting row should be defined everywhere except "- -"
+            ((command.end > -1 && row_index <= command.end) ||      // end is defined
+            (command.text_value && compare_strings(command.text_value, "-")))) ||   // end is defined as end of table
+        // just last row to process:
+        (command.start == -1 && command.end == -1 &&
+        command.text_value && compare_strings(command.text_value, "-") &&
+        last_row()))
+        *can_process = true;
+}
+
+bool string_selection_commands(char *row, CommandData *command, char delimiter, bool begins_with_function)
+{
+    char *cell_start;
+    int cell_size = get_cell_borders(row, &cell_start, delimiter, (int)(command->start));
+    char *cell_end = cell_start + cell_size;
+
+    char *text_beginning = strstr(cell_start, command->text_value);
+    if (text_beginning != NULL && cell_end >= (text_beginning + strlen(command->text_value)) &&  // found substr in range from cell begin to cell end
+        ((cell_start == text_beginning && begins_with_function) ||                 // "beginswith" command
+        (cell_start < text_beginning && !begins_with_function)))                   // "contains" command
+        return true;
+    return false;
+}
+
+void beginswith(char *row, CommandData *command, const char *delimiter, bool *can_start)
+{
+    *can_start = string_selection_commands(row, command, *delimiter, true);
+}
+
+void contains(char *row, CommandData *command, const char *delimiter, bool *can_start)
+{
+    *can_start = string_selection_commands(row, command, *delimiter, false);
+}
+
+bool process_selection_commands(char *row, Command *commands, int commands_count, char delimiter, long row_index)
+{
+    bool can_process = false;
+    for (int command_index = 0; command_index < commands_count; command_index++)
+    {
+        function_ptr command_processing_function = commands[command_index].processing_function;
+        if (command_processing_function == rows)
+            command_processing_function(row_index, commands[command_index].data, &can_process);
+        else
+            command_processing_function(row, &commands[command_index].data, &delimiter, &can_process);    // beginswith and contains commands
+        if (can_process)
+            break;
+    }
+    return can_process;
+}
+
+void add_missing_columns(char *row, char delimiter, CommandData *command)
+{
+    size_t row_len = strlen(row) - 1;
+    size_t position = row_len;
+
+    long to_add;    // calculate how many delims needs to add for match delims count in first row
+    if (command->end != -1)
+        to_add = command->end - count_delimiters(row, delimiter);
+    else
+        to_add = ROW_BUFFER_SIZE - (CELL_SIZE + 1) - row_len;
+
+    for (; position < to_add + row_len; position++)
+        row[position] = delimiter;
+
+    row[position] = '\n';
+    row[position+1] = '\0';
+}
+
+void split(char *row, CommandData *command, const char *delimiter)
+{
+    /* In valid row could be in cell maximum of 100 (CELL_SIZE) new delimiters, so 100 last characters are reserved to keep column count in whole table same.
+     * Because in table could be added up to 100 new delimiters (columns splitted by splitting character). */
+    if (strlen(row) > (ROW_BUFFER_SIZE - CELL_SIZE + 1)) {  // CELL_SIZE have -1, so we need to add it
+        print_error("Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE + 1));
+        return;
+    }
+    char *cell_to_split;
+    int cell_length = get_cell_borders(row, &cell_to_split, *delimiter, (int)(command->start));
+    char splitter = command->text_value[0];
+
+    for (int position = 0; position < cell_length; position++)
+        if (cell_to_split[position] == splitter)
+            cell_to_split[position] = *delimiter;
+
+    add_missing_columns(row, *delimiter, command);  // add delimiters to set same column count for every line
+    if (command->end == -1)
+    {
+        int new_table_columns_count = count_delimiters(row, *delimiter);
+        command->end = new_table_columns_count;
+    }
 }
 
 void get_all_command_definitions(CommandDefinition *commands)
 {
     CommandDefinition base_commands[COMMANDS_COUNT] = {
             /* TABLE EDIT COMMANDS */
-            {"irow",    1, 1, empty_function},
-            {"arow",    0, 1, empty_function},
-            {"drow",    1, 1, drow_s},
-            {"drows",   2, 1, drow_s},
-            {"icol",    1, 1, icol},
-            {"acol",    0, 1, acol},
-            {"dcol",    1, 1, dcol},
-            {"dcols",   2, 1, dcols},
+            {"irow",    1, TABLE_EDIT_COMMAND, irow},
+            {"arow",    0, TABLE_EDIT_COMMAND, arow},   // arow have custom function calling
+            {"drow",    1, TABLE_EDIT_COMMAND, drow_s}, // osetrit pripad, ked nastavim csetom
+            {"drows",   2, TABLE_EDIT_COMMAND, drow_s},
+            {"icol",    1, TABLE_EDIT_COMMAND, icol},
+            {"acol",    0, TABLE_EDIT_COMMAND, acol},
+            {"dcol",    1, TABLE_EDIT_COMMAND, dcol},
+            {"dcols",   2, TABLE_EDIT_COMMAND, dcols},
             /* DATA PROCESSING COMMANDS */
-            {"cset",    2, 2, cset},
-            {"tolower", 1, 2, column_tolower},
-            {"toupper", 1, 2, column_toupper},
-            {"copy",    2, 2, copy},
-            {"swap",    2, 2, swap},
-            {"move",    2, 2, move},
-            {"csum",    3, 2, csum},
-            {"cavg",    3, 2, cavg},
-            {"cmin",    3, 2, cmin},
-            {"cmax",    3, 2, cmax},
-            {"ccount",  3, 2, ccount},
-            {"cseq",    3, 2, cseq},
-            {"rseq",    4, 2, empty_function},
-            {"rsum",    3, 2, empty_function},
-            {"ravg",    3, 2, empty_function},
-            {"rmin",    3, 2, empty_function},
-            {"rmax",    3, 2, empty_function},
-            {"rcount",  3, 2, empty_function},
+            {"cset",    2, DATA_PROCESSING_COMMAND, cset},
+            {"tolower", 1, DATA_PROCESSING_COMMAND, column_tolower},
+            {"toupper", 1, DATA_PROCESSING_COMMAND, column_toupper},
+            {"round",   1, DATA_PROCESSING_COMMAND, column_round},
+            {"int",     1, DATA_PROCESSING_COMMAND, column_int},
+            {"copy",    2, DATA_PROCESSING_COMMAND, copy},
+            {"swap",    2, DATA_PROCESSING_COMMAND, swap},
+            {"move",    2, DATA_PROCESSING_COMMAND, move},
+            {"csum",    3, DATA_PROCESSING_COMMAND, csum},
+            {"cavg",    3, DATA_PROCESSING_COMMAND, cavg},
+            {"cmin",    3, DATA_PROCESSING_COMMAND, cmin},
+            {"cmax",    3, DATA_PROCESSING_COMMAND, cmax},
+            {"ccount",  3, DATA_PROCESSING_COMMAND, ccount},
+            {"cseq",    3, DATA_PROCESSING_COMMAND, cseq},
             /* ROW SELECTION COMMANDS */
-            // TODO
+            {"rows",        2, SELECTION_COMMAND, rows},
+            {"beginswith",  2, SELECTION_COMMAND, beginswith},
+            {"contains",    2, SELECTION_COMMAND, contains},
+            /* PREMIUM COMMANDS */
+            {"split", 2, DATA_PROCESSING_COMMAND, split}
     };
     for (int command_index = 0; command_index < COMMANDS_COUNT; command_index++)
         commands[command_index] = base_commands[command_index];
@@ -684,50 +751,49 @@ int main(int args_count, char *arguments[])
     CommandDefinition command_definitions[COMMANDS_COUNT];
     get_all_command_definitions(command_definitions);
 
-    /* PREPARE SELECTION COMMANDS */
-    SelectionRowCommand selection_commands[] = {
-        {"rows", -1, -1, {0}},
-        {"beginswith", -1, -1, ""},
-        {"contains", -1, -1, ""}
-    };
-    int selection_commands_parsing_result = get_selection_commands(args_count, arguments, selection_commands);
-    if (selection_commands_parsing_result != 0)
-        return selection_commands_parsing_result;
-
     /* COMMANDS COUNT */
-    int edit_commands_count = 0;
-    int processing_commands_count = 0;
-    get_command_counts(args_count, arguments, &edit_commands_count, &processing_commands_count, command_definitions);
+    int edit_commands_count         =   get_commands_count(arguments, args_count, command_definitions, TABLE_EDIT_COMMAND);
+    int processing_commands_count   =   get_commands_count(arguments, args_count, command_definitions, DATA_PROCESSING_COMMAND);
+    int selection_commands_count    =   get_commands_count(arguments, args_count, command_definitions, SELECTION_COMMAND);
+
+    /* PREPARE SELECTION COMMANDS */
+    Command selection_commands[selection_commands_count];
+    int selection_commands_parsing_result = get_commands(args_count, arguments, command_definitions, selection_commands, SELECTION_COMMAND);
+    if (selection_commands_parsing_result)
+        return selection_commands_parsing_result;
 
     /*  PREPARE TABLE EDITING COMMANDS  */
     Command edit_commands[edit_commands_count];
-    int edit_commands_parsing_result = get_commands(args_count, arguments, command_definitions, edit_commands, 1);
+    int edit_commands_parsing_result = get_commands(args_count, arguments, command_definitions, edit_commands, TABLE_EDIT_COMMAND);
     if (edit_commands_parsing_result)
         return selection_commands_parsing_result;
 
     /* PREPARE DATA PROCESSING COMMANDS */
     Command processing_commands[processing_commands_count];
-    int processing_commands_parsing_result = get_commands(args_count, arguments, command_definitions, processing_commands, 2);
+    int processing_commands_parsing_result = get_commands(args_count, arguments, command_definitions, processing_commands, DATA_PROCESSING_COMMAND);
     if (processing_commands_parsing_result)
         return processing_commands_parsing_result;
 
     long row_index = -1;  // using long because max number of rows is not defined
-    int column_count = 0;    // TODO: check if column count is valid in selection commands
-    int original_column_count = column_count;
-
+    int column_count = 0;
     char row_buffer[ROW_BUFFER_SIZE];
 
-    while (fgets(row_buffer, ROW_BUFFER_SIZE, stdin))
+    while (fgets(row_buffer, ROW_BUFFER_SIZE, stdin) && !line_is_too_long(row_buffer))
     {
         row_index++;
-        
-        parse_line(row_buffer, cells_delimiter, row_index, !row_index ? &column_count : &original_column_count);
-        if (!row_index)
-            original_column_count = column_count;
 
-        process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0], row_index);
-        process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0], row_index);
+        parse_line(row_buffer, cells_delimiter, row_index, &column_count);
+
+        if (!selection_commands_count || process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
+        {
+            process_commands(row_buffer, edit_commands, edit_commands_count, cells_delimiter[0], row_index);
+            process_commands(row_buffer, processing_commands, processing_commands_count, cells_delimiter[0], row_index);
+        }
         print_row(row_buffer);
     }
+    for (int command = 0; command < edit_commands_count; command++)
+        if (edit_commands[command].processing_function == arow)
+            arow(row_buffer, &edit_commands[command].data, LONG_MAX, cells_delimiter);
+
     return 0;
 }
