@@ -156,7 +156,7 @@ void rows(long row_index, CommandData command, bool *can_process)
          ((command.end > -1 && row_index <= command.end) ||      // end is defined
           (command.text_value && compare_strings(command.text_value, "-")))) ||   // end is defined as end of table
         // just last row to process:
-        (command.start == -1 && command.end == -1 &&
+        (command.start == -2 && command.end == -2 &&
          command.text_value && compare_strings(command.text_value, "-") &&
          last_row()))
         *can_process = true;
@@ -427,19 +427,21 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
     char *text_value = NULL;
 
     function_ptr function = command_definition->processing_function;
+    bool string_value_function = (function == contains || function == beginswith || function == cset);
 
     if (arg_count >= 1)
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if ((function == cset || (end < 0 && arg_count == 2)) && strlen(arguments[command_index + 2]) < CELL_SIZE)
+    if ((string_value_function || function == rows) && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
-
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
 
-    if ((start == -1 && end == -1 && value == -1 && text_value == NULL && function != arow) ||          // arow could be empty, it's processing by another way
-        (text_value == NULL && (function == contains || function == beginswith || function == cset)))  // functions that require text value
+    if ((((start == -2 || end == -2) && (text_value == NULL ||                          // totally invalid input data
+            (text_value != NULL && start == -2 && end == -2))) && function != rows) ||  // invalid input data in string commands, rows has specific arguments
+        (start == -1 && end == -1 && value == -1 && text_value == NULL && function != arow) ||  // empty input data, arow is processed in another way - it's excluded
+        (text_value == NULL && (string_value_function)))  // functions that require text value
     {
         print_error("Invalid arguments!\n");
         return EXIT_FAILURE;
