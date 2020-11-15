@@ -263,12 +263,6 @@ void icol(char *row, CommandData *command_data, const char *delimiter)
     *cell_start = *delimiter;
 }
 
-void empty_function(const char *row, CommandData *command_data)   // function used to set some function to command so mark command as used and should be performed
-{
-    (void)row;
-    (void)command_data;
-}
-
 int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
     int number = -1;
@@ -350,15 +344,41 @@ void drow_s(char *row, CommandData *command_data, long row_index)
         row[0] = '\0';
 }
 
+void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (command_data->start != row_index)
+        return;
+
+    int columns_count = count_delimiters(row, *delimiter);
+    for (int delimiters = 0; delimiters < columns_count; delimiters++)
+        printf("%c", *delimiter);
+
+    printf("\n");
+}
+
+void arow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (!last_row())
+        return;
+    (void)command_data;
+    CommandData data = {0};
+    data.start = row_index;
+    irow(row, &data, row_index, delimiter);
+}
+
 void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
     {
         function_ptr edit_function = edit_commands[command_index].processing_function;
-        if (edit_function != drow_s)
-            edit_function(row, &edit_commands[command_index].data, &delimiter);
-        else
+        if (edit_function == arow)  // arow has custom calling
+            continue;
+        if (edit_function == drow_s)
             edit_function(row, &edit_commands[command_index].data, row_index);
+        else if (edit_function == irow)
+            edit_function(row, &edit_commands[command_index].data, row_index, &delimiter);
+        else
+            edit_function(row, &edit_commands[command_index].data, &delimiter);
         if (row[0] == '\0') // row has been deleted, dont need to process another commands
             break;
     }
@@ -674,8 +694,8 @@ void get_all_command_definitions(CommandDefinition *commands)
 {
     CommandDefinition base_commands[COMMANDS_COUNT] = {
             /* TABLE EDIT COMMANDS */
-            {"irow",    1, TABLE_EDIT_COMMAND, empty_function},
-            {"arow",    0, TABLE_EDIT_COMMAND, empty_function},
+            {"irow",    1, TABLE_EDIT_COMMAND, irow},
+            {"arow",    0, TABLE_EDIT_COMMAND, arow},   // arow have custom function calling
             {"drow",    1, TABLE_EDIT_COMMAND, drow_s}, // osetrit pripad, ked nastavim csetom
             {"drows",   2, TABLE_EDIT_COMMAND, drow_s},
             {"icol",    1, TABLE_EDIT_COMMAND, icol},
@@ -778,5 +798,9 @@ int main(int args_count, char *arguments[])
         }
         print_row(row_buffer);
     }
+    for (int command = 0; command < edit_commands_count; command++)
+        if (edit_commands[command].processing_function == arow)
+            arow(row_buffer, &edit_commands[command].data, LONG_MAX, cells_delimiter);
+
     return 0;
 }
