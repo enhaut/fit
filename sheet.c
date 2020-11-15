@@ -261,7 +261,7 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if (end < 0 && arg_count == 2)
+    if (end < 0 && arg_count == 2 && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
