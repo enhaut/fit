@@ -111,7 +111,7 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)
 }
 
 // Function will set pointers cell_start and cell_end at N-th cell start and cell end in row array
-int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
+int get_cell_borders(char *row, char **start, char delimiter, long wanted_column)
 {
     int actual_column = 0;
     int cell_length = -1;
@@ -310,7 +310,7 @@ void rows(long row_index, CommandData command, bool *can_process)
 bool string_selection_commands(char *row, CommandData *command, char delimiter, bool begins_with_function)
 {
     char *cell_start;
-    int cell_size = get_cell_borders(row, &cell_start, delimiter, (int)(command->start));
+    int cell_size = get_cell_borders(row, &cell_start, delimiter, (command->start));
     char *cell_end = cell_start + cell_size;
 
     char *text_beginning = strstr(cell_start, command->text_value);
@@ -359,7 +359,7 @@ void acol(char *row, CommandData *command_data, const char *delimiter)
 void dcol(char *row, CommandData *command_data, const char *delimiter)
 {
     char *cell_start;
-    int cell_length = get_cell_borders(row, &cell_start, *delimiter, (int)command_data->start);
+    int cell_length = get_cell_borders(row, &cell_start, *delimiter, command_data->start);
     char *continue_at = cell_start + cell_length;
     if (continue_at[0] != '\n') // will move pointer behind delimiter but not in last column - there is no next delimiter
         continue_at++;
@@ -372,8 +372,8 @@ void dcols(char *row, CommandData *command_data, const char *delimiter)
 {
     char *start;
     char *end;
-    get_cell_borders(row, &start, *delimiter, (int)command_data->start);
-    int end_cell_length = get_cell_borders(row, &end, *delimiter, (int)command_data->end);
+    get_cell_borders(row, &start, *delimiter, command_data->start);                     // get starting cell
+    int end_cell_length = get_cell_borders(row, &end, *delimiter, command_data->end);   // get ending cell
 
     end += end_cell_length; // move pointer to end of cell
     if (end[0] != '\n')     // in case, it is not the last column, move end of column behind delimiter
@@ -387,7 +387,7 @@ void dcols(char *row, CommandData *command_data, const char *delimiter)
 void icol(char *row, CommandData *command_data, const char *delimiter)
 {
     char *cell_start;
-    get_cell_borders(row, &cell_start, *delimiter, (int)command_data->start);
+    get_cell_borders(row, &cell_start, *delimiter, command_data->start);
     memmove(cell_start + 1, cell_start, strlen(cell_start) + 1);
     *cell_start = *delimiter;
 }
@@ -397,7 +397,7 @@ void cset(char *row, CommandData *command, const char *delimiter)
     if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
     char *actual_column;
-    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
+    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, command->start);
 
     int new_value_length = (int)strlen(command->text_value);
     int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
@@ -536,7 +536,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
 void column_case(char *row, CommandData *commandData, const char *delimiter, bool lower)
 {
     char *start;
-    int column_length = get_cell_borders(row, &start, *delimiter, (int)commandData->start);
+    int column_length = get_cell_borders(row, &start, *delimiter, commandData->start);
     for (int position = 0; position < column_length; position++)
         start[position] = (char)(lower ? tolower(start[position]) : toupper(start[position]));
 }
@@ -556,7 +556,7 @@ void copy(char *row, CommandData *command, const char *delimiter)
     if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
     char *copy_from;
-    int cell_length = get_cell_borders(row, &copy_from, *delimiter, (int)(command->start));
+    int cell_length = get_cell_borders(row, &copy_from, *delimiter, command->start);
     char to_copy[cell_length + 1];
     copy_to_array(to_copy, copy_from, cell_length);
 
@@ -569,8 +569,8 @@ void swap(char *row, CommandData *command, const char *delimiter)
         return;
     char *what;
     char *with;
-    int what_size = get_cell_borders(row, &what, *delimiter, (int)(command->start));
-    int with_size = get_cell_borders(row, &with, *delimiter, (int)(command->end));
+    int what_size = get_cell_borders(row, &what, *delimiter, command->start);
+    int with_size = get_cell_borders(row, &with, *delimiter, command->end);
 
     char what_temp[what_size + 1];
     copy_to_array(what_temp, what, what_size);
@@ -593,7 +593,7 @@ void move(char *row, CommandData *command, const char *delimiter)
     if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
     char *cell_source;
-    int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
+    int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, command->start);
     long move_to = command->end;
     long move_from = command->start;
 
@@ -627,7 +627,7 @@ bool get_numeric_cell_value(char *column, float *value)
 void set_numeric_value_to_cell(float value, long cell_index, const char *delimiter, char *row)
 {
     char *cell_to_set_start;
-    get_cell_borders(row, &cell_to_set_start, *delimiter, (int)cell_index);
+    get_cell_borders(row, &cell_to_set_start, *delimiter, cell_index);
 
     int no_of_digits = snprintf(NULL, 0, "%f", value);
     char result[no_of_digits];
@@ -707,7 +707,7 @@ void cseq(char *row, CommandData *command, const char *delimiter)
 void column_round(char *row, CommandData *command, const char *delimiter)
 {
     char *column;
-    int cell_length = get_cell_borders(row, &column, *delimiter, (int)(command->start));
+    int cell_length = get_cell_borders(row, &column, *delimiter, command->start);
     char cell[cell_length + 1];
     copy_to_array(cell, column, cell_length);
 
@@ -726,7 +726,7 @@ void column_round(char *row, CommandData *command, const char *delimiter)
 void column_int(char *row, CommandData *command, const char *delimiter)
 {
     char *column_start;
-    int cell_length = get_cell_borders(row, &column_start, *delimiter, (int)(command->start));
+    int cell_length = get_cell_borders(row, &column_start, *delimiter, command->start);
     char *cell_end = column_start + cell_length;
 
     char *decimal_dot = strchr(column_start, '.');
@@ -745,7 +745,7 @@ void split(char *row, CommandData *command, const char *delimiter)
         return;
     }
     char *cell_to_split;
-    int cell_length = get_cell_borders(row, &cell_to_split, *delimiter, (int)(command->start));
+    int cell_length = get_cell_borders(row, &cell_to_split, *delimiter, (command->start));
     char splitter = command->text_value[0];
 
     for (int position = 0; position < cell_length; position++)
