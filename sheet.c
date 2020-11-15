@@ -411,11 +411,11 @@ void process_commands(char *row, Command *edit_commands, int edit_commands_count
     }
 }
 
-int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
+long get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
-    int number = -1;
-    int column_number = (int)get_valid_row_number(text_form, false);
-    return column_number + (column_number > -1 ? number : 0);
+    //int number = -1;
+    long column_number = get_valid_row_number(text_form, false);
+    return column_number -1;
 }
 
 int set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
