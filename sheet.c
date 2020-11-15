@@ -1,7 +1,7 @@
 /***********************************************************/
 /*             1. project - Table processor                */
 /*                                                         */
-/*               Samuel Dobroň - xdobro23                  */
+/*               Samuel Dobron - xdobro23                  */
 /*                                                         */
 /*  There is no segfaults, errors or unexpected behaviour, */
 /*               just dont try it. Please :(               */
