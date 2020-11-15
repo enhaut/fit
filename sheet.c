@@ -80,6 +80,16 @@ void copy_to_array(char *dest, char *source, int how_many_characters)
     dest[how_many_characters] = 0;
 }
 
+// Function caller will call function in the same way as commands from user are called
+void function_caller(char *row, long start, char *text, char delimiter, function_ptr function)
+{
+    CommandData data = {0};
+    data.start = start;
+    data.end = -1;
+    data.text_value = text;
+    function(row, &data, &delimiter);
+}
+
 char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
     char cell_delimiter = 0;
@@ -410,19 +420,15 @@ void copy(char *row, CommandData *command, const char *delimiter)
     char to_copy[cell_length + 1];
     copy_to_array(to_copy, copy_from, cell_length);
 
-    CommandData data = {0};
-    data.text_value = to_copy;
-    data.start = command->end;
-
-    cset(row, &data, delimiter);
+    function_caller(row, command->end, to_copy, *delimiter, cset);
 }
 
-void swap(char *row, CommandData *command, char *delimtier)
+void swap(char *row, CommandData *command, const char *delimiter)
 {
     char *what;
     char *with;
-    int what_size = get_cell_borders(row, &what, *delimtier, (int)(command->start));
-    int with_size = get_cell_borders(row, &with, *delimtier, (int)(command->end));
+    int what_size = get_cell_borders(row, &what, *delimiter, (int)(command->start));
+    int with_size = get_cell_borders(row, &with, *delimiter, (int)(command->end));
 
     char what_temp[what_size + 1];
     copy_to_array(what_temp, what, what_size);
@@ -435,19 +441,11 @@ void swap(char *row, CommandData *command, char *delimtier)
     if (with_temp[with_size - 1] == '\n')
         with_temp[with_size - 1] = '\0';
 
-    CommandData with_data = {0};
-    with_data.start = command->start;
-    with_data.text_value = with_temp;
-    cset(row, &with_data, delimtier);
-
-    CommandData what_data = {0};
-    what_data.start = command->end;
-    what_data.text_value = what_temp;
-    cset(row, &what_data, delimtier);
-
+    function_caller(row, command->start, with_temp, *delimiter, cset);
+    function_caller(row, command->end, what_temp, *delimiter, cset);
 }
 
-void move(char *row, CommandData *command, char *delimiter)
+void move(char *row, CommandData *command, const char *delimiter)
 {
     char *dest_cell;
     get_cell_borders(row, &dest_cell, *delimiter, (int)(command->end));
@@ -458,13 +456,8 @@ void move(char *row, CommandData *command, char *delimiter)
     char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
     copy_to_array(temp_cell, cell_source, source_cell_length);
 
-    CommandData to_delete_col = {0};
-    to_delete_col.start = command->start;
-    dcol(row, &to_delete_col, delimiter);
-
-    CommandData to_add_col = {0};
-    to_add_col.start = command->end;
-    icol(row, &to_add_col, delimiter);
+    function_caller(row, command->start, NULL, *delimiter, dcol);
+    function_caller(row, command->end, NULL, *delimiter, icol);
 
     memmove(dest_cell + source_cell_length, dest_cell, strlen(dest_cell));
     strncpy(dest_cell + 1, temp_cell, source_cell_length);  // +1 to move behind delimiter
@@ -491,10 +484,7 @@ void set_numeric_value_to_cell(float value, long cell_index, const char *delimit
     result[no_of_digits + 1] = '\0';
     sprintf(result,"%g", value);
 
-    CommandData to_set = {0};
-    to_set.start = cell_index;
-    to_set.text_value = result;
-    cset(row, &to_set, delimiter);
+    function_caller(row, cell_index, result, *delimiter, cset);
 }
 
 /* Common function for csum, cavg, cmin, cmax functions. Function has parameter "what_to_do" which defines what to do with numbers */
