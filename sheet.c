@@ -36,7 +36,6 @@ typedef struct{
 }CommandData;
 
 typedef struct{
-    char *name;
     CommandData data;
     function_ptr processing_function;   // saving pointer to function
 }Command;
@@ -500,7 +499,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         int setting_data_result = set_command_data(arguments, command_index, &data, &command_definition);
         if (setting_data_result)
             return EXIT_FAILURE;
-        Command command = {arguments[command_index], data, command_definition.processing_function};
+        Command command = {data, command_definition.processing_function};
 
         commands[edit_command_index] = command;
         command_index += command_definition.arguments + 1;
