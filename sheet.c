@@ -15,8 +15,8 @@
 #include <errno.h>
 #include <ctype.h>
 
-#define CELL_SIZE (100 + 1)  // + 1 because we need to set \0 to the end
-#define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
+#define CELL_SIZE 100
+#define ROW_BUFFER_SIZE (10240 + 2)     // +2 for \n and \0
 #define COMMANDS_COUNT 26
 
 /* COMMAND CATEGORIES */
@@ -217,7 +217,7 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
 
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, bool last_column)
 {
-    if (column_size >= CELL_SIZE) {
+    if (column_size > CELL_SIZE) {
         print_error("Column is bigger than allowed!\n");
         return EXIT_FAILURE;
     }else if (last_column && row_index && column_index + 1 != column_count){  // +1 because column_index is increased after this check
@@ -448,7 +448,7 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if ((string_value_function || function == rows) && strlen(arguments[command_index + 2]) < CELL_SIZE)
+    if ((string_value_function || function == rows) && strlen(arguments[command_index + 2]) <= CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
@@ -717,7 +717,7 @@ void add_missing_columns(char *row, char delimiter, CommandData *command)
     if (command->end != -1)
         to_add = command->end - count_delimiters(row, delimiter);
     else
-        to_add = ROW_BUFFER_SIZE - (CELL_SIZE + 1) - row_len;
+        to_add = ROW_BUFFER_SIZE - CELL_SIZE - row_len;
 
     for (; position < to_add + row_len; position++)
         row[position] = delimiter;
@@ -730,8 +730,8 @@ void split(char *row, CommandData *command, const char *delimiter)
 {
     /* In valid row could be in cell maximum of 100 (CELL_SIZE) new delimiters, so 100 last characters are reserved to keep column count in whole table same.
      * Because in table could be added up to 100 new delimiters (columns splitted by splitting character). */
-    if (strlen(row) > (ROW_BUFFER_SIZE - CELL_SIZE + 1)) {  // CELL_SIZE have -1, so we need to add it
-        print_error("Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE + 1));
+    if (strlen(row) > (ROW_BUFFER_SIZE - CELL_SIZE)) {
+        print_error("Split is supported up to %d characters per line only.\n", (ROW_BUFFER_SIZE - CELL_SIZE));
         return;
     }
     char *cell_to_split;
