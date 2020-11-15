@@ -717,12 +717,6 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"cmax",    3, DATA_PROCESSING_COMMAND, cmax},
             {"ccount",  3, DATA_PROCESSING_COMMAND, ccount},
             {"cseq",    3, DATA_PROCESSING_COMMAND, cseq},
-            /*{"rseq",    4, DATA_PROCESSING_COMMAND, empty_function},
-            {"rsum",    3, DATA_PROCESSING_COMMAND, empty_function},
-            {"ravg",    3, DATA_PROCESSING_COMMAND, empty_function},
-            {"rmin",    3, DATA_PROCESSING_COMMAND, empty_function},
-            {"rmax",    3, DATA_PROCESSING_COMMAND, empty_function},
-            {"rcount",  3, DATA_PROCESSING_COMMAND, empty_function},*/
             /* ROW SELECTION COMMANDS */
             {"rows",        2, SELECTION_COMMAND, rows},
             {"beginswith",  2, SELECTION_COMMAND, beginswith},
@@ -787,9 +781,7 @@ int main(int args_count, char *arguments[])
     {
         row_index++;
 
-        parse_line(row_buffer, cells_delimiter, row_index, !row_index ? &column_count : &original_column_count);
-        if (!row_index)
-            original_column_count = column_count;
+        parse_line(row_buffer, cells_delimiter, row_index, &column_count);
 
         if (!selection_commands_count || process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
         {
