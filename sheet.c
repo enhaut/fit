@@ -259,6 +259,8 @@ void dcol(char *row, CommandData *command_data, const char *delimiter)
     char *continue_at = cell_start + cell_length;
     if (continue_at[0] != '\n') // will move pointer behind delimiter but not in last column - there is no next delimiter
         continue_at++;
+    else
+        cell_start--;   // remove delimiter in case, the last cell is being deleted
     memmove(cell_start,  continue_at, strlen(cell_start));
 }
 
