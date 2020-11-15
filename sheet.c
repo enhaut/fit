@@ -116,6 +116,17 @@ bool is_defined_delimiter(int args_count, char *arguments[])
     return is_defined_delimiter;
 }
 
+bool line_is_too_long(char *row)
+{
+    char *found_new_line = strchr(row, '\n');
+    if (found_new_line == NULL)
+    {
+        print_error("Line is too long! Maximum size: %d\n", (ROW_BUFFER_SIZE - 2));   // -2 because of \n\0
+        return true;
+    }
+    return false;
+}
+
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
 {
     int return_code = 0;
@@ -765,10 +776,9 @@ int main(int args_count, char *arguments[])
 
     long row_index = -1;  // using long because max number of rows is not defined
     int column_count = 0;
-
     char row_buffer[ROW_BUFFER_SIZE];
 
-    while (fgets(row_buffer, ROW_BUFFER_SIZE, stdin))
+    while (fgets(row_buffer, ROW_BUFFER_SIZE, stdin) && !line_is_too_long(row_buffer))
     {
         row_index++;
 
