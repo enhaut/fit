@@ -171,7 +171,7 @@ bool string_selection_commands(char *row, CommandData *command, char delimiter, 
     char *text_beginning = strstr(cell_start, command->text_value);
     if (text_beginning != NULL && cell_end >= (text_beginning + strlen(command->text_value)) &&  // found substr in range from cell begin to cell end
         ((cell_start == text_beginning && begins_with_function) ||                 // "beginswith" command
-         (cell_start < text_beginning && !begins_with_function)))                   // "contains" command
+         (cell_start <= text_beginning && !begins_with_function)))                   // "contains" command
         return true;
     return false;
 }
