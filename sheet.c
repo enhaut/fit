@@ -448,10 +448,11 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
 
-    if ((((start == -2 || end == -2) && (text_value == NULL ||                          // totally invalid input data
+    if (arg_count &&                                                                    // checking only commands with arguments
+            ((((start == -2 || end == -2) && (text_value == NULL ||                     // totally invalid input data
             (text_value != NULL && start == -2 && end == -2))) && function != rows) ||  // invalid input data in string commands, rows has specific arguments
         (start == -1 && end == -1 && value == -1 && text_value == NULL && function != arow) ||  // empty input data, arow is processed in another way - it's excluded
-        (text_value == NULL && (string_value_function)))  // functions that require text value
+        (text_value == NULL && (string_value_function))))  // functions that require text value
     {
         print_error("Invalid arguments!\n");
         return EXIT_FAILURE;
