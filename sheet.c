@@ -462,20 +462,23 @@ void swap(char *row, CommandData *command, const char *delimiter)
 
 void move(char *row, CommandData *command, const char *delimiter)
 {
-    char *dest_cell;
-    get_cell_borders(row, &dest_cell, *delimiter, (int)(command->end));
-
     char *cell_source;
     int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
+    long move_to = command->end;
+    long move_from = command->start;
 
     char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
     copy_to_array(temp_cell, cell_source, source_cell_length);
 
-    function_caller(row, command->start, NULL, *delimiter, dcol);
-    function_caller(row, command->end, NULL, *delimiter, icol);
+    function_caller(row, move_to, NULL, *delimiter, icol);
 
-    memmove(dest_cell + source_cell_length, dest_cell, strlen(dest_cell));
-    strncpy(dest_cell + 1, temp_cell, source_cell_length);  // +1 to move behind delimiter
+    if (move_from > move_to)
+        move_from++;
+    else if (move_from < move_to)
+        move_to--;  // move column to set temp value before destination cell
+
+    function_caller(row, move_from, NULL, *delimiter, dcol);
+    function_caller(row, move_to, temp_cell, *delimiter, cset);
 }
 
 bool get_numeric_cell_value(char *column, float *value)
