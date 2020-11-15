@@ -100,13 +100,17 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // 
     return cell_delimiter;
 }
 
-bool is_defined_delimiter(int args_count, char *arguments[])
+// return 1 when delimiter is valid; 2 when delimiter is defined but not valid nad 0 when no delimiter is defined
+int valid_delimiter(int args_count, char *arguments[])
 {
-    bool is_defined_delimiter = false;
-    if (args_count >= 3 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
-        is_defined_delimiter = true;
+    if (args_count >= 2 && (compare_strings(arguments[1], "-d") && (args_count == 2 || (args_count > 2 && strlen(arguments[2]) == 0)))) {
+        print_error("Invalid delimiter argument!\n");
+        return 2;
+    }
 
-    return is_defined_delimiter;
+    if (args_count >=2 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
+        return 1;
+    return 0;
 }
 
 bool line_is_too_long(char *row)
@@ -760,10 +764,12 @@ void print_row(char *row)
 int main(int args_count, char *arguments[])
 {
     /* GET DELIMITER */
-    bool defined_custom_delimiter = is_defined_delimiter(args_count, arguments);
+    int defined_valid_delimiter = valid_delimiter(args_count, arguments);
     char default_delimiter[] = {" "};
     char *cells_delimiter = default_delimiter;
-    if (defined_custom_delimiter)
+    if (defined_valid_delimiter == 2)
+        return EXIT_FAILURE;
+    else if (defined_valid_delimiter)
         cells_delimiter = arguments[2];
 
     CommandDefinition command_definitions[COMMANDS_COUNT];
