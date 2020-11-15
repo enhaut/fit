@@ -290,6 +290,61 @@ void cset(char *row, CommandData *command, const char *delimiter)
     strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
 }
 
+void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (command_data->start != row_index)
+        return;
+
+    int columns_count = count_delimiters(row, *delimiter);
+    for (int delimiters = 0; delimiters < columns_count; delimiters++)
+        printf("%c", *delimiter);
+
+    printf("\n");
+}
+
+void arow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (!last_row())
+        return;
+    (void)command_data;
+    CommandData data = {0};
+    data.start = row_index;
+    irow(row, &data, row_index, delimiter);
+}
+
+void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buffer, char delimitier)
+{
+    for (int command = 0; command < edit_commands_count; command++)
+        if (edit_commands[command].processing_function == arow)
+            arow(row_buffer, &edit_commands[command].data, LONG_MAX, &delimitier);
+}
+
+/* implementation od drow and drows commands */
+void drow_s(char *row, CommandData *command_data, long row_index)
+{
+    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
+        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
+        row[0] = '\0';
+}
+
+void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
+{
+    for (int command_index = 0; command_index < edit_commands_count; command_index++)
+    {
+        function_ptr edit_function = edit_commands[command_index].processing_function;
+        if (edit_function == arow)  // arow has custom calling
+            continue;
+        if (edit_function == drow_s)
+            edit_function(row, &edit_commands[command_index].data, row_index);
+        else if (edit_function == irow)
+            edit_function(row, &edit_commands[command_index].data, row_index, &delimiter);
+        else
+            edit_function(row, &edit_commands[command_index].data, &delimiter);
+        if (row[0] == '\0') // row has been deleted, dont need to process another commands
+            break;
+    }
+}
+
 int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
     int number = -1;
@@ -315,7 +370,9 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
     if (arg_count >= 3)
         value = (float)get_valid_column_number(arguments[command_index + 3]);
 
-    if (start == -1 && end == -1 && value == -1 && text_value == NULL) {
+    if (start == -1 && end == -1 && value == -1 && text_value == NULL &&
+        command_definition->processing_function != arow)    // arow could be empty, it's processing by another way
+    {
         print_error("Invalid arguments!\n");
         return EXIT_FAILURE;
     }
@@ -363,54 +420,6 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         edit_command_index++;
     }
     return EXIT_SUCCESS;
-}
-
-/* implementation od drow and drows commands */
-void drow_s(char *row, CommandData *command_data, long row_index)
-{
-    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
-        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
-        row[0] = '\0';
-}
-
-void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
-{
-    if (command_data->start != row_index)
-        return;
-
-    int columns_count = count_delimiters(row, *delimiter);
-    for (int delimiters = 0; delimiters < columns_count; delimiters++)
-        printf("%c", *delimiter);
-
-    printf("\n");
-}
-
-void arow(char *row, CommandData *command_data, long row_index, const char *delimiter)
-{
-    if (!last_row())
-        return;
-    (void)command_data;
-    CommandData data = {0};
-    data.start = row_index;
-    irow(row, &data, row_index, delimiter);
-}
-
-void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
-{
-    for (int command_index = 0; command_index < edit_commands_count; command_index++)
-    {
-        function_ptr edit_function = edit_commands[command_index].processing_function;
-        if (edit_function == arow)  // arow has custom calling
-            continue;
-        if (edit_function == drow_s)
-            edit_function(row, &edit_commands[command_index].data, row_index);
-        else if (edit_function == irow)
-            edit_function(row, &edit_commands[command_index].data, row_index, &delimiter);
-        else
-            edit_function(row, &edit_commands[command_index].data, &delimiter);
-        if (row[0] == '\0') // row has been deleted, dont need to process another commands
-            break;
-    }
 }
 
 /* common function for commands tolower and toupper, they are almost same */
@@ -707,7 +716,7 @@ void get_all_command_definitions(CommandDefinition *commands)
     CommandDefinition base_commands[COMMANDS_COUNT] = {
             /* TABLE EDIT COMMANDS */
             {"irow",    1, TABLE_EDIT_COMMAND, irow},
-            {"arow",    0, TABLE_EDIT_COMMAND, arow},   // arow have custom function calling
+            {"arow",    0, TABLE_EDIT_COMMAND, arow},
             {"drow",    1, TABLE_EDIT_COMMAND, drow_s}, // osetrit pripad, ked nastavim csetom
             {"drows",   2, TABLE_EDIT_COMMAND, drow_s},
             {"icol",    1, TABLE_EDIT_COMMAND, icol},
@@ -802,9 +811,7 @@ int main(int args_count, char *arguments[])
         }
         print_row(row_buffer);
     }
-    for (int command = 0; command < edit_commands_count; command++)
-        if (edit_commands[command].processing_function == arow)
-            arow(row_buffer, &edit_commands[command].data, LONG_MAX, cells_delimiter);
+    arow_caller(edit_commands_count, edit_commands, row_buffer, cells_delimiter[0]);
 
     return EXIT_SUCCESS;
 }
