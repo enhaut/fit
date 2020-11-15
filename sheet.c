@@ -127,15 +127,14 @@ bool line_is_too_long(char *row)
     return false;
 }
 
-int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
+int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index)
 {
     int return_code = 0;
-    if (column_size > CELL_SIZE)
+    if (column_size >= CELL_SIZE)
     {
         print_error("Column is bigger than allowed!\n");
         return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
-    }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){      // TODO: fix!!!
-        // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
+    }else if (row_index && column_index + 1 > column_count){    // +1 because column_index is increased after this check
         print_error("You have inconsistent column count!\n");
         return_code = ERROR_INCONSISTENT_COLUMNS;
     }
@@ -158,12 +157,12 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
         cell_end = strchr(cell_end, actual_delimiter);
         int cell_length = (int)(cell_end - cell_start);
 
-        if (cell_end == NULL || !strlen(cell_end))
-            break;
-
-        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index, cell_end);
+        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index);
         if (column_requirements > 0)
             return column_requirements;
+
+        if (cell_end == NULL || !strlen(cell_end))
+            break;
 
         cell_end[0] = delimiter[0];     // replace delimiter with correct one
         cell_end++;                     // move pointer behind delimiter
