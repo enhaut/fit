@@ -13,13 +13,6 @@
 #define ROW_BUFFER_SIZE (10240 + 2)    // +2 for \n and \0
 #define COMMANDS_COUNT 26
 
-// error codes
-#define ERROR_BIGGER_COLUMN_THAN_ALLOWED 1
-#define ERROR_MAXIMUM_COLUMN_LIMIT_REACHED 2
-#define ERROR_INCONSISTENT_COLUMNS 3
-#define ERROR_INVALID_COMMAND_USAGE 4
-#define ERROR_MAXIMUM_ROW_SIZE_REACHED 5
-
 /* COMMAND CATEGORIES */
 #define TABLE_EDIT_COMMAND 1
 #define DATA_PROCESSING_COMMAND 2
@@ -127,19 +120,16 @@ bool line_is_too_long(char *row)
     return false;
 }
 
-int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index, const char *remaining_row)
+int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index)
 {
-    int return_code = 0;
-    if (column_size > CELL_SIZE)
-    {
+    if (column_size >= CELL_SIZE) {
         print_error("Column is bigger than allowed!\n");
-        return_code = ERROR_BIGGER_COLUMN_THAN_ALLOWED;
-    }else if (column_index + 1 != column_count && row_index > 0 && remaining_row == NULL){      // TODO: fix!!!
-        // +1 because column index is indexed from 0 and column_count from 1, checking of remaining_row to make sure that actual column is the last one
+        return EXIT_FAILURE;
+    }else if (row_index && column_index + 1 > column_count){  // +1 because column_index is increased after this check
         print_error("You have inconsistent column count!\n");
-        return_code = ERROR_INCONSISTENT_COLUMNS;
+        return EXIT_FAILURE;
     }
-    return return_code;
+    return EXIT_SUCCESS;
 }
 
 int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_count)
@@ -158,12 +148,12 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
         cell_end = strchr(cell_end, actual_delimiter);
         int cell_length = (int)(cell_end - cell_start);
 
+        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index);
+        if (column_requirements)
+            return column_requirements;
+
         if (cell_end == NULL || !strlen(cell_end))
             break;
-
-        int column_requirements = check_column_requirements(cell_length, column_index, *columns_count, row_index, cell_end);
-        if (column_requirements > 0)
-            return column_requirements;
 
         cell_end[0] = delimiter[0];     // replace delimiter with correct one
         cell_end++;                     // move pointer behind delimiter
@@ -173,7 +163,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
     if (!row_index)  // set column count from first row
         *columns_count = column_index;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -228,7 +218,6 @@ int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
 
     for (int position = 0; position < row_length; position++)
     {
-
         if ((!wanted_column || (wanted_column == (actual_column + 1) && row[position] == delimiter)) && cell_start_index == -1)
             cell_start_index = position + (!wanted_column ? 0 : 1);     // that condition won't move cell_start_index at first (0.) column behind first character
 
@@ -259,6 +248,8 @@ void dcol(char *row, CommandData *command_data, const char *delimiter)
     char *continue_at = cell_start + cell_length;
     if (continue_at[0] != '\n') // will move pointer behind delimiter but not in last column - there is no next delimiter
         continue_at++;
+    else
+        cell_start--;   // remove delimiter in case, the last cell is being deleted
     memmove(cell_start,  continue_at, strlen(cell_start));
 }
 
@@ -286,6 +277,19 @@ void icol(char *row, CommandData *command_data, const char *delimiter)
     *cell_start = *delimiter;
 }
 
+void cset(char *row, CommandData *command, const char *delimiter)
+{
+    char *actual_column;
+    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
+
+    int new_value_length = (int)strlen(command->text_value);
+    int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
+    char *actual_column_end = actual_column + actual_column_length;
+
+    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column) + 1);  // +1 for copy ending 0
+    strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
+}
+
 int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
     int number = -1;
@@ -305,7 +309,7 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if (end < 0 && arg_count == 2 && strlen(arguments[command_index + 2]) < CELL_SIZE)
+    if ((command_definition->processing_function == cset || (end < 0 && arg_count == 2)) && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
@@ -319,7 +323,6 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
 
 int get_commands(int args_count, char *arguments[], CommandDefinition *command_definitions, Command *commands, int processing_commands_category)
 {
-    int minimal_arguments = 0;
     int edit_command_index = 0;
     for (int command_index = 1; command_index < args_count;)    // starting at 1, 0. arg is program name
     {
@@ -333,7 +336,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         CommandDefinition command_definition = command_definitions[command_def_index];
         int command_arguments = command_definition.arguments;
         if (command_arguments > (args_count - command_index - 1))   // -1 because of actual processing command
-            return -ERROR_INVALID_COMMAND_USAGE;    // TODO: *-1 to error codes
+            return EXIT_FAILURE;
 
         CommandData data = {0};
         set_command_data(arguments, command_index, &data, &command_definition);
@@ -343,20 +346,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         command_index += command_arguments + 1;
         edit_command_index++;
     }
-    return minimal_arguments;
-}
-
-void cset(char *row, CommandData *command, const char *delimiter)
-{
-    char *actual_column;
-    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
-
-    int new_value_length = (int)strlen(command->text_value);
-    int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
-    char *actual_column_end = actual_column + actual_column_length;
-
-    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column));
-    strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
+    return EXIT_SUCCESS;
 }
 
 /* implementation od drow and drows commands */
@@ -460,20 +450,23 @@ void swap(char *row, CommandData *command, const char *delimiter)
 
 void move(char *row, CommandData *command, const char *delimiter)
 {
-    char *dest_cell;
-    get_cell_borders(row, &dest_cell, *delimiter, (int)(command->end));
-
     char *cell_source;
     int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
+    long move_to = command->end;
+    long move_from = command->start;
 
     char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
     copy_to_array(temp_cell, cell_source, source_cell_length);
 
-    function_caller(row, command->start, NULL, *delimiter, dcol);
-    function_caller(row, command->end, NULL, *delimiter, icol);
+    function_caller(row, move_to, NULL, *delimiter, icol);
 
-    memmove(dest_cell + source_cell_length, dest_cell, strlen(dest_cell));
-    strncpy(dest_cell + 1, temp_cell, source_cell_length);  // +1 to move behind delimiter
+    if (move_from > move_to)
+        move_from++;
+    else if (move_from < move_to)
+        move_to--;  // move column to set temp value before destination cell
+
+    function_caller(row, move_from, NULL, *delimiter, dcol);
+    function_caller(row, move_to, temp_cell, *delimiter, cset);
 }
 
 bool get_numeric_cell_value(char *column, float *value)
@@ -782,7 +775,9 @@ int main(int args_count, char *arguments[])
     {
         row_index++;
 
-        parse_line(row_buffer, cells_delimiter, row_index, &column_count);
+        int parsing_result = parse_line(row_buffer, cells_delimiter, row_index, &column_count);
+        if (parsing_result)
+            return parsing_result;
 
         if (!selection_commands_count || process_selection_commands(row_buffer, selection_commands, selection_commands_count, *cells_delimiter, row_index))
         {
@@ -795,5 +790,5 @@ int main(int args_count, char *arguments[])
         if (edit_commands[command].processing_function == arow)
             arow(row_buffer, &edit_commands[command].data, LONG_MAX, cells_delimiter);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
