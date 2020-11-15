@@ -149,6 +149,14 @@ bool line_is_too_long(char *row)
     return false;
 }
 
+bool valid_column_indexes(long column1, long column2, char *row, const char delimiter)
+{
+    int columns_count = count_delimiters(row, delimiter);
+    if (column1 <= columns_count && column2 <= columns_count)
+        return true;
+    return false;
+}
+
 /* SELECTION COMMANDS - returns true in case, row could be processed */
 void rows(long row_index, CommandData command, bool *can_process)
 {
@@ -345,6 +353,8 @@ void icol(char *row, CommandData *command_data, const char *delimiter)
 
 void cset(char *row, CommandData *command, const char *delimiter)
 {
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
+        return;
     char *actual_column;
     int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
 
@@ -513,6 +523,8 @@ void column_toupper(char *row, CommandData *command, char *delimiter)
 
 void copy(char *row, CommandData *command, const char *delimiter)
 {
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
+        return;
     char *copy_from;
     int cell_length = get_cell_borders(row, &copy_from, *delimiter, (int)(command->start));
     char to_copy[cell_length + 1];
@@ -523,6 +535,8 @@ void copy(char *row, CommandData *command, const char *delimiter)
 
 void swap(char *row, CommandData *command, const char *delimiter)
 {
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
+        return;
     char *what;
     char *with;
     int what_size = get_cell_borders(row, &what, *delimiter, (int)(command->start));
@@ -545,6 +559,8 @@ void swap(char *row, CommandData *command, const char *delimiter)
 
 void move(char *row, CommandData *command, const char *delimiter)
 {
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
+        return;
     char *cell_source;
     int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
     long move_to = command->end;
