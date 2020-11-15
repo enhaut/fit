@@ -293,6 +293,18 @@ void add_missing_columns(char *row, char delimiter, CommandData *command)
     row[position+1] = '\0';
 }
 
+// Function will convert string number to float
+bool get_numeric_cell_value(char *column, float *value)
+{
+    errno = 0;
+    char *result;
+    *value = strtof(column, &result);
+
+    if (errno != 0 || (result != NULL && result[0] != '\0'))
+        return false;
+    return true;
+}
+
 
 /* SELECTION COMMANDS - returns true in case, row could be processed */
 void rows(long row_index, CommandData command, bool *can_process)
@@ -348,6 +360,135 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
     return can_process;
 }
 
+/* DATA PROCESSING COMMANDS */
+void cset(char *row, CommandData *command, const char *delimiter)
+{
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
+        return;
+    char *actual_column;
+    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, command->start);
+
+    int new_value_length = (int)strlen(command->text_value);
+    int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
+    char *actual_column_end = actual_column + actual_column_length;
+
+    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column) + 1);  // +1 for copy ending 0
+    strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
+}
+
+// Function will set float value to char array
+void set_numeric_value_to_cell(float value, long cell_index, const char *delimiter, char *row)
+{
+    char *cell_to_set_start;
+    get_cell_borders(row, &cell_to_set_start, *delimiter, cell_index);
+
+    int no_of_digits = snprintf(NULL, 0, "%f", value);
+    char result[no_of_digits];
+    result[no_of_digits + 1] = '\0';
+    sprintf(result,"%g", value);
+
+    function_caller(row, cell_index, result, *delimiter, cset);
+}
+
+/* Common function for commands tolower and toupper, they are almost same.
+ * Parameter lower means that tolower() should be called instead of toupper() */
+void column_case(char *row, CommandData *commandData, const char *delimiter, bool lower)
+{
+    char *start;
+    int column_length = get_cell_borders(row, &start, *delimiter, commandData->start);
+    for (int position = 0; position < column_length; position++)
+        start[position] = (char)(lower ? tolower(start[position]) : toupper(start[position]));
+}
+
+void column_tolower(char *row, CommandData *command, char *delimiter)
+{
+    column_case(row, command, delimiter, true);
+}
+
+void column_toupper(char *row, CommandData *command, char *delimiter)
+{
+    column_case(row, command, delimiter, false);
+}
+
+void column_round(char *row, CommandData *command, const char *delimiter)
+{
+    char *column;
+    int cell_length = get_cell_borders(row, &column, *delimiter, command->start);
+    char cell[cell_length + 1];
+    copy_to_array(cell, column, cell_length);
+
+    double to_round;
+    char *remaining = NULL;
+    errno = 0;
+
+    to_round = strtod(cell, &remaining);
+    if (errno != 0 || (remaining != NULL && *remaining != '\0'))
+        return;
+
+    int rounded = (int)(to_round + (to_round > 0.0 ? 0.5 : -0.5));
+    set_numeric_value_to_cell((float)rounded, (int)(command->start), delimiter, row);
+}
+
+void column_int(char *row, CommandData *command, const char *delimiter)
+{
+    char *column_start;
+    int cell_length = get_cell_borders(row, &column_start, *delimiter, command->start);
+    char *cell_end = column_start + cell_length;
+
+    char *decimal_dot = strchr(column_start, '.');
+    if (decimal_dot > cell_end || !decimal_dot)   // dot found behind actual cell
+        return;
+
+    memmove(decimal_dot, cell_end, strlen(cell_end) + 1);
+}
+
+
+/* TABLE EDIT COMMANDS */
+void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+{
+    if (command_data->start != row_index)
+        return;
+
+    int columns_count = count_delimiters(row, *delimiter);
+    for (int delimiters = 0; delimiters < columns_count; delimiters++)
+        printf("%c", *delimiter);
+
+    printf("\n");
+}
+
+void arow(char *row, long row_index, const char *delimiter)
+{
+    if (!last_row())
+        return;
+    CommandData data = {0};
+    data.start = row_index;
+    irow(row, &data, row_index, delimiter);
+}
+
+// Function will call arow in same way as using it by user
+void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buffer, char delimitier)
+{
+    for (int command = 0; command < edit_commands_count; command++)
+        if (edit_commands[command].processing_function == arow)
+            arow(row_buffer, LONG_MAX, &delimitier);
+}
+
+// Implementation od drow and drows commands
+void drow_s(char *row, CommandData *command_data, long row_index)
+{
+    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
+        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
+        row[0] = '\0';
+}
+
+void icol(char *row, CommandData *command_data, const char *delimiter)
+{
+    char *cell_start;
+    get_cell_borders(row, &cell_start, *delimiter, command_data->start);
+    memmove(cell_start + 1, cell_start, strlen(cell_start) + 1);
+    *cell_start = *delimiter;
+}
+
 void acol(char *row, CommandData *command_data, const char *delimiter)
 {
     (void)command_data; // command data is not used here, but it has to be here
@@ -384,64 +525,132 @@ void dcols(char *row, CommandData *command_data, const char *delimiter)
     memmove(start, end, strlen(end) + 1);
 }
 
-void icol(char *row, CommandData *command_data, const char *delimiter)
-{
-    char *cell_start;
-    get_cell_borders(row, &cell_start, *delimiter, command_data->start);
-    memmove(cell_start + 1, cell_start, strlen(cell_start) + 1);
-    *cell_start = *delimiter;
-}
 
-void cset(char *row, CommandData *command, const char *delimiter)
+void copy(char *row, CommandData *command, const char *delimiter)
 {
     if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
-    char *actual_column;
-    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, command->start);
+    char *copy_from;
+    int cell_length = get_cell_borders(row, &copy_from, *delimiter, command->start);
+    char to_copy[cell_length + 1];
+    copy_to_array(to_copy, copy_from, cell_length);
 
-    int new_value_length = (int)strlen(command->text_value);
-    int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
-    char *actual_column_end = actual_column + actual_column_length;
-
-    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column) + 1);  // +1 for copy ending 0
-    strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
+    function_caller(row, command->end, to_copy, *delimiter, cset);
 }
 
-void irow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+void swap(char *row, CommandData *command, const char *delimiter)
 {
-    if (command_data->start != row_index)
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
+    char *what;
+    char *with;
+    int what_size = get_cell_borders(row, &what, *delimiter, command->start);
+    int with_size = get_cell_borders(row, &with, *delimiter, command->end);
 
-    int columns_count = count_delimiters(row, *delimiter);
-    for (int delimiters = 0; delimiters < columns_count; delimiters++)
-        printf("%c", *delimiter);
+    char what_temp[what_size + 1];
+    copy_to_array(what_temp, what, what_size);
 
-    printf("\n");
+    char with_temp[with_size + 1];
+    copy_to_array(with_temp, with, with_size);
+
+    /* Replace \n from last column to \0 to prevent split rows */
+    if (what_temp[what_size - 1] == '\n')
+        what_temp[what_size - 1] = '\0';
+    if (with_temp[with_size - 1] == '\n')
+        with_temp[with_size - 1] = '\0';
+
+    function_caller(row, command->start, with_temp, *delimiter, cset);
+    function_caller(row, command->end, what_temp, *delimiter, cset);
 }
 
-void arow(char *row, long row_index, const char *delimiter)
+void move(char *row, CommandData *command, const char *delimiter)
 {
-    if (!last_row())
+    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
         return;
-    CommandData data = {0};
-    data.start = row_index;
-    irow(row, &data, row_index, delimiter);
+    char *cell_source;
+    int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, command->start);
+    long move_to = command->end;
+    long move_from = command->start;
+
+    char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
+    copy_to_array(temp_cell, cell_source, source_cell_length);
+
+    function_caller(row, move_to, NULL, *delimiter, icol);
+
+    if (move_from > move_to)
+        move_from++;
+    else if (move_from < move_to)
+        move_to--;  // move column to set temp value before destination cell
+
+    function_caller(row, move_from, NULL, *delimiter, dcol);
+    function_caller(row, move_to, temp_cell, *delimiter, cset);
 }
 
-// Function will call arow in same way as using it by user
-void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buffer, char delimitier)
+/* Common function for csum, cavg, cmin, cmax functions.
+ * Function has parameter "what_to_do" which defines what to do with numbers */
+void cx_commands(char *row, CommandData *command, const char *delimiter, int what_to_do)
 {
-    for (int command = 0; command < edit_commands_count; command++)
-        if (edit_commands[command].processing_function == arow)
-            arow(row_buffer, LONG_MAX, &delimitier);
+    float result = 0;
+    float number_to_add = 0;
+    float valid_columns = 0;
+    int end_column_index = (int)command->value;
+
+    for (int column = (int)command->end; column <= end_column_index; column++)
+    {
+        char *column_start;
+        int column_length = get_cell_borders(row, &column_start, *delimiter, column);
+        char cell[column_length + 1];
+        copy_to_array(cell, column_start, column_length);
+
+        bool valid_number = get_numeric_cell_value(cell, &number_to_add);
+        if (!valid_number)  // if invalid number is in cell, skip it
+            continue;
+
+        if (what_to_do <= 2)        // csum
+            result += number_to_add;
+        else if ((what_to_do == 3 && number_to_add < result) || (what_to_do == 4 && number_to_add > result))    // another functions does smth with sum of cells
+            result = number_to_add;
+
+        valid_columns++;
+    }
+    if (what_to_do == 2)
+        result /= valid_columns ? valid_columns : 1;    // prevent / by 0
+    else if (what_to_do == 5)
+        result = valid_columns;
+
+    set_numeric_value_to_cell(result, command->start, delimiter, row);
 }
 
-// Implementation od drow and drows commands
-void drow_s(char *row, CommandData *command_data, long row_index)
+void csum(char *row, CommandData *command, const char *delimiter)
 {
-    if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
-        (row_index >= command_data->start && row_index <= command_data->end))   // drows command
-        row[0] = '\0';
+    cx_commands(row, command, delimiter, 1);
+}
+
+void cavg(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 2);
+}
+
+void cmin(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 3);
+}
+void cmax(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 4);
+}
+
+void ccount(char *row, CommandData *command, const char *delimiter)
+{
+    cx_commands(row, command, delimiter, 5);
+}
+
+void cseq(char *row, CommandData *command, const char *delimiter)
+{
+    int seq_start = (int)command->value + 1; // +1 because parsing decreased starting value by 1
+    int starting_column = (int)command->start;
+    for (int column = starting_column; column <= command->end; column++)
+        set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
 }
 
 // Call processing commands function
@@ -529,211 +738,6 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
         edit_command_index++;
     }
     return EXIT_SUCCESS;
-}
-
-/* Common function for commands tolower and toupper, they are almost same.
- * Parameter lower means that tolower() should be called instead of toupper() */
-void column_case(char *row, CommandData *commandData, const char *delimiter, bool lower)
-{
-    char *start;
-    int column_length = get_cell_borders(row, &start, *delimiter, commandData->start);
-    for (int position = 0; position < column_length; position++)
-        start[position] = (char)(lower ? tolower(start[position]) : toupper(start[position]));
-}
-
-void column_tolower(char *row, CommandData *command, char *delimiter)
-{
-    column_case(row, command, delimiter, true);
-}
-
-void column_toupper(char *row, CommandData *command, char *delimiter)
-{
-    column_case(row, command, delimiter, false);
-}
-
-void copy(char *row, CommandData *command, const char *delimiter)
-{
-    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
-        return;
-    char *copy_from;
-    int cell_length = get_cell_borders(row, &copy_from, *delimiter, command->start);
-    char to_copy[cell_length + 1];
-    copy_to_array(to_copy, copy_from, cell_length);
-
-    function_caller(row, command->end, to_copy, *delimiter, cset);
-}
-
-void swap(char *row, CommandData *command, const char *delimiter)
-{
-    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
-        return;
-    char *what;
-    char *with;
-    int what_size = get_cell_borders(row, &what, *delimiter, command->start);
-    int with_size = get_cell_borders(row, &with, *delimiter, command->end);
-
-    char what_temp[what_size + 1];
-    copy_to_array(what_temp, what, what_size);
-
-    char with_temp[with_size + 1];
-    copy_to_array(with_temp, with, with_size);
-
-    /* Replace \n from last column to \0 to prevent split rows */
-    if (what_temp[what_size - 1] == '\n')
-        what_temp[what_size - 1] = '\0';
-    if (with_temp[with_size - 1] == '\n')
-        with_temp[with_size - 1] = '\0';
-
-    function_caller(row, command->start, with_temp, *delimiter, cset);
-    function_caller(row, command->end, what_temp, *delimiter, cset);
-}
-
-void move(char *row, CommandData *command, const char *delimiter)
-{
-    if (!valid_column_indexes(command->start, command->end, row, *delimiter))
-        return;
-    char *cell_source;
-    int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, command->start);
-    long move_to = command->end;
-    long move_from = command->start;
-
-    char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
-    copy_to_array(temp_cell, cell_source, source_cell_length);
-
-    function_caller(row, move_to, NULL, *delimiter, icol);
-
-    if (move_from > move_to)
-        move_from++;
-    else if (move_from < move_to)
-        move_to--;  // move column to set temp value before destination cell
-
-    function_caller(row, move_from, NULL, *delimiter, dcol);
-    function_caller(row, move_to, temp_cell, *delimiter, cset);
-}
-
-// Function will convert string number to float
-bool get_numeric_cell_value(char *column, float *value)
-{
-    errno = 0;
-    char *result;
-    *value = strtof(column, &result);
-
-    if (errno != 0 || (result != NULL && result[0] != '\0'))
-        return false;
-    return true;
-}
-
-// Function will set float value to char array
-void set_numeric_value_to_cell(float value, long cell_index, const char *delimiter, char *row)
-{
-    char *cell_to_set_start;
-    get_cell_borders(row, &cell_to_set_start, *delimiter, cell_index);
-
-    int no_of_digits = snprintf(NULL, 0, "%f", value);
-    char result[no_of_digits];
-    result[no_of_digits + 1] = '\0';
-    sprintf(result,"%g", value);
-
-    function_caller(row, cell_index, result, *delimiter, cset);
-}
-
-/* Common function for csum, cavg, cmin, cmax functions.
- * Function has parameter "what_to_do" which defines what to do with numbers */
-void cx_commands(char *row, CommandData *command, const char *delimiter, int what_to_do)
-{
-    float result = 0;
-    float number_to_add = 0;
-    float valid_columns = 0;
-    int end_column_index = (int)command->value;
-
-    for (int column = (int)command->end; column <= end_column_index; column++)
-    {
-        char *column_start;
-        int column_length = get_cell_borders(row, &column_start, *delimiter, column);
-        char cell[column_length + 1];
-        copy_to_array(cell, column_start, column_length);
-
-        bool valid_number = get_numeric_cell_value(cell, &number_to_add);
-        if (!valid_number)  // if invalid number is in cell, skip it
-            continue;
-
-        if (what_to_do <= 2)        // csum
-            result += number_to_add;
-        else if ((what_to_do == 3 && number_to_add < result) || (what_to_do == 4 && number_to_add > result))    // another functions does smth with sum of cells
-            result = number_to_add;
-
-        valid_columns++;
-    }
-    if (what_to_do == 2)
-        result /= valid_columns ? valid_columns : 1;    // prevent / by 0
-    else if (what_to_do == 5)
-        result = valid_columns;
-
-    set_numeric_value_to_cell(result, command->start, delimiter, row);
-}
-
-void csum(char *row, CommandData *command, const char *delimiter)
-{
-    cx_commands(row, command, delimiter, 1);
-}
-
-void cavg(char *row, CommandData *command, const char *delimiter)
-{
-    cx_commands(row, command, delimiter, 2);
-}
-
-void cmin(char *row, CommandData *command, const char *delimiter)
-{
-    cx_commands(row, command, delimiter, 3);
-}
-void cmax(char *row, CommandData *command, const char *delimiter)
-{
-    cx_commands(row, command, delimiter, 4);
-}
-
-void ccount(char *row, CommandData *command, const char *delimiter)
-{
-    cx_commands(row, command, delimiter, 5);
-}
-
-void cseq(char *row, CommandData *command, const char *delimiter)
-{
-    int seq_start = (int)command->value + 1; // +1 because parsing decreased starting value by 1
-    int starting_column = (int)command->start;
-    for (int column = starting_column; column <= command->end; column++)
-        set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
-}
-
-void column_round(char *row, CommandData *command, const char *delimiter)
-{
-    char *column;
-    int cell_length = get_cell_borders(row, &column, *delimiter, command->start);
-    char cell[cell_length + 1];
-    copy_to_array(cell, column, cell_length);
-
-    double to_round;
-    char *remaining = NULL;
-    errno = 0;
-
-    to_round = strtod(cell, &remaining);
-    if (errno != 0 || (remaining != NULL && *remaining != '\0'))
-        return;
-
-    int rounded = (int)(to_round + (to_round > 0.0 ? 0.5 : -0.5));
-    set_numeric_value_to_cell((float)rounded, (int)(command->start), delimiter, row);
-}
-
-void column_int(char *row, CommandData *command, const char *delimiter)
-{
-    char *column_start;
-    int cell_length = get_cell_borders(row, &column_start, *delimiter, command->start);
-    char *cell_end = column_start + cell_length;
-
-    char *decimal_dot = strchr(column_start, '.');
-    if (decimal_dot > cell_end || !decimal_dot)   // dot found behind actual cell
-        return;
-
-    memmove(decimal_dot, cell_end, strlen(cell_end) + 1);
 }
 
 void split(char *row, CommandData *command, const char *delimiter)
