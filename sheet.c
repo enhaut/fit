@@ -95,7 +95,7 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // 
     return cell_delimiter;
 }
 
-bool is_defined_delimiter(int args_count, char **arguments)
+bool is_defined_delimiter(int args_count, char *arguments[])
 {
     bool is_defined_delimiter = false;
     if (args_count >= 3 && compare_strings(arguments[1], "-d") && strlen(arguments[2]) > 0)
@@ -309,7 +309,7 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
 
         CommandDefinition command_definition = command_definitions[command_def_index];
         int command_arguments = command_definition.arguments;
-        if (command_index + command_arguments > args_count)
+        if (command_arguments > (args_count - command_index - 1))   // -1 because of actual processing command
             return -ERROR_INVALID_COMMAND_USAGE;    // TODO: *-1 to error codes
 
         CommandData data = {0};
