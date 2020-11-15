@@ -120,7 +120,7 @@ int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_cou
         column_index++;
     }
 
-    if (row_index == 0)  // set column count from first row
+    if (!row_index)  // set column count from first row
         *columns_count = column_index;
 
     return 0;
