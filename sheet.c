@@ -29,10 +29,10 @@
 typedef void (*function_ptr)(); // pointer to function with no strict arguments
 
 typedef struct{
-    long start;
+    long start;         // using long because, here could be stored row indexes
     long end;
     float value;
-    char *text_value;
+    char *text_value;   // store text arguments, when needed
 }CommandData;
 
 typedef struct{
@@ -40,9 +40,11 @@ typedef struct{
     function_ptr processing_function;   // saving pointer to function
 }Command;
 
+/* Struct for command definitions - it stores commands requirement, processing function...
+ * When adding new processing functions just add it to commands definition and add it's processing function. */
 typedef struct {
-    char *name;
-    int arguments;
+    char *name;             // command name
+    int arguments;          // needed arguments count
     int command_category;   // type of command (table edit/row selection/data processing)
     function_ptr processing_function;
 }CommandDefinition;
@@ -64,6 +66,7 @@ int count_delimiters(char *row, char delimiter)
     return delims;
 }
 
+// Function will check if actual processing row is last one.
 bool last_row()
 {
     int next_character = getc(stdin);
@@ -74,6 +77,7 @@ bool last_row()
     return false;
 }
 
+// Function will copy source to destination array with and sets trailing \0
 void copy_to_array(char *dest, char *source, int how_many_characters)
 {
     strncpy(dest, source, how_many_characters);
@@ -85,12 +89,13 @@ void function_caller(char *row, long start, char *text, char delimiter, function
 {
     CommandData data = {0};
     data.start = start;
-    data.end = -1;
+    data.end = -1;                      // end is not used anywhere, just mark it as unused
     data.text_value = text;
-    function(row, &data, &delimiter);
+    function(row, &data, &delimiter);   // this is function from command definition
 }
 
-char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
+// Function will find next column delimiter and returns it.
+char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)
 {
     char cell_delimiter = 0;
 
@@ -105,7 +110,7 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // 
     return cell_delimiter;
 }
 
-/* function will set pointers cell_start and cell_end at N cell start and cell end in row array */
+// Function will set pointers cell_start and cell_end at N-th cell start and cell end in row array
 int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
 {
     int actual_column = 0;
@@ -123,14 +128,14 @@ int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
             break;
         }
         if (row[position] == delimiter)
-            actual_column++;
+            actual_column++;    // delimiter found, so we will process next column
     }
 
     *start = &row[cell_start_index];
     return cell_length;
 }
 
-// return 1 when delimiter is valid; 2 when delimiter is defined but not valid nad 0 when no delimiter is defined
+// returns 1 when delimiter is valid; 2 when delimiter is defined but not valid nad 0 when no delimiter is defined
 int valid_delimiter(int args_count, char *arguments[])
 {
     if (args_count >= 2 && (compare_strings(arguments[1], "-d") && (args_count == 2 || (args_count > 2 && strlen(arguments[2]) == 0)))) {
@@ -154,6 +159,7 @@ bool line_is_too_long(char *row)
     return false;
 }
 
+// Function will check if columns are valid in row
 bool valid_column_indexes(long column1, long column2, char *row, const char delimiter)
 {
     int columns_count = count_delimiters(row, delimiter);
@@ -184,7 +190,7 @@ bool string_selection_commands(char *row, CommandData *command, char delimiter, 
     char *text_beginning = strstr(cell_start, command->text_value);
     if (text_beginning != NULL && cell_end >= (text_beginning + strlen(command->text_value)) &&  // found substr in range from cell begin to cell end
         ((cell_start == text_beginning && begins_with_function) ||                 // "beginswith" command
-         (cell_start <= text_beginning && !begins_with_function)))                   // "contains" command
+         (cell_start <= text_beginning && !begins_with_function)))                 // "contains" command
         return true;
     return false;
 }
@@ -199,6 +205,7 @@ void contains(char *row, CommandData *command, const char *delimiter, bool *can_
     *can_start = string_selection_commands(row, command, *delimiter, false);
 }
 
+// Function will call correct selection command function and that function will decide what to do.
 bool process_selection_commands(char *row, Command *commands, int commands_count, char delimiter, long row_index)
 {
     bool can_process = false;
@@ -209,7 +216,7 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
             command_processing_function(row_index, commands[command_index].data, &can_process);
         else
             command_processing_function(row, &commands[command_index].data, &delimiter, &can_process);    // beginswith and contains commands
-        if (can_process)
+        if (can_process)    // some selection commands said that we can process row, dont need to check another commands
             break;
     }
     return can_process;
@@ -227,6 +234,7 @@ int check_column_requirements(size_t column_size, int column_index, int column_c
     return EXIT_SUCCESS;
 }
 
+// Function will returns true if actual processed column is last one
 bool last_cell(char *cell_start, int cell_size)
 {
     char *cell_end = cell_start + cell_size;
@@ -236,6 +244,7 @@ bool last_cell(char *cell_start, int cell_size)
     return false;
 }
 
+// Function will check if row meets requirements and replaces delimiters to first one
 int parse_line(char *raw_line, char *delimiter, long row_index, int *columns_count)
 {
     char *cell_end = raw_line;
@@ -288,6 +297,7 @@ long get_valid_row_number(char *number, int allow_dash)
         return -1;
 }
 
+// Function returns index of wanted command from array.
 int get_command_definition(char *command_name, CommandDefinition *command_definitions)
 {
     for (int command_def_index = 0; command_def_index < COMMANDS_COUNT; command_def_index++) {
@@ -297,6 +307,7 @@ int get_command_definition(char *command_name, CommandDefinition *command_defini
     return -1;
 }
 
+// Function counts commands in wanted category (selection, table edit and data processing commands).
 int get_commands_count(char *arguments[], int args_count, CommandDefinition *definitions, int command_category)
 {
     int count = 0;
@@ -393,6 +404,7 @@ void arow(char *row, CommandData *command_data, long row_index, const char *deli
     irow(row, &data, row_index, delimiter);
 }
 
+// Function will call arow in same way as using it by user
 void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buffer, char delimitier)
 {
     for (int command = 0; command < edit_commands_count; command++)
@@ -400,7 +412,7 @@ void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buff
             arow(row_buffer, &edit_commands[command].data, LONG_MAX, &delimitier);
 }
 
-/* implementation od drow and drows commands */
+// Implementation od drow and drows commands
 void drow_s(char *row, CommandData *command_data, long row_index)
 {
     if ((row_index == command_data->start && command_data->end == -1) ||        // drow command
@@ -408,6 +420,7 @@ void drow_s(char *row, CommandData *command_data, long row_index)
         row[0] = '\0';
 }
 
+// Call processing commands function
 void process_commands(char *row, Command *edit_commands, int edit_commands_count, char delimiter, long row_index)
 {
     for (int command_index = 0; command_index < edit_commands_count; command_index++)
@@ -428,11 +441,11 @@ void process_commands(char *row, Command *edit_commands, int edit_commands_count
 
 long get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
-    //int number = -1;
     long column_number = get_valid_row_number(text_form, false);
     return column_number -1;
 }
 
+// Function will parse and set controling data for function (columns, rows, ...)
 int set_command_data(char **arguments, int command_index, CommandData *command_data, CommandDefinition *command_definition)
 {
     int arg_count = command_definition->arguments;
@@ -470,6 +483,7 @@ int set_command_data(char **arguments, int command_index, CommandData *command_d
     return EXIT_SUCCESS;
 }
 
+// Function will check, if there is not valid count of arguments
 int missing_command_arguments(int command_arguments, int args_count, int command_index)
 {
     if (command_arguments > (args_count - command_index - 1)) {   // -1 because of actual processing command
@@ -479,6 +493,7 @@ int missing_command_arguments(int command_arguments, int args_count, int command
     return EXIT_SUCCESS;
 }
 
+// Functions will get functions from arguments and save it for processing
 int get_commands(int args_count, char *arguments[], CommandDefinition *command_definitions, Command *commands, int processing_commands_category)
 {
     int edit_command_index = 0;
@@ -508,7 +523,8 @@ int get_commands(int args_count, char *arguments[], CommandDefinition *command_d
     return EXIT_SUCCESS;
 }
 
-/* common function for commands tolower and toupper, they are almost same */
+/* Common function for commands tolower and toupper, they are almost same.
+ * Parameter lower means that tolower() should be called instead of toupper() */
 void column_case(char *row, CommandData *commandData, const char *delimiter, bool lower)
 {
     char *start;
@@ -554,6 +570,7 @@ void swap(char *row, CommandData *command, const char *delimiter)
     char with_temp[with_size + 1];
     copy_to_array(with_temp, with, with_size);
 
+    /* Replace \n from last column to \0 to prevent split rows */
     if (what_temp[what_size - 1] == '\n')
         what_temp[what_size - 1] = '\0';
     if (with_temp[with_size - 1] == '\n')
@@ -586,6 +603,7 @@ void move(char *row, CommandData *command, const char *delimiter)
     function_caller(row, move_to, temp_cell, *delimiter, cset);
 }
 
+// Function will convert string number to float
 bool get_numeric_cell_value(char *column, float *value)
 {
     errno = 0;
@@ -597,6 +615,7 @@ bool get_numeric_cell_value(char *column, float *value)
     return true;
 }
 
+// Function will set float value to char array
 void set_numeric_value_to_cell(float value, long cell_index, const char *delimiter, char *row)
 {
     char *cell_to_set_start;
@@ -610,7 +629,8 @@ void set_numeric_value_to_cell(float value, long cell_index, const char *delimit
     function_caller(row, cell_index, result, *delimiter, cset);
 }
 
-/* Common function for csum, cavg, cmin, cmax functions. Function has parameter "what_to_do" which defines what to do with numbers */
+/* Common function for csum, cavg, cmin, cmax functions.
+ * Function has parameter "what_to_do" which defines what to do with numbers */
 void cx_commands(char *row, CommandData *command, const char *delimiter, int what_to_do)
 {
     float result = 0;
@@ -626,12 +646,12 @@ void cx_commands(char *row, CommandData *command, const char *delimiter, int wha
         copy_to_array(cell, column_start, column_length);
 
         bool valid_number = get_numeric_cell_value(cell, &number_to_add);
-        if (!valid_number)
+        if (!valid_number)  // if invalid number is in cell, skip it
             continue;
 
-        if (what_to_do <= 2)
+        if (what_to_do <= 2)        // csum
             result += number_to_add;
-        else if ((what_to_do == 3 && number_to_add < result) || (what_to_do == 4 && number_to_add > result))
+        else if ((what_to_do == 3 && number_to_add < result) || (what_to_do == 4 && number_to_add > result))    // another functions does smth with sum of cells
             result = number_to_add;
 
         valid_columns++;
@@ -670,7 +690,7 @@ void ccount(char *row, CommandData *command, const char *delimiter)
 
 void cseq(char *row, CommandData *command, const char *delimiter)
 {
-    int seq_start = (int)command->value + 1; // +1 because parsing decreased it by 1
+    int seq_start = (int)command->value + 1; // +1 because parsing decreased starting value by 1
     int starting_column = (int)command->start;
     for (int column = starting_column; column <= command->end; column++)
         set_numeric_value_to_cell((float)(seq_start+(column-starting_column)), column, delimiter, row); // add # of iteration to seq_start, to increase it
@@ -756,7 +776,7 @@ void get_all_command_definitions(CommandDefinition *commands)
             /* TABLE EDIT COMMANDS */
             {"irow",    1, TABLE_EDIT_COMMAND, irow},
             {"arow",    0, TABLE_EDIT_COMMAND, arow},
-            {"drow",    1, TABLE_EDIT_COMMAND, drow_s}, // osetrit pripad, ked nastavim csetom
+            {"drow",    1, TABLE_EDIT_COMMAND, drow_s},
             {"drows",   2, TABLE_EDIT_COMMAND, drow_s},
             {"icol",    1, TABLE_EDIT_COMMAND, icol},
             {"acol",    0, TABLE_EDIT_COMMAND, acol},
