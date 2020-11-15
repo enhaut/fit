@@ -100,6 +100,31 @@ char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // 
     return cell_delimiter;
 }
 
+/* function will set pointers cell_start and cell_end at N cell start and cell end in row array */
+int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
+{
+    int actual_column = 0;
+    int cell_length = -1;
+    int row_length = (int)strlen(row);
+    int cell_start_index = -1;
+
+    for (int position = 0; position < row_length; position++)
+    {
+        if ((!wanted_column || (wanted_column == (actual_column + 1) && row[position] == delimiter)) && cell_start_index == -1)
+            cell_start_index = position + (!wanted_column ? 0 : 1);     // that condition won't move cell_start_index at first (0.) column behind first character
+
+        if ((wanted_column == actual_column && row[position] == delimiter && cell_start_index > -1) || (row[position] == '\n')) {
+            cell_length = position - cell_start_index;
+            break;
+        }
+        if (row[position] == delimiter)
+            actual_column++;
+    }
+
+    *start = &row[cell_start_index];
+    return cell_length;
+}
+
 // return 1 when delimiter is valid; 2 when delimiter is defined but not valid nad 0 when no delimiter is defined
 int valid_delimiter(int args_count, char *arguments[])
 {
@@ -122,6 +147,59 @@ bool line_is_too_long(char *row)
         return true;
     }
     return false;
+}
+
+/* SELECTION COMMANDS - returns true in case, row could be processed */
+void rows(long row_index, CommandData command, bool *can_process)
+{
+    if ((command.start > -1 && row_index >= command.start &&        // starting row should be defined everywhere except "- -"
+         ((command.end > -1 && row_index <= command.end) ||      // end is defined
+          (command.text_value && compare_strings(command.text_value, "-")))) ||   // end is defined as end of table
+        // just last row to process:
+        (command.start == -1 && command.end == -1 &&
+         command.text_value && compare_strings(command.text_value, "-") &&
+         last_row()))
+        *can_process = true;
+}
+
+bool string_selection_commands(char *row, CommandData *command, char delimiter, bool begins_with_function)
+{
+    char *cell_start;
+    int cell_size = get_cell_borders(row, &cell_start, delimiter, (int)(command->start));
+    char *cell_end = cell_start + cell_size;
+
+    char *text_beginning = strstr(cell_start, command->text_value);
+    if (text_beginning != NULL && cell_end >= (text_beginning + strlen(command->text_value)) &&  // found substr in range from cell begin to cell end
+        ((cell_start == text_beginning && begins_with_function) ||                 // "beginswith" command
+         (cell_start < text_beginning && !begins_with_function)))                   // "contains" command
+        return true;
+    return false;
+}
+
+void beginswith(char *row, CommandData *command, const char *delimiter, bool *can_start)
+{
+    *can_start = string_selection_commands(row, command, *delimiter, true);
+}
+
+void contains(char *row, CommandData *command, const char *delimiter, bool *can_start)
+{
+    *can_start = string_selection_commands(row, command, *delimiter, false);
+}
+
+bool process_selection_commands(char *row, Command *commands, int commands_count, char delimiter, long row_index)
+{
+    bool can_process = false;
+    for (int command_index = 0; command_index < commands_count; command_index++)
+    {
+        function_ptr command_processing_function = commands[command_index].processing_function;
+        if (command_processing_function == rows)
+            command_processing_function(row_index, commands[command_index].data, &can_process);
+        else
+            command_processing_function(row, &commands[command_index].data, &delimiter, &can_process);    // beginswith and contains commands
+        if (can_process)
+            break;
+    }
+    return can_process;
 }
 
 int check_column_requirements(size_t column_size, int column_index, int column_count, long row_index)
@@ -210,31 +288,6 @@ int get_commands_count(char *arguments[], int args_count, CommandDefinition *def
             count++;
     }
     return count;
-}
-
-/* function will set pointers cell_start and cell_end at N cell start and cell end in row array */
-int get_cell_borders(char *row, char **start, char delimiter, int wanted_column)
-{
-    int actual_column = 0;
-    int cell_length = -1;
-    int row_length = (int)strlen(row);
-    int cell_start_index = -1;
-
-    for (int position = 0; position < row_length; position++)
-    {
-        if ((!wanted_column || (wanted_column == (actual_column + 1) && row[position] == delimiter)) && cell_start_index == -1)
-            cell_start_index = position + (!wanted_column ? 0 : 1);     // that condition won't move cell_start_index at first (0.) column behind first character
-
-        if ((wanted_column == actual_column && row[position] == delimiter && cell_start_index > -1) || (row[position] == '\n')) {
-            cell_length = position - cell_start_index;
-            break;
-        }
-        if (row[position] == delimiter)
-            actual_column++;
-    }
-
-    *start = &row[cell_start_index];
-    return cell_length;
 }
 
 void acol(char *row, CommandData *command_data, const char *delimiter)
@@ -618,59 +671,6 @@ void column_int(char *row, CommandData *command, const char *delimiter)
         return;
 
     memmove(decimal_dot, cell_end, strlen(cell_end) + 1);
-}
-
-/* SELECTION COMMANDS - returns true in case, row could be processed */
-void rows(long row_index, CommandData command, bool *can_process)
-{
-    if ((command.start > -1 && row_index >= command.start &&        // starting row should be defined everywhere except "- -"
-            ((command.end > -1 && row_index <= command.end) ||      // end is defined
-            (command.text_value && compare_strings(command.text_value, "-")))) ||   // end is defined as end of table
-        // just last row to process:
-        (command.start == -1 && command.end == -1 &&
-        command.text_value && compare_strings(command.text_value, "-") &&
-        last_row()))
-        *can_process = true;
-}
-
-bool string_selection_commands(char *row, CommandData *command, char delimiter, bool begins_with_function)
-{
-    char *cell_start;
-    int cell_size = get_cell_borders(row, &cell_start, delimiter, (int)(command->start));
-    char *cell_end = cell_start + cell_size;
-
-    char *text_beginning = strstr(cell_start, command->text_value);
-    if (text_beginning != NULL && cell_end >= (text_beginning + strlen(command->text_value)) &&  // found substr in range from cell begin to cell end
-        ((cell_start == text_beginning && begins_with_function) ||                 // "beginswith" command
-        (cell_start < text_beginning && !begins_with_function)))                   // "contains" command
-        return true;
-    return false;
-}
-
-void beginswith(char *row, CommandData *command, const char *delimiter, bool *can_start)
-{
-    *can_start = string_selection_commands(row, command, *delimiter, true);
-}
-
-void contains(char *row, CommandData *command, const char *delimiter, bool *can_start)
-{
-    *can_start = string_selection_commands(row, command, *delimiter, false);
-}
-
-bool process_selection_commands(char *row, Command *commands, int commands_count, char delimiter, long row_index)
-{
-    bool can_process = false;
-    for (int command_index = 0; command_index < commands_count; command_index++)
-    {
-        function_ptr command_processing_function = commands[command_index].processing_function;
-        if (command_processing_function == rows)
-            command_processing_function(row_index, commands[command_index].data, &can_process);
-        else
-            command_processing_function(row, &commands[command_index].data, &delimiter, &can_process);    // beginswith and contains commands
-        if (can_process)
-            break;
-    }
-    return can_process;
 }
 
 void add_missing_columns(char *row, char delimiter, CommandData *command)
