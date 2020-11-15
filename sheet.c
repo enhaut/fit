@@ -419,11 +419,10 @@ void irow(char *row, CommandData *command_data, long row_index, const char *deli
     printf("\n");
 }
 
-void arow(char *row, CommandData *command_data, long row_index, const char *delimiter)
+void arow(char *row, long row_index, const char *delimiter)
 {
     if (!last_row())
         return;
-    (void)command_data;
     CommandData data = {0};
     data.start = row_index;
     irow(row, &data, row_index, delimiter);
@@ -434,7 +433,7 @@ void arow_caller(int edit_commands_count, Command *edit_commands, char *row_buff
 {
     for (int command = 0; command < edit_commands_count; command++)
         if (edit_commands[command].processing_function == arow)
-            arow(row_buffer, &edit_commands[command].data, LONG_MAX, &delimitier);
+            arow(row_buffer, LONG_MAX, &delimitier);
 }
 
 // Implementation od drow and drows commands
@@ -774,7 +773,7 @@ void get_all_command_definitions(CommandDefinition *commands)
             {"dcol",    1, TABLE_EDIT_COMMAND, dcol},
             {"dcols",   2, TABLE_EDIT_COMMAND, dcols},
             /* DATA PROCESSING COMMANDS */
-            {"cset",    2, DATA_PROCESSING_COMMAND, cset},      // TODO: setting empty to end
+            {"cset",    2, DATA_PROCESSING_COMMAND, cset},
             {"tolower", 1, DATA_PROCESSING_COMMAND, column_tolower},
             {"toupper", 1, DATA_PROCESSING_COMMAND, column_toupper},
             {"round",   1, DATA_PROCESSING_COMMAND, column_round},
