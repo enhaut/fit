@@ -288,19 +288,6 @@ void icol(char *row, CommandData *command_data, const char *delimiter)
     *cell_start = *delimiter;
 }
 
-void cset(char *row, CommandData *command, const char *delimiter)
-{
-    char *actual_column;
-    int actual_column_length = get_cell_borders(row, &actual_column, *delimiter, (int)command->start);
-
-    int new_value_length = (int)strlen(command->text_value);
-    int offset = new_value_length - actual_column_length;   // calculate direction and offset of move
-    char *actual_column_end = actual_column + actual_column_length;
-
-    memmove(actual_column_end + offset, actual_column_end, strlen(actual_column) + 1);  // +1 for copy ending 0
-    strncpy(actual_column, command->text_value, new_value_length);   // command->text value contains \0, so its necessary to copy characters until \0
-}
-
 int get_valid_column_number(char *text_form)    // will return -1 for invalid col num
 {
     int number = -1;
@@ -320,7 +307,7 @@ void set_command_data(char **arguments, int command_index, CommandData *command_
         start = get_valid_column_number(arguments[command_index + 1]);
     if (arg_count >= 2)
         end = get_valid_column_number(arguments[command_index + 2]);
-    if ((command_definition->processing_function == cset || (end < 0 && arg_count == 2)) && strlen(arguments[command_index + 2]) < CELL_SIZE)
+    if (end < 0 && arg_count == 2 && strlen(arguments[command_index + 2]) < CELL_SIZE)
         text_value = arguments[command_index + 2];  // at this place, will be saved text value
 
     if (arg_count >= 3)
