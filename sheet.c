@@ -53,6 +53,33 @@ bool compare_strings(char *first, char *second)
     return strcmp(first, second) == 0 ? true : false;
 }
 
+int count_delimiters(char *row, char delimiter)
+{
+    int delims = 0;
+    int row_length = (int)strlen(row);
+    for (int position = 0; position < row_length; position++)
+        if (row[position] == delimiter)
+            delims++;
+
+    return delims;
+}
+
+bool last_row()
+{
+    int next_character = getc(stdin);
+    if (next_character == EOF)
+        return true;
+    else
+        ungetc(next_character, stdin);  // returns loaded character back to stdin
+    return false;
+}
+
+void copy_to_array(char *dest, char *source, int how_many_characters)
+{
+    strncpy(dest, source, how_many_characters);
+    dest[how_many_characters] = 0;
+}
+
 char get_cells_delimiter(char *row, char *delimiters, int remaining_lenght)  // using delimiter_argument to check if not contains -d, in this case, delimiter is " "
 {
     char cell_delimiter = 0;
@@ -361,8 +388,7 @@ void copy(char *row, CommandData *command, const char *delimiter)
     char *copy_from;
     int cell_length = get_cell_borders(row, &copy_from, *delimiter, (int)(command->start));
     char to_copy[cell_length + 1];
-    to_copy[cell_length] = '\0';
-    strncpy(to_copy, copy_from, cell_length);
+    copy_to_array(to_copy, copy_from, cell_length);
 
     CommandData data = {0};
     data.text_value = to_copy;
@@ -379,12 +405,10 @@ void swap(char *row, CommandData *command, char *delimtier)
     int with_size = get_cell_borders(row, &with, *delimtier, (int)(command->end));
 
     char what_temp[what_size + 1];
-    strncpy(what_temp, what, what_size);
-    what_temp[what_size] = '\0';
+    copy_to_array(what_temp, what, what_size);
 
     char with_temp[with_size + 1];
-    strncpy(with_temp, with, with_size);
-    with_temp[with_size] = '\0';
+    copy_to_array(with_temp, with, with_size);
 
     if (what_temp[what_size - 1] == '\n')
         what_temp[what_size - 1] = '\0';
@@ -412,8 +436,7 @@ void move(char *row, CommandData *command, char *delimiter)
     int source_cell_length = get_cell_borders(row, &cell_source, *delimiter, (int)(command->start));
 
     char temp_cell[source_cell_length + 1]; // using temp cell because of moving columns when whole row is used
-    strncpy(temp_cell, cell_source, source_cell_length);
-    temp_cell[source_cell_length] = '\0';
+    copy_to_array(temp_cell, cell_source, source_cell_length);
 
     CommandData to_delete_col = {0};
     to_delete_col.start = command->start;
@@ -467,8 +490,7 @@ void cx_commands(char *row, CommandData *command, const char *delimiter, int wha
         char *column_start;
         int column_length = get_cell_borders(row, &column_start, *delimiter, column);
         char cell[column_length + 1];
-        strncpy(cell, column_start, column_length);
-        cell[column_length] = '\0';
+        copy_to_array(cell, column_start, column_length);
 
         bool valid_number = get_numeric_cell_value(cell, &number_to_add);
         if (!valid_number)
@@ -526,8 +548,7 @@ void column_round(char *row, CommandData *command, const char *delimiter)
     char *column;
     int cell_length = get_cell_borders(row, &column, *delimiter, (int)(command->start));
     char cell[cell_length + 1];
-    strncpy(cell, column, cell_length);
-    cell[cell_length] = 0;
+    copy_to_array(cell, column, cell_length);
 
     double to_round;
     char *remaining = NULL;
@@ -555,15 +576,6 @@ void column_int(char *row, CommandData *command, const char *delimiter)
 }
 
 /* SELECTION COMMANDS - returns true in case, row could be processed */
-bool last_row()
-{
-    int next_character = getc(stdin);
-    if (next_character == EOF)
-        return true;
-    else
-        ungetc(next_character, stdin);  // returns loaded character back to stdin
-    return false;
-}
 void rows(long row_index, CommandData command, bool *can_process)
 {
     if ((command.start > -1 && row_index >= command.start &&        // starting row should be defined everywhere except "- -"
@@ -616,17 +628,6 @@ bool process_selection_commands(char *row, Command *commands, int commands_count
     return can_process;
 }
 
-int count_delimiters(char *row, char delimiter)
-{
-    int delims = 0;
-    int row_length = (int)strlen(row);
-    for (int position = 0; position < row_length; position++)
-        if (row[position] == delimiter)
-            delims++;
-
-    return delims;
-}
-
 void add_missing_columns(char *row, char delimiter, CommandData *command)
 {
     size_t row_len = strlen(row) - 1;
@@ -668,7 +669,6 @@ void split(char *row, CommandData *command, const char *delimiter)
         command->end = new_table_columns_count;
     }
 }
-
 
 void get_all_command_definitions(CommandDefinition *commands)
 {
