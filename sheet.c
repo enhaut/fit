@@ -3,7 +3,7 @@
 /*                                                         */
 /*               Samuel Dobron - xdobro23                  */
 /*                                                         */
-/*  There is no segfaults, errors or unexpected behaviour, */
+/*  There are no segfaults, errors or unexpected behaviour, */
 /*               just dont try it. Please :(               */
 /*                                              15.11.2020 */
 /***********************************************************/
