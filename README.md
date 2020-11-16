@@ -66,3 +66,4 @@ Commands that selects range of rows to be processed.
     - How would you handle various count of cells in different rows? - I am just unifying count of cells in whole table to make table valid.
     
 ### Rating of my project 
+*will be updated*
