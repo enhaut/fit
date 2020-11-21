@@ -10,6 +10,8 @@
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
 
+typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
+
 bool string_compare(char *first, char *second)
 {
     return strcmp(first, second) == 0;
@@ -42,6 +44,37 @@ int defined_delimiter(int arg_count, char *arguments[])
     return 0;
 }
 
+int get_table_filename_index(int arg_count)
+{
+    return arg_count - 1;   // filename is always last argument
+}
+
+FILE *file_loader(char *filename, char *mode)
+{
+    FILE *opened_file = fopen(filename, mode);
+    if (!opened_file) {
+        print_error("Could not open file!");
+        return NULL;
+    }
+    return opened_file;
+}
+
+table_index get_table_file_rows(FILE *table_file)
+{
+    table_index rows = 0;
+    int loaded_character;
+    int character_before;
+
+    while ((loaded_character = getc(table_file)) != EOF)
+    {
+        if (loaded_character == '\n' &&
+            loaded_character != character_before)   // prevent counting empty lines
+            rows++;
+        character_before = loaded_character;
+    }
+    return rows;
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -57,6 +90,14 @@ int main(int arg_count, char *arguments[])
     if (is_defined_delimiter)
         delimiter = arguments[2];
 
+
+    FILE *table_file = file_loader(arguments[get_table_filename_index(arg_count)], "r");
+    if (!table_file)
+        return EXIT_FAILURE;
+
+    table_index rows = get_table_file_rows(table_file);
+
+    printf("%llu", rows);
     printf(".%s.", delimiter);
     return EXIT_SUCCESS;
 }
