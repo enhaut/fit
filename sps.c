@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define print_error(...) fprintf(stderr, __VA_ARGS__)
+#define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
 
 bool string_compare(char *first, char *second)
@@ -34,7 +34,7 @@ int defined_delimiter(int arg_count, char *arguments[])
                             (strchr(arguments[2], '"') || strchr(arguments[2], '\\')   // forbidden chars in delimiter
                             ))))
     {
-        print_error("Invalid delimiter!\n");
+        print_error("Invalid delimiter!");
         return -1;
     }else if (arg_count == 5 && is_set_d_argument)
         return 1;
