@@ -44,6 +44,13 @@ int defined_delimiter(int arg_count, char *arguments[])
     return 0;
 }
 
+bool is_character_delimiter(char *delimiters, int delimiter)
+{
+    if (strchr(delimiters, delimiter))
+        return true;
+    return false;
+}
+
 int get_table_filename_index(int arg_count)
 {
     return arg_count - 1;   // filename is always last argument
@@ -59,20 +66,38 @@ FILE *file_loader(char *filename, char *mode)
     return opened_file;
 }
 
-table_index get_table_file_rows(FILE *table_file)
+void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
 {
     table_index rows = 0;
+    table_index columns = 0;
+    table_index row_columns = 0;
     int loaded_character;
     int character_before;
+    bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
 
     while ((loaded_character = getc(table_file)) != EOF)
     {
-        if (loaded_character == '\n' &&
-            loaded_character != character_before)   // prevent counting empty lines
+        if (loaded_character == '\"') {
+            inside_quotation = inside_quotation ? false : true;
+            continue;
+        }
+
+        if (!inside_quotation && is_character_delimiter(delimiters, loaded_character))
+            row_columns++;
+
+        if (loaded_character == '\n' && loaded_character != character_before) {
+            //                             ^ -- prevent counting empty lines
             rows++;
+            if (row_columns > columns)
+                columns = row_columns;  // save the count of cells in the biggest row
+            row_columns = 0;            // new row reached, reset counter
+        }
         character_before = loaded_character;
     }
-    return rows;
+    size->rows = rows;  // TODO: counting rows in file with no empty line at the EOF
+    size->columns = rows ? columns + 1 : 0; // the counter counts delimiters only so +1 to add missing column
+
+    rewind(table_file); // back to the start of file
 }
 
 int main(int arg_count, char *arguments[])
@@ -95,9 +120,10 @@ int main(int arg_count, char *arguments[])
     if (!table_file)
         return EXIT_FAILURE;
 
-    table_index rows = get_table_file_rows(table_file);
+    TableSize size;
+    get_table_size(table_file, delimiter, &size);
 
-    printf("%llu", rows);
+    printf("%llu, %llu", size.columns, size.rows);
     printf(".%s.", delimiter);
     return EXIT_SUCCESS;
 }
