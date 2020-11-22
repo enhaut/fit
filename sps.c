@@ -9,6 +9,7 @@
 
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
+#define INITIAL_CELL_SIZE 50        // initial size of cells, it is dynamically allocated but there must be a starting point
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
@@ -142,6 +143,74 @@ Table * initialize_table(TableSize dimensions)
     return table;
 }
 
+int resize_cell_if_needed(table_index position, table_index *cell_size, char **cell)
+{
+    if (position < *cell_size)
+        return EXIT_SUCCESS;
+
+    (*cell_size) *= 2;
+    char *larger = (char *) realloc(*cell, sizeof(char) * (*cell_size) + 1);
+    if (!larger)
+    {
+        free (cell);
+        return EXIT_FAILURE;
+    }
+
+    *cell = larger;
+    return EXIT_SUCCESS;
+}
+
+char * load_table_cell(FILE *table_file, char *delimiters)
+{
+    table_index cell_length = INITIAL_CELL_SIZE;
+    char *cell = (char *) malloc(sizeof(char) * cell_length + 1);
+    if (!cell)
+        return NULL;
+    table_index position = 0;
+    bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
+    int loaded_character;
+
+    while ((loaded_character = getc(table_file)) != EOF)
+    {
+        if (loaded_character == '\"')
+            inside_quotation = inside_quotation ? false : true;
+
+        if ((!inside_quotation && is_character_delimiter(delimiters, loaded_character)) || loaded_character == '\n')
+            break;
+
+        if (resize_cell_if_needed(position, &cell_length, &cell))
+            return NULL;
+
+        cell[position] = (char) loaded_character;
+        position++;
+    }
+
+    char *reallocated_cell = (char *) realloc(cell, position + 1);  // resize array to allocate needed memory only, +1 for \0
+    if (reallocated_cell)   // in case, realloc fails, bigger cell (already allocated) will be used
+        cell = reallocated_cell;
+
+    cell[position] = '\0';
+    return cell;
+}
+
+int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
+{
+    for (table_index row = 0; row < size.rows; row++) {
+        for (table_index column = 0; column < size.columns; column++) {
+            char *cell = load_table_cell(table_file, delimiters);
+            if (!cell)
+            {
+                print_error("Could not allocate memory for table cells!");
+                return EXIT_FAILURE;
+            }
+            table->rows[row]->cells[column] = cell;
+        }
+    }
+
+    rewind(table_file); // back to the start of file
+    return EXIT_SUCCESS;
+}
+
 void destruct_table(Table *table, TableSize size)
 {
     for (table_index row_index = 0; row_index < size.rows; row_index++)
@@ -182,7 +251,9 @@ int main(int arg_count, char *arguments[])
     get_table_size(table_file, delimiter, &size);
 
     Table *table = initialize_table(size);
-
+    int load_result = load_table(table_file, table, delimiter, size);
+    if (load_result)
+        return EXIT_FAILURE;
 
     destruct_table(table, size);
     printf("Hotovo");
