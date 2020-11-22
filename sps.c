@@ -227,6 +227,17 @@ void destruct_table(Table *table, TableSize size)
     free(table);
 }
 
+void print_table(Table *table, TableSize size)
+{
+    for (table_index row = 0; row < size.rows; row++)
+    {
+        for (table_index column = 0; column < size.columns; column++) {
+            printf("%s ", table->rows[row]->cells[column]);
+        }
+        printf("\n");
+    }
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -254,6 +265,7 @@ int main(int arg_count, char *arguments[])
     int load_result = load_table(table_file, table, delimiter, size);
     if (load_result)
         return EXIT_FAILURE;
+    print_table(table, size);
 
     destruct_table(table, size);
     printf("Hotovo");
