@@ -19,17 +19,10 @@ typedef struct {
 }TableSize;
 
 typedef struct {
-    char *cell_start;
-    size_t cell_length;
-}TableCell;
-
-typedef struct {
-    table_index columns;
     char **cells;
 }TableRow;
 
 typedef struct {
-    table_index rows_count;
     TableRow **rows;
 }Table;
 
