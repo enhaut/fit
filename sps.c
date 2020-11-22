@@ -133,8 +133,8 @@ Table * initialize_table(TableSize dimensions)
     {
         TableRow *row = (TableRow *)malloc(sizeof(TableRow));
         char **row_cells = (char **)malloc(sizeof(char *) * dimensions.columns);
-            for (table_index cell_index = 0; cell_index < dimensions.columns; cell_index++)
-                row_cells[cell_index] = NULL;
+        for (table_index cell_index = 0; cell_index < dimensions.columns; cell_index++)
+             row_cells[cell_index] = NULL;
 
         row->cells = row_cells;
         rows[row_index] = row;
