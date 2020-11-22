@@ -115,24 +115,41 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
-Table * initialize_table(TableSize dimensions)
+Table * initialize_table(TableSize dimensions, int *result)
 {
-    // TODO: checking malloc result
     Table *table = (Table *)malloc(sizeof(Table));
+    if (!table) {
+        *result = EXIT_FAILURE;
+        return table;
+    }
 
     TableRow  **rows = (TableRow **)malloc(sizeof(TableRow *) * dimensions.rows);
+    table->rows = rows;
+    if (!rows) {
+        *result = EXIT_FAILURE;
+        return table;
+    }
 
     for (table_index row_index = 0; row_index < dimensions.rows; row_index++)
     {
         TableRow *row = (TableRow *)malloc(sizeof(TableRow));
-        char **row_cells = (char **)malloc(sizeof(char *) * dimensions.columns);
+        rows[row_index] = row;
+        if (!row) {
+            *result = EXIT_FAILURE;
+            return table;
+        }
+        row->cells = NULL;
+
+        char **row_cells = (char **)malloc(sizeof(char *) * dimensions.columns);    // TODO: valg hlasi nealokovanu pamat ak ten malloc failne
+        row->cells = row_cells;
+        if (!row_cells) {
+            *result = EXIT_FAILURE;
+            return table;
+        }
+
         for (table_index cell_index = 0; cell_index < dimensions.columns; cell_index++)
              row_cells[cell_index] = NULL;
-
-        row->cells = row_cells;
-        rows[row_index] = row;
     }
-    table->rows = rows;
     return table;
 }
 
@@ -144,10 +161,7 @@ int resize_cell_if_needed(table_index position, table_index *cell_size, char **c
     (*cell_size) *= 2;
     char *larger = (char *) realloc(*cell, sizeof(char) * (*cell_size) + 1);
     if (!larger)
-    {
-        free (cell);
         return EXIT_FAILURE;
-    }
 
     *cell = larger;
     return EXIT_SUCCESS;
@@ -171,8 +185,10 @@ char * load_table_cell(FILE *table_file, char *delimiters)
         if ((!inside_quotation && is_character_delimiter(delimiters, loaded_character)) || loaded_character == '\n')
             break;
 
-        if (resize_cell_if_needed(position, &cell_length, &cell))
+        if (resize_cell_if_needed(position, &cell_length, &cell)) {
+            free(cell);
             return NULL;
+        }
 
         cell[position] = (char) loaded_character;
         position++;
@@ -206,18 +222,32 @@ int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
 
 void destruct_table(Table *table, TableSize size)
 {
+    if (!table)         // allocation of table failed, so nothing remaining to free
+        return;
+    if (!table->rows)   // allocation of rows array failed, there is just table to free
+    {
+        free(table);
+        return;
+    }
+
     for (table_index row_index = 0; row_index < size.rows; row_index++)
     {
-        for (table_index cell_index = 0; cell_index < size.columns; cell_index++)
+        if (!table->rows[row_index])    // in case, allocation of row failed, there are no cells
+            break;
+
+        if (table->rows[row_index]->cells)  // deallocating allocated cells only
         {
-            if (table->rows[row_index]->cells[cell_index] != NULL)
-                free(table->rows[row_index]->cells[cell_index]);
+            for (table_index cell_index = 0; cell_index < size.columns; cell_index++)
+            {
+                if (table->rows[row_index]->cells[cell_index])
+                    free(table->rows[row_index]->cells[cell_index]);
+            }
+            free(table->rows[row_index]->cells);
         }
-        free(table->rows[row_index]->cells);
-        free(table->rows[row_index]);
+        free(table->rows[row_index]);   // deallocate row
     }
-    free(table->rows);  // remove rows storing array
-    free(table);
+    free(table->rows);  // deallocate rows storing array
+    free(table);        // deallocate empty table
 }
 
 void print_table(Table *table, TableSize size)
@@ -254,14 +284,17 @@ int main(int arg_count, char *arguments[])
     TableSize size;
     get_table_size(table_file, delimiter, &size);
 
-    Table *table = initialize_table(size);
-    int load_result = load_table(table_file, table, delimiter, size);
-    if (load_result)
-        return EXIT_FAILURE;
-    print_table(table, size);
+    int successful_initialization = EXIT_SUCCESS;
+    Table *table = initialize_table(size, &successful_initialization);
+
+    if (!successful_initialization)
+    {
+        int successfully_loaded = load_table(table_file, table, delimiter, size);
+        if (!successfully_loaded)
+            print_table(table, size);
+    }
 
     destruct_table(table, size);
-    printf("Hotovo");
     fclose(table_file);
     return EXIT_SUCCESS;
 }
