@@ -12,6 +12,27 @@
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
+typedef struct {
+    table_index rows;
+    table_index columns;
+}TableSize;
+
+typedef struct {
+    char *cell_start;
+    size_t cell_length;
+}TableCell;
+
+typedef struct {
+    table_index columns;
+    char **cells;
+}TableRow;
+
+typedef struct {
+    table_index rows_count;
+    TableRow **rows;
+}Table;
+
+
 bool string_compare(char *first, char *second)
 {
     return strcmp(first, second) == 0;
@@ -100,6 +121,43 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
+Table * initialize_table(TableSize dimensions)
+{
+    // TODO: checking malloc result
+    Table *table = (Table *)malloc(sizeof(Table));
+
+    TableRow  **rows = (TableRow **)malloc(sizeof(TableRow *) * dimensions.rows);
+
+    for (table_index row_index = 0; row_index < dimensions.rows; row_index++)
+    {
+        TableRow *row = (TableRow *)malloc(sizeof(TableRow));
+        char **row_cells = (char **)malloc(sizeof(char *) * dimensions.columns);
+            for (table_index cell_index = 0; cell_index < dimensions.columns; cell_index++)
+                row_cells[cell_index] = NULL;
+
+        row->cells = row_cells;
+        rows[row_index] = row;
+    }
+    table->rows = rows;
+    return table;
+}
+
+void destruct_table(Table *table, TableSize size)
+{
+    for (table_index row_index = 0; row_index < size.rows; row_index++)
+    {
+        for (table_index cell_index = 0; cell_index < size.columns; cell_index++)
+        {
+            if (table->rows[row_index]->cells[cell_index] != NULL)
+                free(table->rows[row_index]->cells[cell_index]);
+        }
+        free(table->rows[row_index]->cells);
+        free(table->rows[row_index]);
+    }
+    free(table->rows);  // remove rows storing array
+    free(table);
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -123,7 +181,11 @@ int main(int arg_count, char *arguments[])
     TableSize size;
     get_table_size(table_file, delimiter, &size);
 
-    printf("%llu, %llu", size.columns, size.rows);
-    printf(".%s.", delimiter);
+    Table *table = initialize_table(size);
+
+
+    destruct_table(table, size);
+    printf("Hotovo");
+    fclose(table_file);
     return EXIT_SUCCESS;
 }
