@@ -359,7 +359,7 @@ int main(int arg_count, char *arguments[])
         delimiter = arguments[2];
 
 
-    FILE *table_file = file_loader(arguments[get_table_filename_index(arg_count)], "r");
+    FILE *table_file = file_loader(arguments[get_table_filename_index(arg_count)], "r+");
     if (!table_file)
         return EXIT_FAILURE;
 
