@@ -11,6 +11,8 @@
 #define MINIMAL_ARGUMENTS_COUNT 3
 #define INITIAL_CELL_SIZE 50        // initial size of cells, it is dynamically allocated but there must be a starting point
 
+#define MAXIMUM_COMMANDS_COUNT 1000
+
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
 typedef struct {
@@ -50,6 +52,26 @@ FILE *file_loader(char *filename, char *mode)
     return opened_file;
 }
 
+long get_file_size(FILE *file)
+{
+    fseek(file, 0, SEEK_END);   // seek to end of file
+    long size = ftell(file);        // save last position
+    rewind(file);                   // go back to the file beginning
+    return size;
+}
+
+void copy_file_to_array(FILE *source, char *destination)
+{
+    int loaded_character;
+    long position = 0;
+    while ((loaded_character = getc(source)) != EOF)
+    {
+        destination[position] = (char) loaded_character;
+        position++;
+    }
+    destination[position] = '\0';
+}
+
 // Returns -1 for invalid delimiter -> exit, 0 for no delimiter defined, 1 for defined delimiter
 int defined_delimiter(int arg_count, char *arguments[])
 {
@@ -67,6 +89,63 @@ int defined_delimiter(int arg_count, char *arguments[])
         return 1;
 
     return 0;
+}
+
+unsigned short count_commands(char *commands, char commands_delimiter)
+{
+    int count = 0;
+    size_t commands_length = strlen(commands);
+    bool inside_quotation = false;
+    for (size_t position = 0; position < commands_length; position++)
+    {
+        char loaded_character = commands[position];
+        if (loaded_character == '\"')
+            inside_quotation = inside_quotation ? false : true;
+
+        if (!inside_quotation && loaded_character == commands_delimiter)
+            count++;
+
+        if (count == MAXIMUM_COMMANDS_COUNT + 1)    // dont need to count commands anymore, limit has been just reached
+            return MAXIMUM_COMMANDS_COUNT + 1;
+    }
+    /*it s counting from 0, so we have to add 1, but only in case there are commands defined and
+     * delimiter is not \n because it would count last empty line*/
+    if (commands_length && commands_delimiter != '\n')
+        count++;
+    return count;
+}
+
+int valid_commands_argument(int arg_count, char *arguments[])
+{
+    int commands_argument_index = arg_count - 2;    // commands argument have to be 2. from the end
+    char *commands_arguments = arguments[commands_argument_index];
+
+    unsigned short commands_count;
+
+    if (strstr(commands_arguments, "-c") == commands_arguments)     // -c have to be at beginning of argument
+    {
+        char *file_name = commands_arguments + 2;   // move pointer behind -c in argument
+        FILE *commands_file = file_loader(file_name, "r");
+        if (!commands_file)
+            return EXIT_FAILURE;
+
+        long file_size = get_file_size(commands_file);
+        char file_content[file_size + 1];   // +1 for \0
+        copy_file_to_array(commands_file, file_content);
+        fclose(commands_file);
+        commands_count = count_commands(file_content, '\n');
+    }else
+        commands_count = count_commands(commands_arguments, ';');
+
+    printf("\n\n\n%d\n\n\n", commands_count);
+
+    if (!commands_count || commands_count > MAXIMUM_COMMANDS_COUNT)
+    {
+        print_error("Invalid commands!");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 bool is_character_delimiter(char *delimiters, int delimiter)
@@ -264,6 +343,9 @@ void print_table(Table *table, TableSize size)
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
+        return EXIT_FAILURE;
+
+    if (valid_commands_argument(arg_count, arguments))
         return EXIT_FAILURE;
 
     int is_defined_delimiter = defined_delimiter(arg_count, arguments);
