@@ -40,6 +40,16 @@ bool provided_minimal_amount_of_arguments(int arg_count)
     return true;
 }
 
+FILE *file_loader(char *filename, char *mode)
+{
+    FILE *opened_file = fopen(filename, mode);
+    if (!opened_file) {
+        print_error("Could not open file!");
+        return NULL;
+    }
+    return opened_file;
+}
+
 // Returns -1 for invalid delimiter -> exit, 0 for no delimiter defined, 1 for defined delimiter
 int defined_delimiter(int arg_count, char *arguments[])
 {
@@ -69,16 +79,6 @@ bool is_character_delimiter(char *delimiters, int delimiter)
 int get_table_filename_index(int arg_count)
 {
     return arg_count - 1;   // filename is always last argument
-}
-
-FILE *file_loader(char *filename, char *mode)
-{
-    FILE *opened_file = fopen(filename, mode);
-    if (!opened_file) {
-        print_error("Could not open file!");
-        return NULL;
-    }
-    return opened_file;
 }
 
 void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
