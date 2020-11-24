@@ -329,6 +329,32 @@ void destruct_table(Table *table, TableSize size)
     free(table);        // deallocate empty table
 }
 
+/* Function will return size of savable table. That will remove empty columns at the end of table. */
+TableSize get_savable_table_size(Table *table, TableSize size)
+{
+    TableSize savable_size;
+    savable_size.columns = size.columns;
+    savable_size.rows = size.rows;
+
+    for (table_index column = size.columns - 1; column; column--)
+    {
+        bool can_skip = true;
+        for (table_index row = 0; row < size.rows; row++)
+        {
+            if (table->rows[row]->cells[column] && strlen(table->rows[row]->cells[column]))
+            {
+                can_skip = false;
+                break;
+            }
+        }
+        if (can_skip)
+            savable_size.columns--;
+        else
+            break;  // if the actual column is not removable, columns before could not be removed too
+    }
+    return savable_size;
+}
+
 void print_table(Table *table, TableSize size)
 {
     for (table_index row = 0; row < size.rows; row++)
