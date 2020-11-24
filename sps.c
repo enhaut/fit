@@ -357,10 +357,13 @@ TableSize get_savable_table_size(Table *table, TableSize size)
 
 void print_table(Table *table, TableSize size)
 {
+    size = get_savable_table_size(table, size);
     for (table_index row = 0; row < size.rows; row++)
     {
         for (table_index column = 0; column < size.columns; column++) {
-            printf("%s ", table->rows[row]->cells[column]);
+            printf("%s", table->rows[row]->cells[column]);
+            if (column < (size.columns - 1))
+                printf(",");
         }
         printf("\n");
     }
