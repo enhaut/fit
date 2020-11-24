@@ -369,6 +369,22 @@ void print_table(Table *table, TableSize size)
     }
 }
 
+void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
+{
+    size = get_savable_table_size(table, size);
+
+    for (table_index row = 0; row < size.rows; row++)
+    {
+        for (table_index column = 0; column < size.columns; column++)
+        {
+            fprintf(table_file, "%s", table->rows[row]->cells[column]);
+            if (column < (size.columns - 1))    // write delimiter behind not last columns
+                fprintf(table_file, "%c", delimiter);
+        }
+        fputc('\n', table_file);
+    }
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -402,7 +418,10 @@ int main(int arg_count, char *arguments[])
     {
         int successfully_loaded = load_table(table_file, table, delimiter, size);
         if (!successfully_loaded)
+        {
             print_table(table, size);
+            save_table(table, table_file, size, delimiter[0]);
+        }
     }
 
     destruct_table(table, size);
