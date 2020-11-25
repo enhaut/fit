@@ -137,7 +137,6 @@ int valid_commands_argument(int arg_count, char *arguments[])
     }else
         commands_count = count_commands(commands_arguments, ';');
 
-    printf("\n\n\n%d\n\n\n", commands_count);
 
     if (!commands_count || commands_count > MAXIMUM_COMMANDS_COUNT)
     {
