@@ -282,23 +282,60 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
         position++;
     }
 
+    if (loaded_character == '\n')
+        *last_cell = true;
+
     dealloc_unused_cell_part(&cell, position);
     cell[position] = '\0';
 
     return cell;
 }
 
+char * get_empty_cell()
+{
+    char *cell = (char *) malloc(sizeof(bool));     // allocating bool size to save memory
+    if (!cell)
+        return NULL;
+
+    cell[0] = '\0';
+    return cell;
+}
+
+int fill_with_empty_cells(Table *table, TableSize size, table_index row, table_index column)
+{
+    for (table_index column_to_add = column + 1; column_to_add < size.columns; column_to_add++)
+    {
+        char *empty_cell = get_empty_cell();
+        if (!empty_cell)
+        {
+            print_error("Could not allocate memory for table cells!");
+            return EXIT_FAILURE;
+        }
+        table->rows[row]->cells[column_to_add] = empty_cell;
+    }
+    return EXIT_SUCCESS;
+}
+
 int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
 {
     for (table_index row = 0; row < size.rows; row++) {
-        for (table_index column = 0; column < size.columns; column++) {
-            char *cell = load_table_cell(table_file, delimiters);
+        bool last_cell = false;
+        for (table_index column = 0; column < size.columns; column++)
+        {
+            char *cell = load_table_cell(table_file, delimiters, &last_cell);
             if (!cell)
             {
                 print_error("Could not allocate memory for table cells!");
                 return EXIT_FAILURE;
             }
             table->rows[row]->cells[column] = cell;
+
+            if (last_cell)
+            {
+                if (fill_with_empty_cells(table, size, row, column))
+                    return EXIT_FAILURE;
+                break;
+            }
         }
     }
 
