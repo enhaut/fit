@@ -264,13 +264,14 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
     int loaded_character;
+    int character_before;
 
     while ((loaded_character = getc(table_file)) != EOF)
     {
-        if (loaded_character == '\"')
+        if (loaded_character == '\"' && character_before != '\\')
             inside_quotation = inside_quotation ? false : true;
 
-        if ((!inside_quotation && is_character_delimiter(delimiters, loaded_character)) || loaded_character == '\n')
+        if ((!inside_quotation && character_before != '\\' && is_character_delimiter(delimiters, loaded_character)) || loaded_character == '\n')
             break;
 
         if (resize_cell_if_needed(position, &cell_length, &cell)) {
@@ -280,6 +281,7 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
 
         cell[position] = (char) loaded_character;
         position++;
+        character_before = loaded_character;
     }
 
     if (loaded_character == '\n')
