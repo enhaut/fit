@@ -10,6 +10,7 @@
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
 #define INITIAL_CELL_SIZE 50        // initial size of cells, it is dynamically allocated but there must be a starting point
+#define CELL_SIZE_MULTIPLIER 2
 
 #define MAXIMUM_COMMANDS_COUNT 1000
 
@@ -231,12 +232,13 @@ Table * initialize_table(TableSize dimensions, int *result)
     return table;
 }
 
+// Function will resize (* CELL_SIZE_MULTIPLIER) cell array to make space for new characters
 int resize_cell_if_needed(table_index position, table_index *cell_size, char **cell)
 {
     if (position < *cell_size)
         return EXIT_SUCCESS;
 
-    (*cell_size) *= 2;
+    (*cell_size) *= CELL_SIZE_MULTIPLIER;
     char *larger = (char *) realloc(*cell, sizeof(char) * (*cell_size) + 1);
     if (!larger)
         return EXIT_FAILURE;
