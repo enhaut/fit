@@ -415,6 +415,7 @@ void print_table(Table *table, TableSize size)
 
 void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
 {
+    freopen(NULL, "w", table_file);     // file is opened in r mode, so reopen it to rewrite content
     size = get_savable_table_size(table, size);
 
     for (table_index row = 0; row < size.rows; row++)
@@ -423,7 +424,7 @@ void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
         {
             fprintf(table_file, "%s", table->rows[row]->cells[column]);
             if (column < (size.columns - 1))    // write delimiter behind not last columns
-                fprintf(table_file, "%c", delimiter);
+                fputc(delimiter, table_file);
         }
         fputc('\n', table_file);
     }
