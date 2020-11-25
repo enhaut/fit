@@ -13,6 +13,7 @@
 #define CELL_SIZE_MULTIPLIER 2
 
 #define MAXIMUM_COMMANDS_COUNT 1000
+#define MAXIMUM_COMMAND_LENGTH 1000
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
@@ -432,6 +433,69 @@ void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
     }
 }
 
+char *get_command_from_argument(char **cell_start, bool first_command, unsigned short *command_length)
+{
+    char *command_end = *cell_start;
+    size_t remaining_commands_size = strlen(*cell_start);
+    bool inside_quotation = false;
+    if (!remaining_commands_size)
+        return NULL;
+    if (command_end[0] == ';' || command_end[0] == '\n')
+        command_end++;
+
+    for (unsigned int position = 0; position < remaining_commands_size; position++)
+    {
+        if ((*cell_start)[position] == '\"' && ((!first_command || position) && (*cell_start)[position - 1] != '\\'))
+            inside_quotation = inside_quotation ? false : true;
+
+        if ((!inside_quotation && (*cell_start)[position] == ';') || (*cell_start)[position] == '\n')
+            break;
+
+        command_end++;  // moving command end to last character of command
+        (*command_length)++;
+
+        if (*command_length > MAXIMUM_COMMAND_LENGTH)
+            break;
+    }
+    return command_end;
+}
+
+void initialize_selector(CellsSelector *selector, TableSize size)
+{
+    selector->starting_row = 0;
+    selector->starting_cell = 0;
+
+    selector->ending_row = size.rows - 1;       // -1 because size is indexed from 1
+    selector->ending_cell = size.columns - 1;
+}
+
+int process_commands(Table *table, TableSize size, int arg_count, char **arguments)
+{
+    (void)table;
+    (void)size;
+
+    char *command_start = arguments[arg_count - 2];
+    char *command_end = command_start;
+    CellsSelector selected;
+    initialize_selector(&selected, size);
+
+    bool first_command = true;
+    unsigned short command_length = 0;
+
+    while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
+    {
+        if (command_length > MAXIMUM_COMMAND_LENGTH)
+        {
+            print_error("Maximum command size reached!");
+            return EXIT_FAILURE;
+        }
+
+        first_command = false;
+        command_start = command_end;
+    }
+    return EXIT_SUCCESS;
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -467,6 +531,7 @@ int main(int arg_count, char *arguments[])
         if (!successfully_loaded)
         {
             print_table(table, size);
+            process_commands(table, size, arg_count, arguments);
             save_table(table, table_file, size, delimiter[0]);
         }
     }
