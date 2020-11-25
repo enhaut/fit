@@ -250,7 +250,7 @@ int resize_cell_if_needed(table_index position, table_index *cell_size, char **c
 // Function will realloc cell array to used bytes to save memory.
 void dealloc_unused_cell_part(char **cell, table_index size)
 {
-    char *reallocated_cell = (char *) realloc(cell, size + 1);  // resize array to allocate needed memory only, +1 for \0
+    char *reallocated_cell = (char *) realloc(*cell, size + 1);  // resize array to allocate needed memory only, +1 for \0
     if (reallocated_cell)   // in case, realloc fails, bigger cell (already allocated) will be used
         *cell = reallocated_cell;
 }
