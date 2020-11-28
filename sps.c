@@ -621,7 +621,7 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
 
         char *raw_selector = selector_value;
         char *remaining = NULL;
-        table_index value = 0;
+        table_index value;
         value = strtoull(selector_value, &remaining, 10);
 
         selector_value = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
