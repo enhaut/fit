@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
@@ -51,6 +52,19 @@ void copy_to_array(char *destination, char *source, size_t how_much)
     strncpy(destination, source, how_much);
     destination[how_much] = '\0';
 }
+
+// Function will convert string number to float
+bool get_numeric_cell_value(char *column, float *value)
+{
+    errno = 0;
+    char *result;
+    *value = strtof(column, &result);
+
+    if (errno != 0 || (result != NULL && result[0] != '\0'))
+        return false;
+    return true;
+}
+
 
 bool provided_minimal_amount_of_arguments(int arg_count)
 {
