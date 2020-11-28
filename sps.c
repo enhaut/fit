@@ -660,7 +660,7 @@ unsigned short process_selector(CellsSelector *selector, char *command, Table *t
     return result;
 }
 
-int process_commands(Table *table, TableSize size, int arg_count, char **arguments)
+int parse_commands(Table *table, TableSize size, int arg_count, char **arguments)
 {
     char *command_start = arguments[arg_count - 2];
     char *command_end = command_start;
@@ -729,7 +729,7 @@ int main(int arg_count, char *arguments[])
         if (!successfully_loaded)
         {
             print_table(table, size);
-            process_commands(table, size, arg_count, arguments);
+            parse_commands(table, size, arg_count, arguments);
             save_table(table, table_file, size, delimiter[0]);
         }
     }
