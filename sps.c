@@ -471,7 +471,10 @@ char *get_command_from_argument(char **cell_start, bool first_command, unsigned 
         (*command_length)++;
 
         if (*command_length > MAXIMUM_COMMAND_LENGTH)
+        {
+            print_error("Selector is too long!");
             break;
+        }
     }
     return command_end;
 }
@@ -562,10 +565,7 @@ int process_commands(Table *table, TableSize size, int arg_count, char **argumen
     while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
     {
         if (command_length > MAXIMUM_COMMAND_LENGTH)
-        {
-            print_error("Maximum command size reached!");
             return EXIT_FAILURE;
-        }
 
         char command[command_length + 1];
         copy_to_array(command, command_start, command_length);
