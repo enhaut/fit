@@ -496,6 +496,9 @@ int process_commands(Table *table, TableSize size, int arg_count, char **argumen
             return EXIT_FAILURE;
         }
 
+        char command[command_length + 1];
+        copy_to_array(command, command_start, command_length);
+
         first_command = false;
         command_start = command_end;
         command_length = 0;
