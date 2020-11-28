@@ -498,6 +498,7 @@ int process_commands(Table *table, TableSize size, int arg_count, char **argumen
 
         first_command = false;
         command_start = command_end;
+        command_length = 0;
     }
     return EXIT_SUCCESS;
 }
