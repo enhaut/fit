@@ -502,6 +502,14 @@ void initialize_selector(CellsSelector *selector, TableSize size)
     selector->ending_cell = size.columns;
 }
 
+void set_cell_directions(CellsSelector *selector, table_index row, table_index column)
+{
+    selector->starting_row = row;
+    selector->starting_cell = column;
+    selector->ending_row = row;
+    selector->ending_cell = column;
+}
+
 table_index * get_selector_from_index(unsigned short index, CellsSelector *selector)
 {
     table_index *save_to = &selector->starting_row;
