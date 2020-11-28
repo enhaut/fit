@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
+#include <float.h>
 
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
 #define MINIMAL_ARGUMENTS_COUNT 3
@@ -510,6 +511,87 @@ void set_cell_directions(CellsSelector *selector, table_index row, table_index c
     selector->ending_cell = column;
 }
 
+unsigned short process_min_max_selectors(CellsSelector *selector, bool min, Table *table)
+{
+    CellsSelector selected = {0};
+    bool found = false;
+    float selected_value = min ? FLT_MAX : FLT_MIN;
+
+    for (table_index row = selector->starting_row; row < selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column < selector->ending_cell; column++)
+        {
+            float cell_value;
+            bool converted = get_numeric_cell_value(table->rows[row]->cells[column], &cell_value);
+            if (!converted)
+                continue;
+
+            if ((min && cell_value < selected_value) || (!min && cell_value > selected_value))
+            {
+                set_cell_directions(&selected, row, column);
+                selected_value = cell_value;
+                found = true;
+            }
+        }
+
+    if (found)
+        set_cell_directions(selector, selected.starting_row, selected.starting_cell);
+
+    return found ? 4 : 0;
+}
+
+unsigned short process_find_selector(CellsSelector *selector, const char *command, Table *table)
+{
+    char *selector_ending = strchr(command, ']');
+    unsigned short selector_length = selector_ending - command + 1;     // +1 because selector ending is not included
+    if (!selector_ending || (selector_length - 6) <= 1)                 // selector length could not be 1, it s starting at 1
+    {
+        print_error("Invalid selecor!");
+        return EXIT_FAILURE;
+    }
+
+    *selector_ending = '\0';    // marking selector ending as end of command, it will be used for searching in cells
+    command += 6;               // string starts at 6. position
+    bool found = false;
+
+    for (table_index row = selector->starting_row; row < selector->ending_row && !found; row++)
+        for (table_index column = selector->starting_cell; column < selector->ending_cell; column++)
+        {
+            char *contains = strstr(table->rows[row]->cells[column], command);
+            if (contains)
+            {
+                set_cell_directions(selector, row, column);
+                found = true;
+                break;
+            }
+        }
+    return selector_length;
+}
+
+unsigned short process_temporary_selector(CellsSelector *selector, CellsSelector *temporary_selector)
+{
+    selector->starting_row  = temporary_selector->starting_row;
+    selector->starting_cell = temporary_selector->starting_cell;
+    selector->ending_row    = temporary_selector->ending_row;
+    selector->ending_cell   = temporary_selector->ending_cell;
+
+    return EXIT_SUCCESS;
+}
+
+// Function process special selectors ([min], [max], [find STR], [_])
+unsigned short process_special_selectors(CellsSelector *selector, const char *command, Table *table, CellsSelector *temporary_selector)
+{
+    if (strstr(command, "[min]") == command)
+        return process_min_max_selectors(selector, true, table);
+    else if (strstr(command, "[max]") == command)
+        return process_min_max_selectors(selector, false, table);
+    else if (strstr(command, "[find") == command)
+        return process_find_selector(selector, command, table);
+    else if (strstr(command, "[_]") == command)
+        return process_temporary_selector(selector, temporary_selector);
+
+    return EXIT_SUCCESS;
+}
+
 table_index * get_selector_from_index(unsigned short index, CellsSelector *selector)
 {
     table_index *save_to = &selector->starting_row;
@@ -557,29 +639,35 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
 }
 
 // Function returns selector length. Minimal length of selector is 3 characters - [_]. So 0-3 can be used as error codes.
-unsigned short process_selector(CellsSelector *selector, char *command)
+unsigned short process_selector(CellsSelector *selector, char *command, Table *table, CellsSelector *temporary_selector)
 {
     if (command[0] != '[')      // first character is not a selector
         return EXIT_SUCCESS;
 
     unsigned short result;
 
-    result = process_normal_selector(selector, command);
+    result = process_special_selectors(selector, command, table, temporary_selector);
     if (result == EXIT_FAILURE)
         return EXIT_FAILURE;
+
+    if (!result)
+    {
+        result = process_normal_selector(selector, command);
+        if (result == EXIT_FAILURE)
+            return EXIT_FAILURE;
+    }
 
     return result;
 }
 
 int process_commands(Table *table, TableSize size, int arg_count, char **arguments)
 {
-    (void)table;
-    (void)size;
-
     char *command_start = arguments[arg_count - 2];
     char *command_end = command_start;
     CellsSelector selected;
+    CellsSelector users_saved_selector;
     initialize_selector(&selected, size);
+    initialize_selector(&users_saved_selector, size);
 
     bool first_command = true;
     unsigned short command_length = 0;
@@ -591,9 +679,13 @@ int process_commands(Table *table, TableSize size, int arg_count, char **argumen
 
         char command[command_length + 1];
         copy_to_array(command, command_start, command_length);
-        unsigned short selector_parsing_result = process_selector(&selected, command);
-        if (selector_parsing_result == EXIT_FAILURE)
+        char *selectors_end = command;
+        unsigned short selector_length = process_selector(&selected, command, table, &users_saved_selector);
+        if (selector_length == EXIT_FAILURE)
             return EXIT_FAILURE;
+        selectors_end += selector_length + 1;   // move commands start behind selectors + space
+
+        printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
 
         first_command = false;
         command_start = command_end;
