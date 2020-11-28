@@ -15,6 +15,8 @@
 #define MAXIMUM_COMMANDS_COUNT 1000
 #define MAXIMUM_COMMAND_LENGTH 1000
 
+#define SELECTION_COMMANDS_DELIMITER ","
+
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
 typedef struct {
@@ -29,6 +31,14 @@ typedef struct {
 typedef struct {
     TableRow **rows;
 }Table;
+
+typedef struct {
+    table_index starting_row;
+    table_index starting_cell;
+    table_index ending_row;
+    table_index ending_cell;
+}CellsSelector;
+
 
 
 bool string_compare(char *first, char *second)
@@ -475,6 +485,67 @@ void initialize_selector(CellsSelector *selector, TableSize size)
     selector->ending_cell = size.columns - 1;
 }
 
+table_index * get_selector_from_index(unsigned short index, CellsSelector *selector)
+{
+    table_index *save_to = &selector->starting_row;
+    if (index == 1)
+        save_to = &selector->starting_cell;
+    else if (index == 2)
+        save_to = &selector->ending_row;
+    else if (index == 3)
+        save_to = &selector->ending_cell;
+    return save_to;
+}
+
+unsigned short process_normal_selector(CellsSelector *selector, char *command)
+{
+    char *selector_value;
+    short selector_index = -1;
+    selector_value = strtok(++command, SELECTION_COMMANDS_DELIMITER);    // moving pointer behind [
+
+    while (selector_value != NULL && selector_index++ < 4)   // there could be up to 4 selectors (R1, C1, R2, C2)
+    {
+        table_index *save_to = get_selector_from_index(selector_index, selector);
+
+        if (strchr(selector_value, '_') == selector_value) {
+            *save_to = 0;
+            continue;
+        }
+
+        char *raw_selector = selector_value;
+        char *remaining = NULL;
+        table_index value = 0;
+        value = strtoull(selector_value, &remaining, 10);
+
+        selector_value = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
+        if ((!selector_value && !strchr(raw_selector, ']')) ||                   // last selector should contains ]
+            (remaining[0] != '\0' && !(!selector_value && remaining[0] == ']')) ||  // invalid selector detection but exclude ending selector with trailing ]
+            ((selector_index == 0 || selector_index == 2) && !selector_value) ||    // invalid selectors count
+            !value)
+        {
+            print_error("Invalid selecor!");
+            return EXIT_FAILURE;
+        }
+        *save_to = value;
+    }
+    return EXIT_SUCCESS;
+}
+
+// Function returns selector length. Minimal length of selector is 3 characters - [_]. So 0-3 can be used as error codes.
+unsigned short process_selector(CellsSelector *selector, char *command)
+{
+    if (command[0] != '[')      // first character is not a selector
+        return EXIT_SUCCESS;
+
+    unsigned short result;
+
+    result = process_normal_selector(selector, command);
+    if (result == EXIT_FAILURE)
+        return EXIT_FAILURE;
+
+    return result;
+}
+
 int process_commands(Table *table, TableSize size, int arg_count, char **arguments)
 {
     (void)table;
@@ -498,6 +569,9 @@ int process_commands(Table *table, TableSize size, int arg_count, char **argumen
 
         char command[command_length + 1];
         copy_to_array(command, command_start, command_length);
+        unsigned short selector_parsing_result = process_selector(&selected, command);
+        if (selector_parsing_result == EXIT_FAILURE)
+            return EXIT_FAILURE;
 
         first_command = false;
         command_start = command_end;
