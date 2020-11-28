@@ -481,8 +481,8 @@ void initialize_selector(CellsSelector *selector, TableSize size)
     selector->starting_row = 0;
     selector->starting_cell = 0;
 
-    selector->ending_row = size.rows - 1;       // -1 because size is indexed from 1
-    selector->ending_cell = size.columns - 1;
+    selector->ending_row = size.rows;
+    selector->ending_cell = size.columns;
 }
 
 table_index * get_selector_from_index(unsigned short index, CellsSelector *selector)
@@ -526,7 +526,7 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
             print_error("Invalid selecor!");
             return EXIT_FAILURE;
         }
-        *save_to = value;
+        *save_to = value - 1;   // rows & columns are indexed from 0
     }
     return EXIT_SUCCESS;
 }
