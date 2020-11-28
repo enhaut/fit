@@ -36,6 +36,12 @@ bool string_compare(char *first, char *second)
     return strcmp(first, second) == 0;
 }
 
+void copy_to_array(char *destination, char *source, size_t how_much)
+{
+    strncpy(destination, source, how_much);
+    destination[how_much] = '\0';
+}
+
 bool provided_minimal_amount_of_arguments(int arg_count)
 {
     if (arg_count >= MINIMAL_ARGUMENTS_COUNT)
