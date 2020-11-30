@@ -638,6 +638,11 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
         }
         *save_to = value - 1;   // rows & columns are indexed from 0
     }
+    if (selector_index < 3)
+    {
+        selector->ending_row = selector->starting_row;
+        selector->ending_cell = selector->starting_cell;
+    }
     return EXIT_SUCCESS;
 }
 
