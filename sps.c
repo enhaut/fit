@@ -668,14 +668,140 @@ unsigned short process_selector(CellsSelector *selector, char *command, Table *t
     return result;
 }
 
-int parse_commands(Table *table, TableSize size, int arg_count, char **arguments)
+void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    for (table_index row = size->rows; row < resize_to->rows; row++)
+    {
+        for (table_index column = 0; column < size->columns; column++)
+            free(table->rows[row]->cells[column]);
+        free(table->rows[row]);
+    }
+}
+
+unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    TableRow  **rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * resize_to->rows);
+    if (!rows)
+        return EXIT_FAILURE;
+    table->rows = rows;
+
+    bool rollback = false;
+    for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
+    {
+        char **row_cells = (char **)malloc(sizeof(char *) * size->columns);
+        if (!row_cells)
+        {
+            rollback = true;
+            break;
+        }
+        table->rows[row]->cells = row_cells;
+
+        initialize_cell_pointers(table, row, size->columns, 0);
+
+        int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
+
+        if (filling_result == 1)
+        {
+            rollback = true;
+            break;
+        }
+    }
+    if (rollback)
+    {
+        rollback_rows(table, size, resize_to);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+void rollback_cells(Table *table, TableSize *size, TableSize *resize_to)
+{
+    for (table_index row = 0; row < resize_to->rows; row++)
+        for (table_index column = size->columns; column < resize_to->columns; column++)
+            free(table->rows[row]->cells[column]);
+
+}
+
+unsigned short add_columns(Table *table, TableSize *size, TableSize *resize_to)
+{
+    bool rollback = false;
+    table_index total_rows = resize_to->rows ? resize_to->rows : size->rows;
+
+    for (table_index row = 0; row < total_rows && !rollback; row++)
+    {
+        char **row_cells = (char **)realloc(table->rows[row]->cells, sizeof(char *) * resize_to->columns);
+        if (!row_cells)
+        {
+            rollback = true;
+            break;
+        }
+        table->rows[row]->cells = row_cells;
+
+        initialize_cell_pointers(table, row, resize_to->columns, size->columns);
+        if (fill_with_empty_cells(table, *resize_to, row, size->columns - 1))
+        {
+            rollback = true;
+            break;
+        }
+    }
+
+    if (rollback)
+    {
+        rollback_cells(table, size, resize_to);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+unsigned short resize_table(Table *table, TableSize *size, TableSize *resize_to)
+{
+    if (resize_to->rows != size->rows && add_rows(table, size, resize_to))
+    {
+        print_error("Could not allocate memory for new row(s)!");
+        return EXIT_FAILURE;
+    }
+
+    if (resize_to->columns != size->columns && add_columns(table, size, resize_to))
+    {
+        print_error("Could not allocate memory for new column(s)!");
+        return EXIT_FAILURE;
+    }
+    size->rows = resize_to->rows;
+    size->columns = resize_to->columns;
+
+    for (table_index row = 0; row < size->rows; row++)
+        for (table_index column = 0; column < size->columns; column++)
+        {
+            char *y = table->rows[row]->cells[column];
+            (void)y;
+        }
+
+    return EXIT_SUCCESS;
+}
+
+// Function will resize table, if necessary. There is lot of -1 because of different indexing
+// size is indexed from 1 and selector from 0.
+unsigned short resize_table_if_necessary(Table *table, TableSize *size, CellsSelector *selector)
+{
+    if ((size->rows - 1) >= selector->ending_row && (size->columns - 1) >= selector->ending_cell)   // -1 bcs size is indexed from 1
+        return EXIT_SUCCESS;
+
+    TableSize resize_to = {size->rows, size->columns};
+    if ((size->rows - 1) < selector->ending_row)
+        resize_to.rows = selector->ending_row + 1;      // +1 because of difference in indexing and "<" operator in loops
+    if ((size->columns - 1) < selector->ending_cell)
+        resize_to.columns = selector->ending_cell + 1;  // same
+    return resize_table(table, size, &resize_to);
+}
+
+int parse_commands(Table *table, TableSize *size, int arg_count, char **arguments)
 {
     char *command_start = arguments[arg_count - 2];
     char *command_end = command_start;
     CellsSelector selected;
     CellsSelector users_saved_selector;
-    initialize_selector(&selected, size);
-    initialize_selector(&users_saved_selector, size);
+    initialize_selector(&selected, *size);
+    initialize_selector(&users_saved_selector, *size);
 
     bool first_command = true;
     unsigned short command_length = 0;
@@ -689,9 +815,11 @@ int parse_commands(Table *table, TableSize size, int arg_count, char **arguments
         copy_to_array(command, command_start, command_length);
         char *selectors_end = command;
         unsigned short selector_length = process_selector(&selected, command, table, &users_saved_selector);
-        if (selector_length == EXIT_FAILURE)
+        unsigned short resizing_failed = resize_table_if_necessary(table, size, &selected);
+        if (selector_length == EXIT_FAILURE || resizing_failed)
             return EXIT_FAILURE;
-        selectors_end += selector_length + 1;   // move commands start behind selectors + space
+        selectors_end += selector_length + (selector_length ? 1 : 0);   // move commands start behind selectors + space
+
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
 
@@ -736,8 +864,8 @@ int main(int arg_count, char *arguments[])
         int successfully_loaded = load_table(table_file, table, delimiter, size);
         if (!successfully_loaded)
         {
+            parse_commands(table, &size, arg_count, arguments);
             print_table(table, size);
-            parse_commands(table, size, arg_count, arguments);
             save_table(table, table_file, size, delimiter[0]);
         }
     }
