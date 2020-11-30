@@ -811,8 +811,7 @@ unsigned short set(Table *table, char *to_set, CellsSelector *selector)
     for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
         for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
         {
-            char *y = table->rows[row]->cells[column];
-            char *resized_cell = (char *)realloc(y, sizeof(char) * to_set_length + 1);
+            char *resized_cell = (char *)realloc(table->rows[row]->cells[column], sizeof(char) * to_set_length + 1);
             if (!resized_cell)
             {
                 if (to_set_length > strlen(table->rows[row]->cells[column]))
@@ -823,6 +822,22 @@ unsigned short set(Table *table, char *to_set, CellsSelector *selector)
                 resized_cell = table->rows[row]->cells[column];
             }
             copy_to_array(resized_cell, to_set, to_set_length);
+            table->rows[row]->cells[column] = resized_cell;
+        }
+    return EXIT_SUCCESS;
+}
+
+unsigned short clear(Table *table, CellsSelector *selector)
+{
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
+        {
+            char *resized_cell = (char *)realloc(table->rows[row]->cells[column], sizeof(bool));
+            if (!resized_cell)      // in case realloc failed, dont need to end, original cell will be used
+            {
+                resized_cell = table->rows[row]->cells[column];
+            }
+            copy_to_array(resized_cell, "", 0);
             table->rows[row]->cells[column] = resized_cell;
         }
     return EXIT_SUCCESS;
