@@ -48,6 +48,16 @@ bool string_compare(char *first, char *second)
     return strcmp(first, second) == 0;
 }
 
+// Function checks if provided command name is valid command name
+bool is_command(char **provided_command_name, char *command_name)
+{
+    char *found_at = strstr(*provided_command_name, command_name);
+    if (found_at != *provided_command_name)
+        return false;
+    (*provided_command_name) += strlen(command_name);   // used to move pointer behind command name, to arguments
+    return true;
+}
+
 void copy_to_array(char *destination, char *source, size_t how_much)
 {
     strncpy(destination, source, how_much);
@@ -794,6 +804,42 @@ unsigned short resize_table_if_necessary(Table *table, TableSize *size, CellsSel
     return resize_table(table, size, &resize_to);
 }
 
+unsigned short set(Table *table, char *to_set, CellsSelector *selector)
+{
+    size_t to_set_length = strlen(to_set);
+
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
+        {
+            char *y = table->rows[row]->cells[column];
+            char *resized_cell = (char *)realloc(y, sizeof(char) * to_set_length + 1);
+            if (!resized_cell)
+            {
+                if (to_set_length > strlen(table->rows[row]->cells[column]))
+                {
+                    print_error("Could not allocate memory for cell!");
+                    return EXIT_FAILURE;
+                }
+                resized_cell = table->rows[row]->cells[column];
+            }
+            copy_to_array(resized_cell, to_set, to_set_length);
+            table->rows[row]->cells[column] = resized_cell;
+        }
+    return EXIT_SUCCESS;
+}
+
+unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector)
+{
+    (void)size;
+    (void)temp_selector;
+    unsigned short return_code = 0;
+
+    if (is_command(&command, "set "))
+        return_code = set(table, command, selector);
+
+    return return_code;
+}
+
 int parse_commands(Table *table, TableSize *size, int arg_count, char **arguments)
 {
     char *command_start = arguments[arg_count - 2];
@@ -820,6 +866,7 @@ int parse_commands(Table *table, TableSize *size, int arg_count, char **argument
             return EXIT_FAILURE;
         selectors_end += selector_length + (selector_length ? 1 : 0);   // move commands start behind selectors + space
 
+        process_command(table, *size, selectors_end, &selected, &users_saved_selector);
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
 
