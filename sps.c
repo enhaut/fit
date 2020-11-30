@@ -225,6 +225,12 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
+void initialize_cell_pointers(Table *table, table_index row, table_index columns, table_index starting_column)
+{
+    for (; starting_column < columns; starting_column++)
+        table->rows[row]->cells[starting_column] = NULL;
+}
+
 Table * initialize_table(TableSize dimensions, int *result)
 {
     Table *table = (Table *)malloc(sizeof(Table));
@@ -257,8 +263,7 @@ Table * initialize_table(TableSize dimensions, int *result)
             return table;
         }
 
-        for (table_index cell_index = 0; cell_index < dimensions.columns; cell_index++)
-             row_cells[cell_index] = NULL;
+        initialize_cell_pointers(table, row_index, dimensions.columns, 0);  // initializing with NULL, it will be overwrited in cell loading
     }
     return table;
 }
