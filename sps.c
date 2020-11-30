@@ -300,7 +300,7 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
     int loaded_character;
-    int character_before;
+    int character_before = 0;       // at the first iteration it wont be initialized
 
     while ((loaded_character = getc(table_file)) != EOF)
     {
