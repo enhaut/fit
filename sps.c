@@ -659,7 +659,7 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
 // Function returns selector length. Minimal length of selector is 3 characters - [_]. So 0-3 can be used as error codes.
 unsigned short process_selector(CellsSelector *selector, char *command, Table *table, CellsSelector *temporary_selector)
 {
-    if (command[0] != '[')      // first character is not a selector
+    if (command[0] != '[' || (strlen(command) > 2 && command[1] == 's'))      // first character is not a selector, skip [set] selector
         return EXIT_SUCCESS;
 
     unsigned short result;
@@ -846,11 +846,14 @@ unsigned short clear(Table *table, CellsSelector *selector)
 unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector)
 {
     (void)size;
-    (void)temp_selector;
     unsigned short return_code = 0;
 
     if (is_command(&command, "set "))
         return_code = set(table, command, selector);
+    else if (is_command(&command, "clear"))
+        return_code = clear(table, selector);
+    else if (is_command(&command, "[set]"))
+        return_code = swap_selectors(temp_selector, selector);
 
     return return_code;
 }
