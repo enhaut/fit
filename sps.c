@@ -580,12 +580,12 @@ unsigned short process_find_selector(CellsSelector *selector, const char *comman
     return selector_length;
 }
 
-unsigned short process_temporary_selector(CellsSelector *selector, CellsSelector *temporary_selector)
+unsigned short swap_selectors(CellsSelector *destination, CellsSelector *source)
 {
-    selector->starting_row  = temporary_selector->starting_row;
-    selector->starting_cell = temporary_selector->starting_cell;
-    selector->ending_row    = temporary_selector->ending_row;
-    selector->ending_cell   = temporary_selector->ending_cell;
+    destination->starting_row  = source->starting_row;
+    destination->starting_cell = source->starting_cell;
+    destination->ending_row    = source->ending_row;
+    destination->ending_cell   = source->ending_cell;
 
     return EXIT_SUCCESS;
 }
@@ -600,7 +600,7 @@ unsigned short process_special_selectors(CellsSelector *selector, const char *co
     else if (strstr(command, "[find") == command)
         return process_find_selector(selector, command, table);
     else if (strstr(command, "[_]") == command)
-        return process_temporary_selector(selector, temporary_selector);
+        return swap_selectors(selector, temporary_selector);
 
     return EXIT_SUCCESS;
 }
