@@ -78,11 +78,10 @@ bool provided_minimal_amount_of_arguments(int arg_count)
 FILE *file_loader(char *filename, char *mode)
 {
     FILE *opened_file = fopen(filename, mode);
-    if (!opened_file) {
-        print_error("Could not open file!");
-        return NULL;
-    }
-    return opened_file;
+    if (opened_file)
+        return opened_file;
+    print_error("Could not open file!");
+    return NULL;
 }
 
 long get_file_size(FILE *file)
