@@ -908,6 +908,16 @@ unsigned short count(Table *table, char *command, CellsSelector *selector)
     return cell_counting_commands(table, command, selector, 2);
 }
 
+unsigned short len(Table *table, char *command, CellsSelector *selector)
+{
+    CellsSelector save_to = {0};
+    process_normal_selector(&save_to, command);
+
+    size_t cell_length = strlen(table->rows[selector->starting_row]->cells[selector->starting_cell]);
+    set_numeric_value_to_cell(table, &save_to, (float)cell_length);
+    return EXIT_SUCCESS;
+}
+
 // Funcion checks if selected range is just one cell, or it s range of cells.
 bool is_range(CellsSelector *selector)
 {
@@ -942,6 +952,16 @@ unsigned short process_command(Table *table, TableSize size, char *command, Cell
         return_code = avg(table, command, selector);
     else if (is_command(&command, "count "))
         return_code = count(table, command, selector);
+    else if (is_command(&command, "len "))
+    {
+        if (!is_range(selector))
+            len(table, command, selector);
+        else
+        {
+            print_error("Range is not one cell!");
+            return_code = EXIT_FAILURE;
+        }
+    }
 
     return return_code;
 }
