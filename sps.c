@@ -884,7 +884,8 @@ int parse_commands(Table *table, TableSize *size, int arg_count, char **argument
             return EXIT_FAILURE;
         selectors_end += selector_length + (selector_length ? 1 : 0);   // move commands start behind selectors + space
 
-        process_command(table, *size, selectors_end, &selected, &users_saved_selector);
+        if (process_command(table, *size, selectors_end, &selected, &users_saved_selector))
+            return EXIT_FAILURE;
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
 
@@ -929,9 +930,11 @@ int main(int arg_count, char *arguments[])
         int successfully_loaded = load_table(table_file, table, delimiter, size);
         if (!successfully_loaded)
         {
-            parse_commands(table, &size, arg_count, arguments);
-            print_table(table, size);
-            save_table(table, table_file, size, delimiter[0]);
+            if (!parse_commands(table, &size, arg_count, arguments))
+            {
+                print_table(table, size);
+                save_table(table, table_file, size, delimiter[0]);
+            }
         }
     }
 
