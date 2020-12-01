@@ -843,6 +843,26 @@ unsigned short clear(Table *table, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+unsigned short swap(Table *table, char *command, CellsSelector *selector)
+{
+    CellsSelector swap_with = {0};
+    process_normal_selector(&swap_with, command);
+
+    char *temp = table->rows[selector->starting_row]->cells[selector->ending_row];
+    table->rows[selector->starting_row]->cells[selector->ending_row] = table->rows[swap_with.starting_row]->cells[swap_with.starting_cell];
+    table->rows[swap_with.starting_row]->cells[swap_with.starting_cell] = temp;
+
+    return EXIT_SUCCESS;
+}
+
+// Funcion checks if selected range is just one cell, or it s range of cells.
+bool is_range(CellsSelector *selector)
+{
+    if (selector->starting_row != selector->ending_row || selector->starting_cell != selector->ending_cell)
+        return true;
+    return false;
+}
+
 unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector)
 {
     (void)size;
@@ -854,7 +874,16 @@ unsigned short process_command(Table *table, TableSize size, char *command, Cell
         return_code = clear(table, selector);
     else if (is_command(&command, "[set]"))
         return_code = swap_selectors(temp_selector, selector);
-
+    else if (is_command(&command, "swap "))
+    {
+        if (!is_range(selector))
+            swap(table, command, selector);
+        else
+        {
+            print_error("Range is not one cell!");
+            return_code = EXIT_FAILURE;
+        }
+    }
     return return_code;
 }
 
