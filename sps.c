@@ -855,6 +855,59 @@ unsigned short swap(Table *table, char *command, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+// Function will set float value to char array
+unsigned short set_numeric_value_to_cell(Table *table, CellsSelector *selector, float value)
+{
+    int no_of_digits = snprintf(NULL, 0, "%g", value);
+    char result[no_of_digits];
+    result[no_of_digits] = '\0';
+    sprintf(result,"%g", value);
+
+    return set(table, result, selector);
+}
+
+// Function for sum/avg/count
+unsigned short cell_counting_commands(Table *table, char *command, CellsSelector *selector, short what_to_do)
+{
+    CellsSelector save_to = {0};
+    process_normal_selector(&save_to, command);
+    float sum = 0;
+    table_index values_count = 0;
+
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
+        {
+            float cell_value;
+            bool valid = get_numeric_cell_value(table->rows[row]->cells[column], &cell_value);
+            if (!valid && what_to_do != 2)
+                continue;
+            sum += cell_value;
+            values_count++;
+        }
+
+    if (what_to_do == 0)
+        return set_numeric_value_to_cell(table, &save_to, sum);
+    else if (what_to_do == 1)
+        return set_numeric_value_to_cell(table, &save_to, (sum / (values_count ? (float)values_count : 1)));    // prevent to divide by 0
+    else
+        return set_numeric_value_to_cell(table, &save_to, (float)values_count);
+}
+
+unsigned short sum(Table *table, char *command, CellsSelector *selector)
+{
+    return cell_counting_commands(table, command, selector, 0);
+}
+
+unsigned short avg(Table *table, char *command, CellsSelector *selector)
+{
+    return cell_counting_commands(table, command, selector, 1);
+}
+
+unsigned short count(Table *table, char *command, CellsSelector *selector)
+{
+    return cell_counting_commands(table, command, selector, 2);
+}
+
 // Funcion checks if selected range is just one cell, or it s range of cells.
 bool is_range(CellsSelector *selector)
 {
@@ -883,7 +936,13 @@ unsigned short process_command(Table *table, TableSize size, char *command, Cell
             print_error("Range is not one cell!");
             return_code = EXIT_FAILURE;
         }
-    }
+    }else if (is_command(&command, "sum "))
+        return_code = sum(table, command, selector);
+    else if (is_command(&command, "avg "))
+        return_code = avg(table, command, selector);
+    else if (is_command(&command, "count "))
+        return_code = count(table, command, selector);
+
     return return_code;
 }
 
