@@ -479,13 +479,14 @@ void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
 
 char *get_command_from_argument(char **cell_start, bool first_command, unsigned short *command_length)
 {
-    char *command_end = *cell_start;
     size_t remaining_commands_size = strlen(*cell_start);
+    if (*cell_start[0] == ';' || *cell_start[0] == '\n')
+        (*cell_start)++;
+
+    char *command_end = *cell_start;
     bool inside_quotation = false;
     if (!remaining_commands_size)
         return NULL;
-    if (command_end[0] == ';' || command_end[0] == '\n')
-        command_end++;
 
     for (unsigned int position = 0; position < remaining_commands_size; position++)
     {
@@ -495,7 +496,8 @@ char *get_command_from_argument(char **cell_start, bool first_command, unsigned 
         if ((!inside_quotation && (*cell_start)[position] == ';') || (*cell_start)[position] == '\n')
             break;
 
-        command_end++;  // moving command end to last character of command
+        if (command_end[0] != '\0')
+            command_end++;  // moving command end to last character of command
         (*command_length)++;
 
         if (*command_length > MAXIMUM_COMMAND_LENGTH)
@@ -985,14 +987,13 @@ int parse_commands(Table *table, TableSize *size, int arg_count, char **argument
 
         char command[command_length + 1];
         copy_to_array(command, command_start, command_length);
-        char *selectors_end = command;
+
         unsigned short selector_length = process_selector(&selected, command, table, &users_saved_selector);
         unsigned short resizing_failed = resize_table_if_necessary(table, size, &selected);
         if (selector_length == EXIT_FAILURE || resizing_failed)
             return EXIT_FAILURE;
-        selectors_end += selector_length + (selector_length ? 1 : 0);   // move commands start behind selectors + space
 
-        if (process_command(table, *size, selectors_end, &selected, &users_saved_selector))
+        if (process_command(table, *size, command_end, &selected, &users_saved_selector, user_variables))
             return EXIT_FAILURE;
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
