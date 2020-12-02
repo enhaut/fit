@@ -529,15 +529,6 @@ char *get_command_from_argument(char **cell_start, bool first_command, unsigned 
     return command_end;
 }
 
-void initialize_selector(CellsSelector *selector, TableSize size)
-{
-    selector->starting_row = 0;
-    selector->starting_cell = 0;
-
-    selector->ending_row = size.rows;
-    selector->ending_cell = size.columns;
-}
-
 void set_cell_directions(CellsSelector *selector, table_index row, table_index column)
 {
     selector->starting_row = row;
@@ -800,13 +791,6 @@ unsigned short resize_table(Table *table, TableSize *size, TableSize *resize_to)
     }
     size->rows = resize_to->rows;
     size->columns = resize_to->columns;
-
-    for (table_index row = 0; row < size->rows; row++)
-        for (table_index column = 0; column < size->columns; column++)
-        {
-            char *y = table->rows[row]->cells[column];
-            (void)y;
-        }
 
     return EXIT_SUCCESS;
 }
@@ -1084,10 +1068,8 @@ int parse_commands(Table *table, TableSize *size, int arg_count, char **argument
 {
     char *command_start = arguments[arg_count - 2];
     char *command_end = command_start;
-    CellsSelector selected;
-    CellsSelector users_saved_selector;
-    initialize_selector(&selected, *size);
-    initialize_selector(&users_saved_selector, *size);
+    CellsSelector selected = {1, 1, 1, 1};
+    CellsSelector users_saved_selector = {0, 0, 0, 0};
 
     bool first_command = true;
     unsigned short command_length = 0;
