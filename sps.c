@@ -18,6 +18,7 @@
 #define MAXIMUM_COMMAND_LENGTH 1000
 
 #define SELECTION_COMMANDS_DELIMITER ","
+#define USER_VARIABLES_COUNT 10
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
@@ -419,6 +420,15 @@ void destruct_table(Table *table, TableSize size)
     }
     free(table->rows);  // deallocate rows storing array
     free(table);        // deallocate empty table
+}
+
+void destruct_user_variables(char **variables)
+{
+    for (short var_index = 0; var_index < USER_VARIABLES_COUNT; var_index++)
+        if (variables[var_index])
+            free(variables[var_index]);
+
+    free(variables);
 }
 
 /* Function will return size of savable table. That will remove empty columns at the end of table. */
@@ -920,6 +930,97 @@ unsigned short len(Table *table, char *command, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+char **get_variable_pointer(char *variable_index, char **variables)
+{
+    float index;
+    bool valid = get_numeric_cell_value(variable_index, &index);
+    if (!valid && index < USER_VARIABLES_COUNT)     // user have N variables but indexed from 0
+    {
+        print_error("Invalid variable index!");
+        return NULL;
+    }
+    return &variables[(unsigned short)index];
+}
+
+unsigned short def(Table *table, char **variable, CellsSelector *selector)
+{
+    char *cell = table->rows[selector->starting_row]->cells[selector->starting_cell];
+    size_t cell_length = strlen(cell);
+
+    char *copy = (char *)malloc(sizeof(char) * cell_length + 1);
+    if (!copy)
+    {
+        print_error("Could not allocate memory for cell copy!");
+        return EXIT_FAILURE;
+    }
+    copy_to_array(copy, cell, cell_length);
+    *variable = copy;
+    printf("%s", copy);
+    return EXIT_SUCCESS;
+}
+
+unsigned short use(Table *table, char **variable, CellsSelector *selector)
+{
+    return set(table, *variable, selector);
+}
+
+unsigned short inc(char **variable)
+{
+    float value;
+    bool is_number = get_numeric_cell_value(*variable, &value);
+
+    value = is_number ? (value + 1) : 1;
+
+    int no_of_digits = snprintf(NULL, 0, "%g", value);
+    char *resized = (char *)realloc(*variable, no_of_digits + 1);
+    if (!resized && (size_t)no_of_digits > strlen(*variable))
+    {
+        print_error("Could not allocate enough space for variable!");
+        return EXIT_FAILURE;
+    }else
+        *variable = resized;
+
+    sprintf(resized,"%g", value);
+    return EXIT_SUCCESS;
+}
+
+char *get_variable_index_position(char *command)
+{
+    char *found = strchr(command, '_');
+    if (!found || ((found + 1)[0] == '\0'))
+    {
+        print_error("Invalid syntax!");
+        return NULL;
+    }
+    return found + 1;   // move pointer behind _
+}
+
+unsigned short process_temporary_selectors(Table *table, char *command, CellsSelector *selector, char **user_variables)
+{
+    char *variable_index = get_variable_index_position(command);
+    if (!variable_index)
+    {
+        if (strstr(command, "def ") || strstr(command, "use ") || strstr(command, "inc "))
+            return EXIT_FAILURE;
+        return EXIT_SUCCESS;    // command is not selector
+    }
+
+    char **variable = get_variable_pointer(command, user_variables);
+    if (!variable ||                                   // checking variable validity
+        (!*variable && !strstr(command, "def")))  //checking if variable is initialized for "use" and "inc" commands
+        return EXIT_FAILURE;
+
+    unsigned short result = EXIT_SUCCESS;
+    if (is_command(&command, "def _"))
+        result = def(table, variable, selector);
+    else if (is_command(&command, "use _"))
+        result = use(table, variable, selector);
+    else if (is_command(&command, "inc _"))
+        result = inc(variable);
+
+    return result;
+}
+
 // Funcion checks if selected range is just one cell, or it s range of cells.
 bool is_range(CellsSelector *selector)
 {
@@ -928,7 +1029,7 @@ bool is_range(CellsSelector *selector)
     return false;
 }
 
-unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector)
+unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector, char **user_variables)
 {
     (void)size;
     unsigned short return_code = 0;
@@ -963,12 +1064,13 @@ unsigned short process_command(Table *table, TableSize size, char *command, Cell
             print_error("Range is not one cell!");
             return_code = EXIT_FAILURE;
         }
-    }
+    }else
+        return_code = process_temporary_selectors(table, command, selector, user_variables);
 
     return return_code;
 }
 
-int parse_commands(Table *table, TableSize *size, int arg_count, char **arguments)
+int parse_commands(Table *table, TableSize *size, int arg_count, char **arguments, char **user_variables)
 {
     char *command_start = arguments[arg_count - 2];
     char *command_end = command_start;
@@ -1005,6 +1107,29 @@ int parse_commands(Table *table, TableSize *size, int arg_count, char **argument
     return EXIT_SUCCESS;
 }
 
+// Function initializes array for user variables. Using char because it could be string.
+char ** initialize_user_variables()
+{
+    char **variables = (char **)malloc(sizeof(char *) * USER_VARIABLES_COUNT);   // user could define 10 variables
+    if (!variables)
+    {
+        print_error("Could not allocate memory for user variables!");
+        return NULL;
+    }
+    for (short var_index = 0; var_index < USER_VARIABLES_COUNT; var_index++)
+        variables[var_index] = NULL;
+    return variables;
+}
+
+void print_variables(char **variables)
+{
+    printf("==USED VARIABLES==\n");
+    for (int i = 0; i < USER_VARIABLES_COUNT; i++)
+        if (variables[i])
+            printf("%d. : '%s'\n", i, variables[i]);
+    printf("==VARIABLES==\n");
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
@@ -1034,20 +1159,24 @@ int main(int arg_count, char *arguments[])
     int successful_initialization = EXIT_SUCCESS;
     Table *table = initialize_table(size, &successful_initialization);
 
-    if (!successful_initialization)
+    char **user_variables = initialize_user_variables();
+
+    if (!successful_initialization || !user_variables)
     {
         int successfully_loaded = load_table(table_file, table, delimiter, size);
         if (!successfully_loaded)
         {
-            if (!parse_commands(table, &size, arg_count, arguments))
+            if (!parse_commands(table, &size, arg_count, arguments, user_variables))
             {
                 print_table(table, size);
                 save_table(table, table_file, size, delimiter[0]);
             }
         }
     }
+    print_variables(user_variables);
 
     destruct_table(table, size);
+    destruct_user_variables(user_variables);
     fclose(table_file);
     return EXIT_SUCCESS;
 }
