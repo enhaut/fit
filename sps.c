@@ -398,7 +398,6 @@ int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
         }
     }
 
-    rewind(table_file); // back to the start of file
     return EXIT_SUCCESS;
 }
 
