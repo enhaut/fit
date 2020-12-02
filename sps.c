@@ -20,6 +20,8 @@
 #define SELECTION_COMMANDS_DELIMITER ","
 #define USER_VARIABLES_COUNT 10
 
+#define SUPPORTED_COMMANDS_COUNT 22
+
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
 typedef struct {
@@ -41,6 +43,15 @@ typedef struct {
     table_index ending_row;
     table_index ending_cell;
 }CellsSelector;
+
+typedef unsigned short (*function_ptr)(); // pointer to function with no strict arguments
+/* Struct for command definitions - it stores commands requirement, processing function...
+ * When adding new processing functions just add it to commands definition and add it's processing function. */
+typedef struct {
+    char *name;             // command name
+    int command_category;   // type of command (table edit/row selection/data processing)
+    function_ptr processing_function;
+}Command_t;
 
 
 
@@ -76,7 +87,6 @@ bool get_numeric_cell_value(char *column, float *value)
         return false;
     return true;
 }
-
 
 bool provided_minimal_amount_of_arguments(int arg_count)
 {
@@ -561,7 +571,7 @@ unsigned short process_min_max_selectors(CellsSelector *selector, bool min, Tabl
     if (found)
         set_cell_directions(selector, selected.starting_row, selected.starting_cell);
 
-    return found ? 4 : 0;
+    return EXIT_SUCCESS;
 }
 
 unsigned short process_find_selector(CellsSelector *selector, const char *command, Table *table)
@@ -687,7 +697,7 @@ unsigned short process_selector(CellsSelector *selector, char *command, Table *t
             return EXIT_FAILURE;
     }
 
-    return result;
+    return EXIT_SUCCESS;
 }
 
 void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
