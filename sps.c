@@ -1065,7 +1065,7 @@ void copy_command_definitions(Command_t *destination_array)
     Command_t commands[SUPPORTED_COMMANDS_COUNT] = {
             {"set",     1, set},
             {"clear",   1, clear},
-            {"clear",   1, swap},
+            {"swap",   1, swap},
             {"sum",     1, sum},
             {"avg",     1, avg},
             {"count",   1, count},
