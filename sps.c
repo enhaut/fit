@@ -991,8 +991,6 @@ unsigned short process_command(Table *table, Command_t *command, CellsSelector *
 
 int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned short count, char **user_variables)
 {
-    (void)user_variables;
-    (void)size;
     CellsSelector selected              = {1, 1, 1, 1};
     CellsSelector users_saved_selector  = {0, 0, 0, 0};
 
