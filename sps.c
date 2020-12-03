@@ -641,12 +641,14 @@ unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
     bool rollback = false;
     for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
     {
+        TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
         char **row_cells = (char **)malloc(sizeof(char *) * size->columns);
-        if (!row_cells)
+        if (!new_row || !row_cells)
         {
             rollback = true;
             break;
         }
+        table->rows[row] = new_row;
         table->rows[row]->cells = row_cells;
 
         initialize_cell_pointers(table, row, size->columns, 0);
