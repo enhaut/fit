@@ -690,6 +690,14 @@ unsigned short process_selector(CellsSelector *selector, char *command, Table *t
     return EXIT_SUCCESS;
 }
 
+// Funcion checks if selected range is just one cell, or it s range of cells.
+bool is_range(CellsSelector *selector)
+{
+    if (selector->starting_row != selector->ending_row || selector->starting_cell != selector->ending_cell)
+        return true;
+    return false;
+}
+
 void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
 {
     for (table_index row = size->rows; row < resize_to->rows; row++)
@@ -1012,14 +1020,6 @@ unsigned short process_temporary_selectors(Table *table, char *command, CellsSel
         result = inc(variable);
 
     return result;
-}
-
-// Funcion checks if selected range is just one cell, or it s range of cells.
-bool is_range(CellsSelector *selector)
-{
-    if (selector->starting_row != selector->ending_row || selector->starting_cell != selector->ending_cell)
-        return true;
-    return false;
 }
 
 unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector, char **user_variables)
