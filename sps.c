@@ -1011,34 +1011,20 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
     CellsSelector selected              = {1, 1, 1, 1};
     CellsSelector users_saved_selector  = {0, 0, 0, 0};
 
-    bool first_command = true;
-    (void )first_command;
-    unsigned short command_length = 0;
-    (void )command_length;
-
     for (unsigned short command_index = 0; command_index < count; command_index++)
     {
-        Command_t x = commands[command_index];
-        (void)x;
         if (commands[command_index].command_category == 3 || commands[command_index].command_category == 4)
             if (process_selector(&selected, &commands[command_index], table, &users_saved_selector))
                 return EXIT_FAILURE;
 
-        if (resize_table_if_necessary(table, size, &selected))
-            return EXIT_FAILURE;
-
-        if (commands[command_index].command_category == 1 && process_command(table, &commands[command_index], &selected))
-            return EXIT_FAILURE;
-
-        if (commands[command_index].command_category == 5 && process_temporary_selectors(table, &commands[command_index], &selected, user_variables))
-            return EXIT_FAILURE;
-
-        if (commands[command_index].command_category == 6 && process_table_struct_commands(table, size, &selected, &commands[command_index]))
+        unsigned short command_category =  commands[command_index].command_category;
+        if (resize_table_if_necessary(table, size, &selected) ||
+            (command_category == 1 && process_command(table, &commands[command_index], &selected)) ||
+            (command_category == 5 && process_temporary_selectors(table, &commands[command_index], &selected, user_variables)) ||
+            (command_category == 6 && process_table_struct_commands(table, size, &selected, &commands[command_index])))
             return EXIT_FAILURE;
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
-
-        first_command = false;
     }
     return EXIT_SUCCESS;
 }
@@ -1065,7 +1051,6 @@ void print_variables(char **variables)
             printf("%d. : '%s'\n", i, variables[i]);
     printf("==VARIABLES==\n");
 }
-
 
 void copy_command_definitions(Command_t *destination_array)
 {
