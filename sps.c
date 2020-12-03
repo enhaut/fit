@@ -20,7 +20,7 @@
 #define SELECTION_COMMANDS_DELIMITER ","
 #define USER_VARIABLES_COUNT 10
 
-#define SUPPORTED_COMMANDS_COUNT 22
+#define SUPPORTED_COMMANDS_COUNT 16
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
@@ -105,26 +105,6 @@ FILE *file_loader(char *filename, char *mode)
     return NULL;
 }
 
-long get_file_size(FILE *file)
-{
-    fseek(file, 0, SEEK_END);   // seek to end of file
-    long size = ftell(file);        // save last position
-    rewind(file);                   // go back to the file beginning
-    return size;
-}
-
-void copy_file_to_array(FILE *source, char *destination)
-{
-    int loaded_character;
-    long position = 0;
-    while ((loaded_character = getc(source)) != EOF)
-    {
-        destination[position] = (char) loaded_character;
-        position++;
-    }
-    destination[position] = '\0';
-}
-
 // Returns -1 for invalid delimiter -> exit, 0 for no delimiter defined, 1 for defined delimiter
 int defined_delimiter(int arg_count, char *arguments[])
 {
@@ -144,72 +124,11 @@ int defined_delimiter(int arg_count, char *arguments[])
     return 0;
 }
 
-unsigned short count_commands(char *commands, char commands_delimiter)
-{
-    int count = 0;
-    size_t commands_length = strlen(commands);
-    bool inside_quotation = false;
-    for (size_t position = 0; position < commands_length; position++)
-    {
-        char loaded_character = commands[position];
-        if (loaded_character == '\"')
-            inside_quotation = inside_quotation ? false : true;
-
-        if (!inside_quotation && loaded_character == commands_delimiter)
-            count++;
-
-        if (count == MAXIMUM_COMMANDS_COUNT + 1)    // dont need to count commands anymore, limit has been just reached
-            return MAXIMUM_COMMANDS_COUNT + 1;
-    }
-    /*it s counting from 0, so we have to add 1, but only in case there are commands defined and
-     * delimiter is not \n because it would count last empty line*/
-    if (commands_length && commands_delimiter != '\n')
-        count++;
-    return count;
-}
-
-int valid_commands_argument(int arg_count, char *arguments[])
-{
-    int commands_argument_index = arg_count - 2;    // commands argument have to be 2. from the end
-    char *commands_arguments = arguments[commands_argument_index];
-
-    unsigned short commands_count;
-
-    if (strstr(commands_arguments, "-c") == commands_arguments)     // -c have to be at beginning of argument
-    {
-        char *file_name = commands_arguments + 2;   // move pointer behind -c in argument
-        FILE *commands_file = file_loader(file_name, "r");
-        if (!commands_file)
-            return EXIT_FAILURE;
-
-        long file_size = get_file_size(commands_file);
-        char file_content[file_size + 1];   // +1 for \0
-        copy_file_to_array(commands_file, file_content);
-        fclose(commands_file);
-        commands_count = count_commands(file_content, '\n');
-    }else
-        commands_count = count_commands(commands_arguments, ';');
-
-
-    if (!commands_count || commands_count > MAXIMUM_COMMANDS_COUNT)
-    {
-        print_error("Invalid commands!");
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
-
 bool is_character_delimiter(char *delimiters, int delimiter)
 {
     if (strchr(delimiters, delimiter))
         return true;
     return false;
-}
-
-int get_table_filename_index(int arg_count)
-{
-    return arg_count - 1;   // filename is always last argument
 }
 
 void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
@@ -440,6 +359,14 @@ void destruct_user_variables(char **variables)
     free(variables);
 }
 
+void destruct_commands(Command_t *commands, unsigned short count)
+{
+    for (unsigned short i  = 0; i < count; i++)
+        free(commands[i].name);
+
+    free(commands);
+}
+
 /* Function will return size of savable table. That will remove empty columns at the end of table. */
 TableSize get_savable_table_size(Table *table, TableSize size)
 {
@@ -496,6 +423,15 @@ void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
     }
 }
 
+void print_commands(Command_t *command, unsigned short count)
+{
+    printf("===COMMANDS: %d===\n", count);
+    for (unsigned short i = 0; i < count; i++) {
+        printf("%d.: command:\t%s, type:\t%d\n", i, command[i].name, command[i].command_category);
+    }
+    printf("===COMMANDS===\n");
+}
+
 char *get_command_from_argument(char **cell_start, bool first_command, unsigned short *command_length)
 {
     size_t remaining_commands_size = strlen(*cell_start);
@@ -536,10 +472,11 @@ void set_cell_directions(CellsSelector *selector, table_index row, table_index c
     selector->ending_cell = column;
 }
 
-unsigned short process_min_max_selectors(CellsSelector *selector, bool min, Table *table)
+unsigned short process_min_max_selectors(CellsSelector *selector, Table *table, Command_t *command)
 {
     CellsSelector selected = {0};
     bool found = false;
+    bool min = string_compare(command->name, "[min]");
     float selected_value = min ? FLT_MAX : FLT_MIN;
 
     for (table_index row = selector->starting_row; row < selector->ending_row; row++)
@@ -564,10 +501,10 @@ unsigned short process_min_max_selectors(CellsSelector *selector, bool min, Tabl
     return EXIT_SUCCESS;
 }
 
-unsigned short process_find_selector(CellsSelector *selector, const char *command, Table *table)
+unsigned short process_find_selector(CellsSelector *selector, Command_t *command, Table *table)
 {
-    char *selector_ending = strchr(command, ']');
-    unsigned short selector_length = selector_ending - command + 1;     // +1 because selector ending is not included
+    char *selector_ending = strchr(command->name, ']');
+    unsigned short selector_length = selector_ending - command->name + 1;     // +1 because selector ending is not included
     if (!selector_ending || (selector_length - 6) <= 1)                 // selector length could not be 1, it s starting at 1
     {
         print_error("Invalid selecor!");
@@ -575,13 +512,13 @@ unsigned short process_find_selector(CellsSelector *selector, const char *comman
     }
 
     *selector_ending = '\0';    // marking selector ending as end of command, it will be used for searching in cells
-    command += 6;               // string starts at 6. position
+    command->name += 6;               // string starts at 6. position
     bool found = false;
 
     for (table_index row = selector->starting_row; row < selector->ending_row && !found; row++)
         for (table_index column = selector->starting_cell; column < selector->ending_cell; column++)
         {
-            char *contains = strstr(table->rows[row]->cells[column], command);
+            char *contains = strstr(table->rows[row]->cells[column], command->name);
             if (contains)
             {
                 set_cell_directions(selector, row, column);
@@ -603,16 +540,14 @@ unsigned short swap_selectors(CellsSelector *destination, CellsSelector *source)
 }
 
 // Function process special selectors ([min], [max], [find STR], [_])
-unsigned short process_special_selectors(CellsSelector *selector, const char *command, Table *table, CellsSelector *temporary_selector)
+unsigned short process_special_selectors(CellsSelector *selector, Command_t *command, Table *table, CellsSelector *temporary_selector)
 {
-    if (strstr(command, "[min]") == command)
-        return process_min_max_selectors(selector, true, table);
-    else if (strstr(command, "[max]") == command)
-        return process_min_max_selectors(selector, false, table);
-    else if (strstr(command, "[find") == command)
-        return process_find_selector(selector, command, table);
-    else if (strstr(command, "[_]") == command)
-        return swap_selectors(selector, temporary_selector);
+    if (string_compare(command->name, "[_]"))
+        return command->processing_function(selector, temporary_selector);
+    else if (string_compare(command->name, "[set]"))
+        return command->processing_function(temporary_selector, selector);
+    else
+        return command->processing_function(selector, table, command);
 
     return EXIT_SUCCESS;
 }
@@ -629,11 +564,11 @@ table_index * get_selector_from_index(unsigned short index, CellsSelector *selec
     return save_to;
 }
 
-unsigned short process_normal_selector(CellsSelector *selector, char *command)
+unsigned short process_normal_selector(CellsSelector *selector, Command_t *command)
 {
-    char *selector_value;
+    char *selector_value = command->name;
     short selector_index = -1;
-    selector_value = strtok(++command, SELECTION_COMMANDS_DELIMITER);    // moving pointer behind [
+    selector_value = strtok((strchr(selector_value, '[') + 1), SELECTION_COMMANDS_DELIMITER);    // moving pointer behind [
 
     while (selector_value != NULL && selector_index++ < 4)   // there could be up to 4 selectors (R1, C1, R2, C2)
     {
@@ -669,23 +604,11 @@ unsigned short process_normal_selector(CellsSelector *selector, char *command)
 }
 
 // Function returns selector length. Minimal length of selector is 3 characters - [_]. So 0-3 can be used as error codes.
-unsigned short process_selector(CellsSelector *selector, char *command, Table *table, CellsSelector *temporary_selector)
+unsigned short process_selector(CellsSelector *selector, Command_t *command, Table *table, CellsSelector *temporary_selector)
 {
-    if (command[0] != '[' || (strlen(command) > 2 && command[1] == 's'))      // first character is not a selector, skip [set] selector
-        return EXIT_SUCCESS;
-
-    unsigned short result;
-
-    result = process_special_selectors(selector, command, table, temporary_selector);
-    if (result == EXIT_FAILURE)
+    if ((command->command_category == 3 && process_special_selectors(selector, command, table, temporary_selector)) ||
+        (command->command_category == 4 && process_normal_selector(selector, command)))
         return EXIT_FAILURE;
-
-    if (!result)
-    {
-        result = process_normal_selector(selector, command);
-        if (result == EXIT_FAILURE)
-            return EXIT_FAILURE;
-    }
 
     return EXIT_SUCCESS;
 }
@@ -817,31 +740,41 @@ unsigned short resize_table_if_necessary(Table *table, TableSize *size, CellsSel
     return resize_table(table, size, &resize_to);
 }
 
-unsigned short set(Table *table, char *to_set, CellsSelector *selector)
+unsigned short set_to_cell(char **cell, char *to_set, size_t to_set_length)
 {
+    char *resized_cell = (char *)realloc(*cell, sizeof(char) * to_set_length + 1);
+    if (!resized_cell)
+    {
+        if (to_set_length > strlen(*cell))
+        {
+            print_error("Could not allocate memory for cell!");
+            return EXIT_FAILURE;
+        }
+        resized_cell = *cell;
+    }
+    copy_to_array(resized_cell, to_set, to_set_length);
+    *cell = resized_cell;
+
+    return EXIT_SUCCESS;
+}
+
+unsigned short set(Table *table, Command_t *command, CellsSelector *selector)
+{
+    char *to_set = command->name + 4;
     size_t to_set_length = strlen(to_set);
 
     for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
         for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
         {
-            char *resized_cell = (char *)realloc(table->rows[row]->cells[column], sizeof(char) * to_set_length + 1);
-            if (!resized_cell)
-            {
-                if (to_set_length > strlen(table->rows[row]->cells[column]))
-                {
-                    print_error("Could not allocate memory for cell!");
-                    return EXIT_FAILURE;
-                }
-                resized_cell = table->rows[row]->cells[column];
-            }
-            copy_to_array(resized_cell, to_set, to_set_length);
-            table->rows[row]->cells[column] = resized_cell;
+            if (set_to_cell(&table->rows[row]->cells[column], to_set, to_set_length))
+                return EXIT_FAILURE;
         }
     return EXIT_SUCCESS;
 }
 
-unsigned short clear(Table *table, CellsSelector *selector)
+unsigned short clear(Table *table, Command_t *command, CellsSelector *selector)
 {
+    (void)command;
     for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
         for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
         {
@@ -856,7 +789,7 @@ unsigned short clear(Table *table, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
-unsigned short swap(Table *table, char *command, CellsSelector *selector)
+unsigned short swap(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector swap_with = {0};
     process_normal_selector(&swap_with, command);
@@ -876,14 +809,15 @@ unsigned short set_numeric_value_to_cell(Table *table, CellsSelector *selector, 
     result[no_of_digits] = '\0';
     sprintf(result,"%g", value);
 
-    return set(table, result, selector);
+    return set_to_cell(&table->rows[selector->starting_row]->cells[selector->starting_cell], result, no_of_digits);
 }
 
 // Function for sum/avg/count
-unsigned short cell_counting_commands(Table *table, char *command, CellsSelector *selector, short what_to_do)
+unsigned short cell_counting_commands(Table *table, Command_t *command, CellsSelector *selector, short what_to_do)
 {
     CellsSelector save_to = {0};
     process_normal_selector(&save_to, command);
+
     float sum = 0;
     table_index values_count = 0;
 
@@ -906,22 +840,22 @@ unsigned short cell_counting_commands(Table *table, char *command, CellsSelector
         return set_numeric_value_to_cell(table, &save_to, (float)values_count);
 }
 
-unsigned short sum(Table *table, char *command, CellsSelector *selector)
+unsigned short sum(Table *table, Command_t *command, CellsSelector *selector)
 {
     return cell_counting_commands(table, command, selector, 0);
 }
 
-unsigned short avg(Table *table, char *command, CellsSelector *selector)
+unsigned short avg(Table *table, Command_t *command, CellsSelector *selector)
 {
     return cell_counting_commands(table, command, selector, 1);
 }
 
-unsigned short count(Table *table, char *command, CellsSelector *selector)
+unsigned short count(Table *table, Command_t *command, CellsSelector *selector)
 {
     return cell_counting_commands(table, command, selector, 2);
 }
 
-unsigned short len(Table *table, char *command, CellsSelector *selector)
+unsigned short len(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector save_to = {0};
     process_normal_selector(&save_to, command);
@@ -956,13 +890,12 @@ unsigned short def(Table *table, char **variable, CellsSelector *selector)
     }
     copy_to_array(copy, cell, cell_length);
     *variable = copy;
-    printf("%s", copy);
     return EXIT_SUCCESS;
 }
 
 unsigned short use(Table *table, char **variable, CellsSelector *selector)
 {
-    return set(table, *variable, selector);
+    return set_to_cell(&table->rows[selector->starting_row]->cells[selector->starting_cell], *variable, strlen(*variable));
 }
 
 unsigned short inc(char **variable)
@@ -996,104 +929,72 @@ char *get_variable_index_position(char *command)
     return found + 1;   // move pointer behind _
 }
 
-unsigned short process_temporary_selectors(Table *table, char *command, CellsSelector *selector, char **user_variables)
+unsigned short process_temporary_selectors(Table *table, Command_t *command, CellsSelector *selector, char **user_variables)
 {
-    char *variable_index = get_variable_index_position(command);
-    if (!variable_index)
+    char *variable_index = get_variable_index_position(command->name);
+    char **variable = get_variable_pointer(variable_index, user_variables);
+
+    if (!variable ||                                            // checking variable validity
+        (!*variable && command->processing_function != def))    //checking if variable is initialized for "use" and "inc" commands
     {
-        if (strstr(command, "def ") || strstr(command, "use ") || strstr(command, "inc "))
-            return EXIT_FAILURE;
-        return EXIT_SUCCESS;    // command is not selector
+        print_error("Variable is not defined!");
+        return EXIT_FAILURE;
+    }
+    if (is_range(selector))
+    {
+        print_error("Cannot process command at range of cells!");
+        return EXIT_FAILURE;
     }
 
-    char **variable = get_variable_pointer(command, user_variables);
-    if (!variable ||                                   // checking variable validity
-        (!*variable && !strstr(command, "def")))  //checking if variable is initialized for "use" and "inc" commands
-        return EXIT_FAILURE;
-
-    unsigned short result = EXIT_SUCCESS;
-    if (is_command(&command, "def _"))
-        result = def(table, variable, selector);
-    else if (is_command(&command, "use _"))
-        result = use(table, variable, selector);
-    else if (is_command(&command, "inc _"))
-        result = inc(variable);
-
-    return result;
+    if (command->processing_function == inc)
+        return inc(variable);
+    else
+        return command->processing_function(table, variable, selector);
 }
 
-unsigned short process_command(Table *table, TableSize size, char *command, CellsSelector *selector, CellsSelector *temp_selector, char **user_variables)
+unsigned short process_command(Table *table, Command_t *command, CellsSelector *selector)
 {
+    if (command->processing_function == len || command->processing_function == swap)
+        if (is_range(selector))
+        {
+            print_error("Functions \"len\" and \"swap\" does not support range of cells!");
+            return EXIT_FAILURE;
+        }
+    return command->processing_function(table, command, selector);
+}
+
+int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned short count, char **user_variables)
+{
+    (void)user_variables;
     (void)size;
-    unsigned short return_code = 0;
-
-    if (is_command(&command, "set "))
-        return_code = set(table, command, selector);
-    else if (is_command(&command, "clear"))
-        return_code = clear(table, selector);
-    else if (is_command(&command, "[set]"))
-        return_code = swap_selectors(temp_selector, selector);
-    else if (is_command(&command, "swap "))
-    {
-        if (!is_range(selector))
-            swap(table, command, selector);
-        else
-        {
-            print_error("Range is not one cell!");
-            return_code = EXIT_FAILURE;
-        }
-    }else if (is_command(&command, "sum "))
-        return_code = sum(table, command, selector);
-    else if (is_command(&command, "avg "))
-        return_code = avg(table, command, selector);
-    else if (is_command(&command, "count "))
-        return_code = count(table, command, selector);
-    else if (is_command(&command, "len "))
-    {
-        if (!is_range(selector))
-            len(table, command, selector);
-        else
-        {
-            print_error("Range is not one cell!");
-            return_code = EXIT_FAILURE;
-        }
-    }else
-        return_code = process_temporary_selectors(table, command, selector, user_variables);
-
-    return return_code;
-}
-
-int parse_commands(Table *table, TableSize *size, int arg_count, char **arguments, char **user_variables)
-{
-    char *command_start = arguments[arg_count - 2];
-    char *command_end = command_start;
-    CellsSelector selected = {1, 1, 1, 1};
-    CellsSelector users_saved_selector = {0, 0, 0, 0};
+    CellsSelector selected              = {1, 1, 1, 1};
+    CellsSelector users_saved_selector  = {0, 0, 0, 0};
 
     bool first_command = true;
+    (void )first_command;
     unsigned short command_length = 0;
+    (void )command_length;
 
-    while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
+    for (unsigned short command_index = 0; command_index < count; command_index++)
     {
-        if (command_length > MAXIMUM_COMMAND_LENGTH)
+        Command_t x = commands[command_index];
+        (void)x;
+        if (commands[command_index].command_category == 3 || commands[command_index].command_category == 4)
+            if (process_selector(&selected, &commands[command_index], table, &users_saved_selector))
+                return EXIT_FAILURE;
+
+        if (resize_table_if_necessary(table, size, &selected))
             return EXIT_FAILURE;
 
-        char command[command_length + 1];
-        copy_to_array(command, command_start, command_length);
-
-        unsigned short selector_length = process_selector(&selected, command, table, &users_saved_selector);
-        unsigned short resizing_failed = resize_table_if_necessary(table, size, &selected);
-        if (selector_length == EXIT_FAILURE || resizing_failed)
+        if (commands[command_index].command_category == 1 && process_command(table, &commands[command_index], &selected))
             return EXIT_FAILURE;
 
-        if (process_command(table, *size, command_end, &selected, &users_saved_selector, user_variables))
+        if (commands[command_index].command_category == 5 && process_temporary_selectors(table, &commands[command_index], &selected, user_variables))
             return EXIT_FAILURE;
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
 
         first_command = false;
-        command_start = command_end;
-        command_length = 0;
     }
     return EXIT_SUCCESS;
 }
@@ -1121,12 +1022,205 @@ void print_variables(char **variables)
     printf("==VARIABLES==\n");
 }
 
+
+void copy_command_definitions(Command_t *destination_array)
+{
+    Command_t commands[SUPPORTED_COMMANDS_COUNT] = {
+            {"set",     1, set},
+            {"clear",   1, clear},
+            {"clear",   1, swap},
+            {"sum",     1, sum},
+            {"avg",     1, avg},
+            {"count",   1, count},
+            {"len",     1, len},
+            {"[min]",   3, process_min_max_selectors},
+            {"[max]",   3, process_min_max_selectors},
+            {"[_]",     3, swap_selectors},
+            {"[find ",  3, process_find_selector},
+            {"[set]",   3, swap_selectors},
+            {"def",   5, def},
+            {"use",   5, use},
+            {"inc",   5, inc},
+            {"SLCTRS",  4, process_selector},   // selectors have to be last
+            //{"def", 2, def},
+            //{"len", 1, len},
+    };
+    for (unsigned short command_index = 0; command_index < SUPPORTED_COMMANDS_COUNT; command_index++)
+        destination_array[command_index] = commands[command_index];
+}
+
+unsigned short copy_commands_file_content(FILE *file, char **commands, unsigned int array_capacity)
+{
+    int loaded_character;
+    long position = 0;
+    while ((loaded_character = getc(file)) != EOF)
+    {
+        if (position == array_capacity)
+        {
+            array_capacity *= 2;
+            char *resized = (char *)realloc(*commands, sizeof(char) * array_capacity + 1);
+            if (!resized)
+            {
+                print_error("Could not allocate enough memory for commands!");
+                return EXIT_FAILURE;
+            }
+            *commands = resized;
+        }
+        if (loaded_character == '\n')// replace \n commands delimiter with correct delimiter
+        {
+            int next_char = getc(file);
+            loaded_character = '\0';
+            if (next_char != EOF)
+                loaded_character = ';';
+            ungetc(next_char, file);
+        }
+        (*commands)[position] = (char) loaded_character;
+        position++;
+    }
+    (*commands)[position] = '\0';
+
+    return EXIT_SUCCESS;
+}
+
+char *get_commands_from_file(char *filename)
+{
+    FILE *commands_file = file_loader(filename, "r");
+    if (!commands_file)
+        return NULL;
+
+    unsigned int array_capacity = 50;
+    char *file_commands = (char *)malloc(sizeof(char) * array_capacity + 1);
+    if (!file_commands)
+    {
+        print_error("Could not allocate memory for commands!");
+        return NULL;
+    }
+
+    if (copy_commands_file_content(commands_file, &file_commands, array_capacity))
+        return NULL;
+
+    size_t commands_length = strlen(file_commands);
+    dealloc_unused_cell_part(&file_commands, commands_length);
+
+    fclose(commands_file);
+    return file_commands;
+}
+
+Command_t *allocate_commands_array()
+{
+    Command_t *commands = (Command_t *)malloc(sizeof(bool));    // it is reallocated on-demand, so saving memory for now
+    if (!commands)
+    {
+        print_error("Could not allocate memory for commands!");
+        return NULL;
+    }
+    return commands;
+}
+
+unsigned short get_command_def_index(Command_t *command_definitions, char *command_start)
+{
+    unsigned short command_def_index = SUPPORTED_COMMANDS_COUNT + 1;    // initializing with value behind valid range
+
+    for (unsigned short command_index = 0; command_index < (SUPPORTED_COMMANDS_COUNT - 1) && command_def_index > SUPPORTED_COMMANDS_COUNT; command_index++)
+    {
+        if (strstr(command_start, command_definitions[command_index].name) == command_start)
+            command_def_index = command_index;
+    }
+
+    if (command_def_index > SUPPORTED_COMMANDS_COUNT && command_start[0] == '[' && command_start[1] != 's')   // selectors
+        command_def_index = SUPPORTED_COMMANDS_COUNT-1;
+
+    return command_def_index;
+}
+
+Command_t get_command_from_arguments(char *command_start, unsigned short command_length, Command_t command_def)
+{
+    char *command_content = (char *)malloc(sizeof(char) * command_length + 1);
+    Command_t command = {0};
+    if (!command_content)
+    {
+        print_error("Could not allocate memory for command!");
+        return command;
+    }
+    copy_to_array(command_content, command_start, command_length);
+    command.name = command_content;
+    command.command_category = command_def.command_category;
+    command.processing_function = command_def.processing_function;
+    return command;
+}
+
+short save_commands(char *commands_source, Command_t *command_definitions, Command_t **commands)
+{
+    short commands_array_size = 0;
+    char *command_start = commands_source;
+    char *command_end = commands_source;
+
+    bool first_command = true;
+    unsigned short command_length = 0;
+
+    while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
+    {
+        if (command_length > MAXIMUM_COMMAND_LENGTH)
+            return -1;
+
+        unsigned short command_def_index = get_command_def_index(command_definitions, command_start);
+        if (command_def_index > SUPPORTED_COMMANDS_COUNT)
+            return -1;
+
+        Command_t *reallocated_commands = realloc(*commands, sizeof(Command_t) * (++commands_array_size));
+        if (!reallocated_commands)
+        {
+            print_error("Could not reallocate commands array!");
+            return -1;
+        }
+        *commands = reallocated_commands;
+
+        Command_t allocated_command = get_command_from_arguments(command_start, command_length, command_definitions[command_def_index]);
+        if (!allocated_command.command_category)
+            return -1;
+
+        (*commands)[commands_array_size - 1] = allocated_command;  // -1 because size is indexed from 1
+
+        first_command = false;
+        command_start = command_end + 1;
+        command_length = 0;
+    }
+    return commands_array_size;
+}
+
+Command_t *load_commands(int arg_count, char *arguments[], unsigned short *count)
+{
+    Command_t command_definitions[SUPPORTED_COMMANDS_COUNT];
+    copy_command_definitions(command_definitions);
+    Command_t *commands = allocate_commands_array();
+    if (!commands)
+        return NULL;
+
+    char *commands_source = arguments[arg_count - 2];
+    bool free_commands_source = false;
+
+    if (strstr(commands_source, "-c") == commands_source)
+    {
+        commands_source = get_commands_from_file((commands_source + 2));
+        if (!commands_source)
+            return commands;
+        free_commands_source = true;
+    }
+
+    short commands_count = save_commands(commands_source, command_definitions, &commands);
+    if (commands_count == -1)
+        return commands;
+    *count = commands_count;
+
+    if (free_commands_source)
+        free(commands_source);
+
+    return commands;
+}
+
 int main(int arg_count, char *arguments[])
 {
     if (provided_minimal_amount_of_arguments(arg_count))
-        return EXIT_FAILURE;
-
-    if (valid_commands_argument(arg_count, arguments))
         return EXIT_FAILURE;
 
     int is_defined_delimiter = defined_delimiter(arg_count, arguments);
@@ -1139,8 +1233,10 @@ int main(int arg_count, char *arguments[])
     if (is_defined_delimiter)
         delimiter = arguments[2];
 
+    unsigned short commands_count = 0;
+    Command_t *commands = load_commands(arg_count, arguments, &commands_count);
 
-    FILE *table_file = file_loader(arguments[get_table_filename_index(arg_count)], "r+");
+    FILE *table_file = file_loader(arguments[arg_count - 1], "r");
     if (!table_file)
         return EXIT_FAILURE;
 
@@ -1157,7 +1253,8 @@ int main(int arg_count, char *arguments[])
         int successfully_loaded = load_table(table_file, table, delimiter, size);
         if (!successfully_loaded)
         {
-            if (!parse_commands(table, &size, arg_count, arguments, user_variables))
+            print_commands(commands, commands_count);
+            if (!parse_commands(table, &size, commands, commands_count, user_variables))
             {
                 print_table(table, size);
                 save_table(table, table_file, size, delimiter[0]);
@@ -1168,6 +1265,7 @@ int main(int arg_count, char *arguments[])
 
     destruct_table(table, size);
     destruct_user_variables(user_variables);
+    destruct_commands(commands, commands_count);
     fclose(table_file);
     return EXIT_SUCCESS;
 }
