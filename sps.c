@@ -20,7 +20,7 @@
 #define SELECTION_COMMANDS_DELIMITER ","
 #define USER_VARIABLES_COUNT 10
 
-#define SUPPORTED_COMMANDS_COUNT 16
+#define SUPPORTED_COMMANDS_COUNT 22
 
 typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
 
@@ -954,6 +954,30 @@ unsigned short process_temporary_selectors(Table *table, Command_t *command, Cel
         return command->processing_function(table, variable, selector);
 }
 
+unsigned short irow_arow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    TableSize resize_to = {size->rows + 1, size->columns};
+    if (resize_table(table, size, &resize_to))
+        return EXIT_FAILURE;
+
+    TableRow *new_row = table->rows[resize_to.rows - 1]; // size is indexed from 1 so -1
+    table_index destination_index = string_compare(command->name, "irow") ? selector->starting_row : (selector->ending_row + 1);
+    table_index to_move = resize_to.rows - destination_index - 1;
+
+    memmove(&(table->rows[destination_index + 1]), &(table->rows[destination_index]), sizeof(TableRow *) * to_move);
+    table->rows[destination_index] = new_row;
+
+    return EXIT_SUCCESS;
+}
+
+unsigned short process_table_struct_commands(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    if (command->processing_function == irow_arow)
+        return command->processing_function(table, size, selector, command);
+
+    return command->processing_function(table, size, selector);
+}
+
 unsigned short process_command(Table *table, Command_t *command, CellsSelector *selector)
 {
     if (command->processing_function == len || command->processing_function == swap)
@@ -992,6 +1016,9 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
             return EXIT_FAILURE;
 
         if (commands[command_index].command_category == 5 && process_temporary_selectors(table, &commands[command_index], &selected, user_variables))
+            return EXIT_FAILURE;
+
+        if (commands[command_index].command_category == 6 && process_table_struct_commands(table, size, &selected, &commands[command_index]))
             return EXIT_FAILURE;
 
         printf("%lld, %lld, %lld, %lld\n", selected.starting_row, selected.starting_cell, selected.ending_row, selected.ending_cell);
@@ -1038,12 +1065,18 @@ void copy_command_definitions(Command_t *destination_array)
             {"[min]",   3, process_min_max_selectors},
             {"[max]",   3, process_min_max_selectors},
             {"[_]",     3, swap_selectors},
-            {"[find ",  3, process_find_selector},
-            {"[set]",   3, swap_selectors},
-            {"def",   5, def},
-            {"use",   5, use},
-            {"inc",   5, inc},
-            {"SLCTRS",  4, process_selector},   // selectors have to be last
+            {"[find ",  3,        process_find_selector},
+            {"[set]",   3,        swap_selectors},
+            {"def",   5,          def},
+            {"use",   5,          use},
+            {"inc",   5,          inc},
+            {"irow", 6,           irow_arow},
+            {"arow", 6,           irow_arow},
+            {"drow", 6,           NULL},
+            {"icol", 6, NULL},
+            {"acol", 6, NULL},
+            {"dcol", 6, NULL},
+            {"SLCTRS",  4,        process_selector},   // selectors have to be last
             //{"def", 2, def},
             //{"len", 1, len},
     };
