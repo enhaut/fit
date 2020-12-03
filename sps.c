@@ -970,12 +970,29 @@ unsigned short irow_arow(Table *table, TableSize *size, CellsSelector *selector,
     return EXIT_SUCCESS;
 }
 
+unsigned short icol_acol(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    TableSize resize_to = {size->rows, size->columns + 1};
+    if (resize_table(table, size, &resize_to))
+        return EXIT_FAILURE;
+
+    bool acol = string_compare(command->name, "acol");
+
+    for (table_index row = 0; row < size->rows; row++)
+    {
+        char *new_cell = table->rows[row]->cells[resize_to.columns - 1];
+        table_index destination_index = acol ? (selector->ending_cell + 1) : selector->starting_cell;
+        table_index to_move = resize_to.columns - destination_index - 1;
+        memmove(&(table->rows[row]->cells[destination_index + 1]), &(table->rows[row]->cells[destination_index]), sizeof(char *) * to_move);
+        table->rows[row]->cells[destination_index] = new_cell;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 unsigned short process_table_struct_commands(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
-    if (command->processing_function == irow_arow)
-        return command->processing_function(table, size, selector, command);
-
-    return command->processing_function(table, size, selector);
+    return command->processing_function(table, size, selector, command);
 }
 
 unsigned short process_command(Table *table, Command_t *command, CellsSelector *selector)
@@ -1071,8 +1088,8 @@ void copy_command_definitions(Command_t *destination_array)
             {"irow", 6,           irow_arow},
             {"arow", 6,           irow_arow},
             {"drow", 6,           NULL},
-            {"icol", 6, NULL},
-            {"acol", 6, NULL},
+            {"icol", 6, icol_acol},
+            {"acol", 6, icol_acol},
             {"dcol", 6, NULL},
             {"SLCTRS",  4,        process_selector},   // selectors have to be last
             //{"def", 2, def},
