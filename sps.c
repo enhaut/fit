@@ -564,7 +564,7 @@ table_index * get_selector_from_index(unsigned short index, CellsSelector *selec
     return save_to;
 }
 
-unsigned short process_normal_selector(CellsSelector *selector, Command_t *command)
+unsigned short process_normal_selector(CellsSelector *selector, Command_t *command, TableSize size)
 {
     char *selector_value = command->name;
     short selector_index = -1;
@@ -575,7 +575,15 @@ unsigned short process_normal_selector(CellsSelector *selector, Command_t *comma
         table_index *save_to = get_selector_from_index(selector_index, selector);
 
         if (strchr(selector_value, '_') == selector_value) {
-            *save_to = 0;
+            if (!selector_index) {
+                selector->starting_row = 0;
+                selector->ending_row = size.rows - 1;
+            }else if (selector_index == 1) {
+                selector->starting_cell = 0;
+                selector->ending_cell = size.columns - 1;
+            }
+            selector_value++;
+            selector_value = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
             continue;
         }
 
@@ -595,19 +603,16 @@ unsigned short process_normal_selector(CellsSelector *selector, Command_t *comma
         }
         *save_to = value - 1;   // rows & columns are indexed from 0
     }
-    if (selector_index < 3)
-    {
-        selector->ending_row = selector->starting_row;
-        selector->ending_cell = selector->starting_cell;
-    }
+    selector->ending_row    = !selector->ending_row ? selector->starting_row : selector->ending_row;
+    selector->ending_cell   = !selector->ending_cell ? selector->starting_cell : selector->ending_cell;
     return EXIT_SUCCESS;
 }
 
 // Function returns selector length. Minimal length of selector is 3 characters - [_]. So 0-3 can be used as error codes.
-unsigned short process_selector(CellsSelector *selector, Command_t *command, Table *table, CellsSelector *temporary_selector)
+unsigned short process_selector(CellsSelector *selector, Command_t *command, Table *table, CellsSelector *temporary_selector, TableSize size)
 {
     if ((command->command_category == 3 && process_special_selectors(selector, command, table, temporary_selector)) ||
-        (command->command_category == 4 && process_normal_selector(selector, command)))
+        (command->command_category == 4 && process_normal_selector(selector, command, size)))
         return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -794,7 +799,8 @@ unsigned short clear(Table *table, Command_t *command, CellsSelector *selector)
 unsigned short swap(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector swap_with = {0};
-    process_normal_selector(&swap_with, command);
+    TableSize size = {0};
+    process_normal_selector(&swap_with, command, size);
 
     char *temp = table->rows[selector->starting_row]->cells[selector->ending_row];
     table->rows[selector->starting_row]->cells[selector->ending_row] = table->rows[swap_with.starting_row]->cells[swap_with.starting_cell];
@@ -818,7 +824,8 @@ unsigned short set_numeric_value_to_cell(Table *table, CellsSelector *selector, 
 unsigned short cell_counting_commands(Table *table, Command_t *command, CellsSelector *selector, short what_to_do)
 {
     CellsSelector save_to = {0};
-    process_normal_selector(&save_to, command);
+    TableSize size = {0};
+    process_normal_selector(&save_to, command, size);
 
     float sum = 0;
     table_index values_count = 0;
@@ -860,7 +867,8 @@ unsigned short count(Table *table, Command_t *command, CellsSelector *selector)
 unsigned short len(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector save_to = {0};
-    process_normal_selector(&save_to, command);
+    TableSize size = {0};
+    process_normal_selector(&save_to, command, size);
 
     size_t cell_length = strlen(table->rows[selector->starting_row]->cells[selector->starting_cell]);
     set_numeric_value_to_cell(table, &save_to, (float)cell_length);
@@ -1014,7 +1022,7 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
     for (unsigned short command_index = 0; command_index < count; command_index++)
     {
         if (commands[command_index].command_category == 3 || commands[command_index].command_category == 4)
-            if (process_selector(&selected, &commands[command_index], table, &users_saved_selector))
+            if (process_selector(&selected, &commands[command_index], table, &users_saved_selector, *size))
                 return EXIT_FAILURE;
 
         unsigned short command_category =  commands[command_index].command_category;
