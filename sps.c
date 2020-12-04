@@ -904,7 +904,7 @@ unsigned short cell_counting_commands(Table *table, Command_t *command, CellsSel
         {
             float cell_value;
             bool valid = get_numeric_cell_value(table->rows[row]->cells[column], &cell_value);
-            if (!valid && what_to_do != 2)
+            if (!valid || !strlen(table->rows[row]->cells[column]))
                 continue;
             sum += cell_value;
             values_count++;
