@@ -136,7 +136,6 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     table_index columns = 0;
     table_index row_columns = 0;
     int loaded_character;
-    int character_before;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
 
     while ((loaded_character = getc(table_file)) != EOF)
@@ -149,14 +148,12 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
         if (!inside_quotation && is_character_delimiter(delimiters, loaded_character))
             row_columns++;
 
-        if (loaded_character == '\n' && loaded_character != character_before) {
-            //                             ^ -- prevent counting empty lines
+        if (loaded_character == '\n') {
             rows++;
             if (row_columns > columns)
                 columns = row_columns;  // save the count of cells in the biggest row
             row_columns = 0;            // new row reached, reset counter
         }
-        character_before = loaded_character;
     }
     size->rows = rows;  // TODO: counting rows in file with no empty line at the EOF
     size->columns = rows ? columns + 1 : 0; // the counter counts delimiters only so +1 to add missing column
