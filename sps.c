@@ -414,6 +414,8 @@ void print_table(Table *table, TableSize size)
     for (table_index row = 0; row < size.rows; row++)
     {
         for (table_index column = 0; column < size.columns; column++) {
+            if (!table->rows[row]->cells[column])
+                continue;
             printf("%s", table->rows[row]->cells[column]);
             if (column < (size.columns - 1))
                 printf(",");
