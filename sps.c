@@ -59,16 +59,6 @@ bool string_compare(char *first, char *second)
     return strcmp(first, second) == 0;
 }
 
-// Function checks if provided command name is valid command name
-bool is_command(char **provided_command_name, char *command_name)
-{
-    char *found_at = strstr(*provided_command_name, command_name);
-    if (found_at != *provided_command_name)
-        return false;
-    (*provided_command_name) += strlen(command_name);   // used to move pointer behind command name, to arguments
-    return true;
-}
-
 void copy_to_array(char *destination, char *source, size_t how_much)
 {
     strncpy(destination, source, how_much);
