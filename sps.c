@@ -1381,7 +1381,7 @@ int main(int arg_count, char *arguments[])
             {
                 print_variables(user_variables);
                 print_table(table, size);
-                save_table(table, table_file, size, delimiter[0]);
+                save_table(table, table_file, size, delimiter);
             }
         }
     }
