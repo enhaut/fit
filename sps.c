@@ -231,12 +231,35 @@ void dealloc_unused_cell_part(char **cell, table_index size)
         *cell = reallocated_cell;
 }
 
+void remove_special_characters(char *cell, table_index cell_size)
+{
+
+    char *found_backslash;
+    while ((found_backslash = strchr(cell, '\\')) != NULL)
+    {
+        if (found_backslash && found_backslash[1] != '"') {
+            memmove(found_backslash, &found_backslash[1], sizeof(char) * (strlen(found_backslash) - 1));
+            cell[(cell_size--) - 1] = '\0';
+        }
+    }
+
+    if (cell[0] == '"' && cell[cell_size - 1]  == '"')
+    {
+        memmove(&cell[0], &cell[1], sizeof(char) * (cell_size - 2));
+        cell[cell_size - 2] = '\0';
+    }
+
+}
+
 char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
 {
     table_index cell_length = INITIAL_CELL_SIZE;
     char *cell = (char *) malloc(sizeof(char) * cell_length + 1);
     if (!cell)
         return NULL;
+    for (table_index x = 0; x < cell_length; x++)
+        cell[x] = 0;
+
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
     int loaded_character;
@@ -263,8 +286,8 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
     if (loaded_character == '\n')
         *last_cell = true;
 
+    remove_special_characters(cell, position);
     dealloc_unused_cell_part(&cell, position);
-    cell[position] = '\0';
 
     return cell;
 }
