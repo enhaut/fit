@@ -435,7 +435,17 @@ void print_table(Table *table, TableSize size)
     }
 }
 
-void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
+bool contains_delimiter(char *cell, char *delimiters)
+{
+    size_t cell_len = strlen(cell);
+    bool contains = false;
+    for (table_index position = 0; position < cell_len && !contains; position++)
+        contains = is_character_delimiter(delimiters, cell[position]);
+
+    return contains;
+}
+
+void save_table(Table *table, FILE *table_file, TableSize size, char *delimiters)
 {
     freopen(NULL, "w", table_file);     // file is opened in r mode, so reopen it to rewrite content
     size = get_savable_table_size(table, size);
@@ -444,9 +454,15 @@ void save_table(Table *table, FILE *table_file, TableSize size, char delimiter)
     {
         for (table_index column = 0; column < size.columns; column++)
         {
-            fprintf(table_file, "%s", table->rows[row]->cells[column]);
+            bool should_be_quoted = contains_delimiter(table->rows[row]->cells[column], delimiters);
+            char quot[2] = "\"";
+            if (!should_be_quoted)
+                quot[0] = '\0';
+
+            fprintf(table_file, "%s%s%s", quot, table->rows[row]->cells[column], quot);
+
             if (column < (size.columns - 1))    // write delimiter behind not last columns
-                fputc(delimiter, table_file);
+                fputc(delimiters[0], table_file);
         }
         fputc('\n', table_file);
     }
