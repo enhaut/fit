@@ -54,7 +54,6 @@ typedef struct {
 }Command_t;
 
 
-
 bool string_compare(char *first, char *second)
 {
     return strcmp(first, second) == 0;
@@ -173,6 +172,11 @@ void initialize_cell_pointers(Table *table, table_index row, table_index columns
 
 Table * initialize_table(TableSize dimensions, int *result)
 {
+    if (!dimensions.rows || !dimensions.columns) {
+        *result = EXIT_FAILURE;
+        return NULL;
+    }
+
     Table *table = (Table *)malloc(sizeof(Table));
     if (!table) {
         *result = EXIT_FAILURE;
@@ -396,6 +400,8 @@ TableSize get_savable_table_size(Table *table, TableSize size)
     TableSize savable_size;
     savable_size.columns = size.columns;
     savable_size.rows = size.rows;
+    if (!savable_size.columns || !savable_size.rows)
+        return savable_size;
 
     for (table_index column = size.columns - 1; column; column--)
     {
@@ -791,6 +797,7 @@ unsigned short set_to_cell(char **cell, char *to_set, size_t to_set_length)
 unsigned short set(Table *table, Command_t *command, CellsSelector *selector)
 {
     char *to_set = command->name + 4;
+    remove_special_characters(to_set, strlen(to_set));
     size_t to_set_length = strlen(to_set);
 
     for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
@@ -1227,23 +1234,25 @@ short save_commands(char *commands_source, Command_t *command_definitions, Comma
     while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
     {
         if (command_length > MAXIMUM_COMMAND_LENGTH)
-            return -1;
+            return commands_array_size;
 
         unsigned short command_def_index = get_command_def_index(command_definitions, command_start);
         if (command_def_index > SUPPORTED_COMMANDS_COUNT)
-            return -1;
+            return commands_array_size;
 
         Command_t *reallocated_commands = realloc(*commands, sizeof(Command_t) * (++commands_array_size));
         if (!reallocated_commands)
         {
             print_error("Could not reallocate commands array!");
-            return -1;
+            return commands_array_size;
         }
         *commands = reallocated_commands;
 
         Command_t allocated_command = get_command_from_arguments(command_start, command_length, command_definitions[command_def_index]);
-        if (!allocated_command.command_category)
-            return -1;
+        if (!allocated_command.command_category) {
+            free(allocated_command.name);
+            return commands_array_size;
+        }
 
         (*commands)[commands_array_size - 1] = allocated_command;  // -1 because size is indexed from 1
 
@@ -1316,10 +1325,8 @@ int main(int arg_count, char *arguments[])
 
     if (!successful_initialization || !user_variables)
     {
-        int successfully_loaded = load_table(table_file, table, delimiter, size);
-        if (!successfully_loaded)
+        if (!load_table(table_file, table, delimiter, size))
         {
-            print_commands(commands, commands_count);
             if (!parse_commands(table, &size, commands, commands_count, user_variables))
             {
                 print_table(table, size);
@@ -1327,11 +1334,10 @@ int main(int arg_count, char *arguments[])
             }
         }
     }
-    print_variables(user_variables);
 
     destruct_table(table, size);
-    destruct_user_variables(user_variables);
     destruct_commands(commands, commands_count);
+    destruct_user_variables(user_variables);
     fclose(table_file);
     return EXIT_SUCCESS;
 }
