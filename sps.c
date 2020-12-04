@@ -606,47 +606,83 @@ table_index * get_selector_from_index(unsigned short index, CellsSelector *selec
     return save_to;
 }
 
-unsigned short process_normal_selector(CellsSelector *selector, Command_t *command, TableSize size)
+void set_to_selector(CellsSelector *selector, table_index s_row, table_index s_cell, table_index e_row, table_index e_cell)
 {
-    char *selector_value = command->name;
-    short selector_index = -1;
-    selector_value = strtok((strchr(selector_value, '[') + 1), SELECTION_COMMANDS_DELIMITER);    // moving pointer behind [
+    selector->starting_row = s_row;
+    selector->starting_cell = s_cell;
+    selector->ending_row = e_row;
+    selector->ending_cell = e_cell;
+}
 
-    while (selector_value != NULL && selector_index++ < 4)   // there could be up to 4 selectors (R1, C1, R2, C2)
-    {
-        table_index *save_to = get_selector_from_index(selector_index, selector);
+unsigned short process_relative_selector(CellsSelector *selector, TableSize size, char selectors[][21])
+{
+    bool first_is_comma = selectors[0][0] == '_';
+    bool second_is_comma = selectors[1][0] == '_';
+    float value;
+    bool valid = true;
 
-        if (strchr(selector_value, '_') == selector_value) {
-            if (!selector_index) {
-                selector->starting_row = 0;
-                selector->ending_row = size.rows - 1;
-            }else if (selector_index == 1) {
-                selector->starting_cell = 0;
-                selector->ending_cell = size.columns - 1;
-            }
-            selector_value++;
-            selector_value = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
-            continue;
-        }
-
-        char *raw_selector = selector_value;
-        char *remaining = NULL;
-        table_index value;
-        value = strtoull(selector_value, &remaining, 10);
-
-        selector_value = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
-        if ((!selector_value && !strchr(raw_selector, ']')) ||                   // last selector should contains ]
-            (remaining[0] != '\0' && !(!selector_value && remaining[0] == ']')) ||  // invalid selector detection but exclude ending selector with trailing ]
-            ((selector_index == 0 || selector_index == 2) && !selector_value) ||    // invalid selectors count
-            !value)
+    if (first_is_comma && second_is_comma)
+        set_to_selector(selector, 0, 0, size.rows - 1, size.columns - 1);
+    else if ((first_is_comma && !second_is_comma) || (!first_is_comma && second_is_comma)) {
+        valid = get_numeric_cell_value(selectors[first_is_comma ? 1 : 0], &value);
+        if (!valid)
         {
-            print_error("Invalid selecor!");
+            print_error("Invalid selector!XOXOXOXOXO");
             return EXIT_FAILURE;
         }
-        *save_to = value - 1;   // rows & columns are indexed from 0
+
+        value -= 1;     // adjust indexes
+        if (first_is_comma)
+            set_to_selector(selector, 0, (table_index)value, size.rows - 1, (table_index)value);
+        else
+            set_to_selector(selector, (table_index)value, 0, (table_index)value, size.rows - 1);
     }
-    selector->ending_row    = !selector->ending_row ? selector->starting_row : selector->ending_row;
-    selector->ending_cell   = !selector->ending_cell ? selector->starting_cell : selector->ending_cell;
+
+    return EXIT_SUCCESS;
+}
+
+unsigned short process_normal_selector(CellsSelector *selector, Command_t *command, TableSize size)
+{
+    char *selector_values = command->name;
+    selector_values[strlen(selector_values) - 1] = '\0';    // remove trailing ]
+    selector_values = strtok((strchr(selector_values, '[') + 1), SELECTION_COMMANDS_DELIMITER);
+
+    char selectors[4][21] = {0};      // 4 for 4 selectors and 21 for up to 20 digits of each selector (ull could story up to 20 digits long number)
+    short selector_index = -1;
+
+    while (selector_values != NULL && ++selector_index < 4)     // 4 is maximum # of selectors
+    {
+        copy_to_array(selectors[selector_index], selector_values, strlen(selector_values));
+        selector_values = strtok(NULL, SELECTION_COMMANDS_DELIMITER);
+    }
+
+    if (selectors[0][0] == '_' || selectors[1][0] == '_')
+        return process_relative_selector(selector, size, selectors);
+
+    bool valid = true;
+    float value;
+    for (selector_index = 0; selector_index < 4; selector_index++)  // 4 is maximum # of selectors
+    {
+        short offset = 0;
+        if (selector_index >= 2 && selectors[selector_index][0] == '\0')
+            offset = -2;
+
+        valid = get_numeric_cell_value(selectors[selector_index + offset], &value);
+
+        if (selectors[selector_index][0] == '-')
+        {
+            valid = true;
+            value = (float) (selector_index == 2 ? size.rows : size.columns);
+        }
+
+        if (!valid)
+        {
+            print_error("Invalid selector!");
+            return EXIT_FAILURE;
+        }
+        *get_selector_from_index(selector_index, selector) = (table_index)value - 1;
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -993,16 +1029,24 @@ unsigned short process_temporary_selectors(Table *table, Command_t *command, Cel
         print_error("Variable is not defined!");
         return EXIT_FAILURE;
     }
-    if (is_range(selector))
-    {
-        print_error("Cannot process command at range of cells!");
-        return EXIT_FAILURE;
-    }
 
-    if (command->processing_function == inc)
-        return inc(variable);
-    else
+    if (command->processing_function == def)
         return command->processing_function(table, variable, selector);
+
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
+        {
+            unsigned short return_code;
+            if (command->processing_function == inc)
+                return_code = inc(variable);
+            else
+                return_code = command->processing_function(table, variable, selector);
+
+            if(return_code)
+                return return_code;
+        }
+
+    return EXIT_SUCCESS;
 }
 
 unsigned short irow_arow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
@@ -1069,6 +1113,7 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
                 return EXIT_FAILURE;
 
         unsigned short command_category =  commands[command_index].command_category;
+
         if (resize_table_if_necessary(table, size, &selected) ||
             (command_category == 1 && process_command(table, &commands[command_index], &selected)) ||
             (command_category == 5 && process_temporary_selectors(table, &commands[command_index], &selected, user_variables)) ||
@@ -1342,6 +1387,7 @@ int main(int arg_count, char *arguments[])
         {
             if (!parse_commands(table, &size, commands, commands_count, user_variables))
             {
+                print_variables(user_variables);
                 print_table(table, size);
                 save_table(table, table_file, size, delimiter[0]);
             }
