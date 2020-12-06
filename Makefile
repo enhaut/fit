@@ -7,4 +7,4 @@ clean:
 	-rm sps sps.o
 
 memcheck:
-	-valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./sps CMD_SEQ table_examples/tab1.txt
+	-valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./sps -d ", :-." "[1,1];def _0" table_examples/tab1.txt
