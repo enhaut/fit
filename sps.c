@@ -477,12 +477,12 @@ TableSize get_savable_table_size(Table *table, TableSize size)
 }
 
 // Function checks if cell contains delimiter character.
-bool contains_delimiter(char *cell, char *delimiters)
+bool contains_special_character(char *cell, char *delimiters)
 {
     size_t cell_len = strlen(cell);
     bool contains = false;
     for (table_index position = 0; position < cell_len && !contains; position++)    // loop will be executed until contains == false
-        contains = is_character_delimiter(delimiters, cell[position]);
+        contains = is_character_delimiter(delimiters, cell[position]) || cell[position] == '\\';
 
     return contains;
 }
@@ -496,7 +496,7 @@ void save_table(Table *table, FILE *table_file, TableSize size, char *delimiters
     {
         for (table_index column = 0; column < size.columns; column++)
         {
-            bool should_be_quoted = contains_delimiter(table->rows[row]->cells[column], delimiters);
+            bool should_be_quoted = contains_special_character(table->rows[row]->cells[column], delimiters);
             char quot[2] = "\"";
             if (!should_be_quoted)
                 quot[0] = '\0';
