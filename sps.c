@@ -535,24 +535,28 @@ unsigned short process_min_max_selectors(CellsSelector *selector, Table *table, 
     return EXIT_SUCCESS;
 }
 
-unsigned short process_find_selector(CellsSelector *selector, Command_t *command, Table *table)
+unsigned short process_find_selector(CellsSelector *selector, Table *table, Command_t *command)
 {
-    char *selector_ending = strchr(command->name, ']');
-    unsigned short selector_length = selector_ending - command->name + 1;     // +1 because selector ending is not included
+    size_t command_length = strlen(command->name);
+    char command_name[command_length + 1];
+    copy_to_array(command_name, command->name, command_length);
+
+    char *selector_ending = strchr(command_name, ']');
+    unsigned short selector_length = selector_ending - command_name + 1;     // +1 because selector ending is not included
     if (!selector_ending || (selector_length - 6) <= 1)                 // selector length could not be 1, it s starting at 1
     {
         print_error("Invalid selecor!");
         return EXIT_FAILURE;
     }
 
-    *selector_ending = '\0';    // marking selector ending as end of command, it will be used for searching in cells
-    command->name += 6;               // string starts at 6. position
+    *selector_ending = '\0';            // marking selector ending as end of command, it will be used for searching in cells
+    char *to_find = command_name + 6;   // string starts at 6. position
     bool found = false;
 
     for (table_index row = selector->starting_row; row < selector->ending_row && !found; row++)
         for (table_index column = selector->starting_cell; column < selector->ending_cell; column++)
         {
-            char *contains = strstr(table->rows[row]->cells[column], command->name);
+            char *contains = strstr(table->rows[row]->cells[column], to_find);
             if (contains)
             {
                 set_cell_directions(selector, row, column);
@@ -560,7 +564,7 @@ unsigned short process_find_selector(CellsSelector *selector, Command_t *command
                 break;
             }
         }
-    return selector_length;
+    return EXIT_SUCCESS;
 }
 
 unsigned short swap_selectors(CellsSelector *destination, CellsSelector *source)
