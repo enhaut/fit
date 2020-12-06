@@ -14,7 +14,6 @@
 #define INITIAL_CELL_SIZE 50        // initial size of cells, it is dynamically allocated but there must be a starting point
 #define CELL_SIZE_MULTIPLIER 2
 
-#define MAXIMUM_COMMANDS_COUNT 1000
 #define MAXIMUM_COMMAND_LENGTH 1000
 
 #define SELECTION_COMMANDS_DELIMITER ","
@@ -1388,6 +1387,8 @@ int main(int arg_count, char *arguments[])
 
     unsigned short commands_count = 0;
     Command_t *commands = load_commands(arg_count, arguments, &commands_count);
+    if (commands_count > MAXIMUM_COMMAND_LENGTH)
+        print_error("There is more than allowed commands, but program supports it.");
     print_commands(commands, commands_count);
 
     FILE *table_file = file_loader(arguments[arg_count - 1], "r");
