@@ -156,15 +156,10 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
-void initialize_cell_pointers(Table *table, table_index row, table_index columns, table_index starting_column)
-{
-    for (; starting_column < columns; starting_column++)
-        table->rows[row]->cells[starting_column] = NULL;
-}
-
 Table * initialize_table(TableSize dimensions, int *result)
 {
     if (!dimensions.rows || !dimensions.columns) {
+        print_error("Table is empty!");
         *result = EXIT_FAILURE;
         return NULL;
     }
@@ -192,14 +187,12 @@ Table * initialize_table(TableSize dimensions, int *result)
         }
         row->cells = NULL;
 
-        char **row_cells = (char **)malloc(sizeof(char *) * dimensions.columns);    // TODO: valg hlasi nealokovanu pamat ak ten malloc failne
+        char **row_cells = (char **)calloc(dimensions.columns, sizeof(char *));
         row->cells = row_cells;
         if (!row_cells) {
             *result = EXIT_FAILURE;
             return table;
         }
-
-        initialize_cell_pointers(table, row_index, dimensions.columns, 0);  // initializing with NULL, it will be overwrited in cell loading
     }
     return table;
 }
@@ -726,7 +719,7 @@ unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
     for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
     {
         TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
-        char **row_cells = (char **)malloc(sizeof(char *) * size->columns);
+        char **row_cells = (char **)calloc(size->columns, sizeof(char *));
         if (!new_row || !row_cells)
         {
             rollback = true;
@@ -734,8 +727,6 @@ unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
         }
         table->rows[row] = new_row;
         table->rows[row]->cells = row_cells;
-
-        initialize_cell_pointers(table, row, size->columns, 0);
 
         int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
 
@@ -776,7 +767,9 @@ unsigned short add_columns(Table *table, TableSize *size, TableSize *resize_to)
         }
         table->rows[row]->cells = row_cells;
 
-        initialize_cell_pointers(table, row, resize_to->columns, size->columns);
+        for (table_index starting_column = size->columns; starting_column < resize_to->columns; starting_column++)
+            table->rows[row]->cells[starting_column] = NULL;
+
         if (fill_with_empty_cells(table, *resize_to, row, size->columns - 1))
         {
             rollback = true;
