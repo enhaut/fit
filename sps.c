@@ -369,24 +369,14 @@ void destruct_table(Table *table, TableSize size)
         free(table);
         return;
     }
+    CellsSelector to_remove = {0, 0, size.rows - 1, size.columns - 1};
+    Command_t empty_command = {0};
 
-    for (table_index row_index = 0; row_index < size.rows; row_index++)
-    {
-        if (!table->rows[row_index])    // in case, allocation of row failed, there are no cells
-            break;
+    drow(table, &size, &to_remove, &empty_command);     // drow will remove all the rows
 
-        if (table->rows[row_index]->cells)  // deallocating allocated cells only
-        {
-            for (table_index cell_index = 0; cell_index < size.columns; cell_index++)
-            {
-                if (table->rows[row_index]->cells[cell_index])
-                    free(table->rows[row_index]->cells[cell_index]);
-            }
-            free(table->rows[row_index]->cells);
-        }
-        free(table->rows[row_index]);   // deallocate row
-    }
-    free(table->rows);  // deallocate rows storing array
+    if (table->rows)        // in drow will be realloc(0, ..) called. At some platforms realloc(0, ...) is not same as free()
+        free(table->rows);
+
     free(table);        // deallocate empty table
 }
 
