@@ -513,8 +513,8 @@ unsigned short process_min_max_selectors(CellsSelector *selector, Table *table, 
     bool min = string_compare(command->name, "[min]");
     float selected_value = min ? FLT_MAX : FLT_MIN;
 
-    for (table_index row = selector->starting_row; row < selector->ending_row; row++)
-        for (table_index column = selector->starting_cell; column < selector->ending_cell; column++)
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
         {
             float cell_value;
             bool converted = get_numeric_cell_value(table->rows[row]->cells[column], &cell_value);
