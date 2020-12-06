@@ -700,6 +700,11 @@ unsigned short process_normal_selector(CellsSelector *selector, Command_t *comma
             offset = -2;
 
         valid = get_numeric_cell_value(selectors[selector_index + offset], &value);
+        if (!value)
+        {
+            print_error("Invalid selector index!");
+            return EXIT_FAILURE;
+        }
 
         if (selectors[selector_index][0] == '-')
         {
