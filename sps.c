@@ -1290,7 +1290,7 @@ char *get_commands_from_file(char *filename)
 
 Command_t *allocate_commands_array()
 {
-    Command_t *commands = (Command_t *)malloc(sizeof(bool));    // it is reallocated on-demand, so saving memory for now
+    Command_t *commands = (Command_t *)calloc(1, sizeof(bool));  // it is reallocated on-demand, so saving memory for now
     if (!commands)
     {
         print_error("Could not allocate memory for commands!");
