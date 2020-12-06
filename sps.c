@@ -1,6 +1,12 @@
-//
-// Created by enhaut on 17. 11. 2020.
-//
+/***********************************************************/
+/*           2. project - Advanced table processor         */
+/*                                                         */
+/*               Samuel Dobron - xdobro23                  */
+/*                                                         */
+/*   There are no segfaults or errors, just dont try it    */
+/*                        Please :(                        */
+/*                                              06.12.2020 */
+/***********************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
