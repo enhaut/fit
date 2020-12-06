@@ -1364,6 +1364,7 @@ int main(int arg_count, char *arguments[])
 
     unsigned short commands_count = 0;
     Command_t *commands = load_commands(arg_count, arguments, &commands_count);
+    print_commands(commands, commands_count);
 
     FILE *table_file = file_loader(arguments[arg_count - 1], "r");
     if (!table_file)
