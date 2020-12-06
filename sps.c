@@ -245,30 +245,17 @@ Table * initialize_table(TableSize dimensions, int *result)
         return table;
     }
 
-    TableRow  **rows = (TableRow **)malloc(sizeof(TableRow *) * dimensions.rows);
-    table->rows = rows;
-    if (!rows) {
+    TableRow **rows = (TableRow **)calloc(1, sizeof(TableRow *));
+    if (!rows)
+    {
         *result = EXIT_FAILURE;
         return table;
     }
+    table->rows = rows;
 
-    for (table_index row_index = 0; row_index < dimensions.rows; row_index++)
-    {
-        TableRow *row = (TableRow *)malloc(sizeof(TableRow));
-        rows[row_index] = row;
-        if (!row) {
-            *result = EXIT_FAILURE;
-            return table;
-        }
-        row->cells = NULL;
+    TableSize temp_size = {0, dimensions.columns};
+    add_rows(table, &temp_size, &dimensions);
 
-        char **row_cells = (char **)calloc(dimensions.columns, sizeof(char *));
-        row->cells = row_cells;
-        if (!row_cells) {
-            *result = EXIT_FAILURE;
-            return table;
-        }
-    }
     return table;
 }
 
@@ -315,12 +302,14 @@ void remove_special_characters(char *cell, table_index cell_size)
 
 }
 
-char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
+char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell, char *cell)
 {
     table_index cell_length = INITIAL_CELL_SIZE;
-    char *cell = (char *) calloc(cell_length + 1, sizeof(char));
-    if (!cell)
+    char *resized = (char *)realloc(cell, sizeof(char) * (cell_length + 1));
+    if (!resized)
         return NULL;
+    memset((resized + 1), 0, sizeof(char) * (cell_length));     // initialize
+    cell = resized;
 
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
