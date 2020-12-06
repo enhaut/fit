@@ -468,7 +468,8 @@ void save_table(Table *table, FILE *table_file, TableSize size, char *delimiters
             if (column < (size.columns - 1))    // write delimiter behind not last columns
                 fputc(delimiters[0], table_file);
         }
-        fputc('\n', table_file);
+        if (size.columns)   // skip empty rows
+            fputc('\n', table_file);
     }
 }
 
