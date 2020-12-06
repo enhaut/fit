@@ -623,7 +623,7 @@ unsigned short process_relative_selector(CellsSelector *selector, TableSize size
         valid = get_numeric_cell_value(selectors[first_is_comma ? 1 : 0], &value);
         if (!valid)
         {
-            print_error("Invalid selector!XOXOXOXOXO");
+            print_error("Invalid selector!");
             return EXIT_FAILURE;
         }
 
