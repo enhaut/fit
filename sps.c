@@ -330,6 +330,36 @@ int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
     return EXIT_SUCCESS;
 }
 
+unsigned short drow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    (void)command;  // voiding it to prevent unused error, bcs drow is called from common function
+    table_index removed = (selector->ending_row + 1) - selector->starting_row;
+    table_index remaining = size->rows - removed;
+
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+    {
+        for (table_index column = 0; column < size->columns; column++)
+            free(table->rows[row]->cells[column]);
+
+        free(table->rows[row]->cells);              // dealloc cells array
+        free(table->rows[row]);                     // dealloc row
+
+        for (table_index moving = row + removed; moving < size->rows; moving++) // move remaining rows at correct position
+        {
+            table->rows[moving - removed] = table->rows[moving];
+            table->rows[moving] = NULL;
+        }
+    }
+    TableRow **resized_rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * remaining);
+    if (resized_rows)   // in case, realloc fails, bigger array will be used, it's already allocated
+        table->rows = resized_rows;
+    else if (!remaining && !resized_rows)
+        table->rows = NULL;
+
+    size->rows -= removed;
+    return EXIT_SUCCESS;
+}
+
 void destruct_table(Table *table, TableSize size)
 {
     if (!table)         // allocation of table failed, so nothing remaining to free
@@ -1100,34 +1130,6 @@ unsigned short dcol(Table *table, TableSize *size, CellsSelector *selector, Comm
     }
     size->columns -= removed;
 
-    return EXIT_SUCCESS;
-}
-
-unsigned short drow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
-{
-    (void)command;  // voiding it to prevent unused error, bcs drow is called from common function
-    table_index removed = (selector->ending_row + 1) - selector->starting_row;
-    table_index remaining = size->rows - removed;
-
-    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
-    {
-        for (table_index column = 0; column < size->columns; column++)
-            free(table->rows[row]->cells[column]);
-
-        free(table->rows[row]->cells);              // dealloc cells array
-        free(table->rows[row]);                     // dealloc row
-
-        for (table_index moving = row + removed; moving < size->rows; moving++) // move remaining rows at correct position
-        {
-            table->rows[moving - removed] = table->rows[moving];
-            table->rows[moving] = NULL;
-        }
-    }
-    TableRow **resized_rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * remaining);
-    if (resized_rows)   // in case, realloc fails, bigger array will be used, it's already allocated
-        table->rows = resized_rows;
-
-    size->rows -= removed;
     return EXIT_SUCCESS;
 }
 
