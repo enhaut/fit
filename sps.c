@@ -243,11 +243,9 @@ void remove_special_characters(char *cell, table_index cell_size)
 char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
 {
     table_index cell_length = INITIAL_CELL_SIZE;
-    char *cell = (char *) malloc(sizeof(char) * cell_length + 1);
+    char *cell = (char *) calloc(cell_length + 1, sizeof(char));
     if (!cell)
         return NULL;
-    for (table_index x = 0; x < cell_length; x++)
-        cell[x] = 0;
 
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
