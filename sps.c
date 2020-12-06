@@ -213,7 +213,7 @@ int resize_cell_if_needed(table_index position, table_index *cell_size, char **c
 }
 
 // Function will realloc cell array to used bytes to save memory.
-void dealloc_unused_cell_part(char **cell, table_index size)
+void dealloc_unused_array_part(char **cell, table_index size)
 {
     char *reallocated_cell = (char *) realloc(*cell, size + 1);  // resize array to allocate needed memory only, +1 for \0
     if (reallocated_cell)   // in case, realloc fails, bigger cell (already allocated) will be used
@@ -274,7 +274,7 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
         *last_cell = true;
 
     remove_special_characters(cell, position);
-    dealloc_unused_cell_part(&cell, position);
+    dealloc_unused_array_part(&cell, position);
 
     return cell;
 }
@@ -1271,7 +1271,7 @@ char *get_commands_from_file(char *filename)
         return NULL;
 
     size_t commands_length = strlen(file_commands);
-    dealloc_unused_cell_part(&file_commands, commands_length);
+    dealloc_unused_array_part(&file_commands, commands_length);
 
     fclose(commands_file);
     return file_commands;
