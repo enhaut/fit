@@ -150,7 +150,7 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
             row_columns = 0;            // new row reached, reset counter
         }
     }
-    size->rows = rows;  // TODO: counting rows in file with no empty line at the EOF
+    size->rows = rows;
     size->columns = rows ? columns + 1 : 0; // the counter counts delimiters only so +1 to add missing column
 
     rewind(table_file); // back to the start of file
