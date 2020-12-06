@@ -476,21 +476,6 @@ TableSize get_savable_table_size(Table *table, TableSize size)
     return savable_size;
 }
 
-void print_table(Table *table, TableSize size)
-{
-    for (table_index row = 0; row < size.rows; row++)
-    {
-        for (table_index column = 0; column < size.columns; column++) {
-            if (!table->rows[row]->cells[column])
-                continue;
-            printf("%s", table->rows[row]->cells[column]);
-            if (column < (size.columns - 1))
-                printf(",");
-        }
-        printf("\n");
-    }
-}
-
 // Function checks if cell contains delimiter character.
 bool contains_delimiter(char *cell, char *delimiters)
 {
@@ -525,16 +510,6 @@ void save_table(Table *table, FILE *table_file, TableSize size, char *delimiters
             fputc('\n', table_file);
     }
 }
-
-void print_commands(Command_t *command, unsigned short count)
-{
-    printf("===COMMANDS: %d===\n", count);
-    for (unsigned short i = 0; i < count; i++) {
-        printf("%d.: command:\t%s, type:\t%d\n", i, command[i].name, command[i].command_category);
-    }
-    printf("===COMMANDS===\n");
-}
-
 
 // Parsing commands from argument
 char *get_command_from_argument(char **cell_start, bool first_command, unsigned short *command_length)
@@ -1190,15 +1165,6 @@ char ** initialize_user_variables()
     return variables;
 }
 
-void print_variables(char **variables)
-{
-    printf("==USED VARIABLES==\n");
-    for (int i = 0; i < USER_VARIABLES_COUNT; i++)
-        if (variables[i])
-            printf("%d. : '%s'\n", i, variables[i]);
-    printf("==VARIABLES==\n");
-}
-
 void copy_command_definitions(Command_t *destination_array)
 {
     Command_t commands[SUPPORTED_COMMANDS_COUNT] = {
@@ -1426,7 +1392,6 @@ int main(int arg_count, char *arguments[])
     Command_t *commands = load_commands(arg_count, arguments, &commands_count);
     if (commands_count > MAXIMUM_COMMAND_LENGTH)
         print_error("There is more than allowed commands, but program supports it.");
-    print_commands(commands, commands_count);
 
     FILE *table_file = file_loader(arguments[arg_count - 1], "r");
     if (!table_file)
@@ -1446,8 +1411,6 @@ int main(int arg_count, char *arguments[])
         {
             if (!parse_commands(table, &size, commands, commands_count, user_variables))
             {
-                print_variables(user_variables);
-                print_table(table, size);
                 save_table(table, table_file, size, delimiter);
             }
         }
