@@ -161,6 +161,76 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
+void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    for (table_index row = size->rows; row < resize_to->rows; row++)
+    {
+        for (table_index column = 0; column < size->columns; column++)
+            free(table->rows[row]->cells[column]);
+        free(table->rows[row]);
+    }
+}
+
+char * get_empty_cell()
+{
+    char *cell = (char *) calloc(1, sizeof(bool));     // allocating bool size to save memory
+    if (!cell)
+        return NULL;
+
+    return cell;
+}
+
+int fill_with_empty_cells(Table *table, TableSize size, table_index row, table_index column)
+{
+    for (table_index column_to_add = column + 1; column_to_add < size.columns; column_to_add++)
+    {
+        char *empty_cell = get_empty_cell();
+        if (!empty_cell)
+        {
+            print_error("Could not allocate memory for table cells!");
+            return EXIT_FAILURE;
+        }
+        table->rows[row]->cells[column_to_add] = empty_cell;
+    }
+    return EXIT_SUCCESS;
+}
+
+unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    TableRow  **rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * resize_to->rows);
+    if (!rows)
+        return EXIT_FAILURE;
+    table->rows = rows;
+
+    bool rollback = false;
+    for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
+    {
+        TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
+        char **row_cells = (char **)calloc(size->columns, sizeof(char *));
+        if (!new_row || !row_cells)
+        {
+            rollback = true;
+            break;
+        }
+        table->rows[row] = new_row;
+        table->rows[row]->cells = row_cells;
+
+        int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
+
+        if (filling_result == 1)
+        {
+            rollback = true;
+            break;
+        }
+    }
+    if (rollback)
+    {
+        rollback_rows(table, size, resize_to);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 Table * initialize_table(TableSize dimensions, int *result)
 {
     if (!dimensions.rows || !dimensions.columns) {
@@ -282,31 +352,6 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
     dealloc_unused_array_part(&cell, position);
 
     return cell;
-}
-
-char * get_empty_cell()
-{
-    char *cell = (char *) malloc(sizeof(bool));     // allocating bool size to save memory
-    if (!cell)
-        return NULL;
-
-    cell[0] = '\0';
-    return cell;
-}
-
-int fill_with_empty_cells(Table *table, TableSize size, table_index row, table_index column)
-{
-    for (table_index column_to_add = column + 1; column_to_add < size.columns; column_to_add++)
-    {
-        char *empty_cell = get_empty_cell();
-        if (!empty_cell)
-        {
-            print_error("Could not allocate memory for table cells!");
-            return EXIT_FAILURE;
-        }
-        table->rows[row]->cells[column_to_add] = empty_cell;
-    }
-    return EXIT_SUCCESS;
 }
 
 int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
@@ -708,52 +753,6 @@ bool is_range(CellsSelector *selector)
     if (selector->starting_row != selector->ending_row || selector->starting_cell != selector->ending_cell)
         return true;
     return false;
-}
-
-void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
-{
-    for (table_index row = size->rows; row < resize_to->rows; row++)
-    {
-        for (table_index column = 0; column < size->columns; column++)
-            free(table->rows[row]->cells[column]);
-        free(table->rows[row]);
-    }
-}
-
-unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
-{
-    TableRow  **rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * resize_to->rows);
-    if (!rows)
-        return EXIT_FAILURE;
-    table->rows = rows;
-
-    bool rollback = false;
-    for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
-    {
-        TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
-        char **row_cells = (char **)calloc(size->columns, sizeof(char *));
-        if (!new_row || !row_cells)
-        {
-            rollback = true;
-            break;
-        }
-        table->rows[row] = new_row;
-        table->rows[row]->cells = row_cells;
-
-        int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
-
-        if (filling_result == 1)
-        {
-            rollback = true;
-            break;
-        }
-    }
-    if (rollback)
-    {
-        rollback_rows(table, size, resize_to);
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
 }
 
 void rollback_cells(Table *table, TableSize *size, TableSize *resize_to)
