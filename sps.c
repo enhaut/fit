@@ -1,6 +1,12 @@
-//
-// Created by enhaut on 17. 11. 2020.
-//
+/***********************************************************/
+/*           2. project - Advanced table processor         */
+/*                                                         */
+/*               Samuel Dobron - xdobro23                  */
+/*                                                         */
+/*   There are no segfaults or errors, just dont try it    */
+/*                        Please :(                        */
+/*                                              06.12.2020 */
+/***********************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +16,7 @@
 #include <float.h>
 
 #define print_error(...) fprintf(stderr, __VA_ARGS__ "\n")
-#define MINIMAL_ARGUMENTS_COUNT 3
+#define MINIMAL_ARGUMENTS_COUNT 3   // program has to have at least 3 arguments
 #define INITIAL_CELL_SIZE 50        // initial size of cells, it is dynamically allocated but there must be a starting point
 #define CELL_SIZE_MULTIPLIER 2
 
@@ -19,14 +25,16 @@
 #define SELECTION_COMMANDS_DELIMITER ","
 #define USER_VARIABLES_COUNT 10
 
+// Command types
 #define SPECIAL_SELECTOR_TYPE 1
 #define NORMAL_SELECTOR_TYPE 2
 #define TABLE_EDIT_TYPE 3
 #define CONTENT_EDIT_TYPE 4
 #define TEMPORARY_VAR_COMMANDS 5
-#define SUPPORTED_COMMANDS_COUNT 22
 
-typedef unsigned long long table_index;     // rows and columns have no limit, so I am using ull
+#define SUPPORTED_COMMANDS_COUNT 22     // count of available commands
+
+typedef unsigned long long table_index; // rows and columns have no limit, so I am using ull
 
 typedef struct {
     table_index rows;
@@ -117,6 +125,7 @@ int defined_delimiter(int arg_count, char *arguments[])
     return 0;
 }
 
+// Function checks if provided character is delimiter.
 bool is_character_delimiter(char *delimiters, int delimiter)
 {
     if (strchr(delimiters, delimiter))
@@ -124,6 +133,7 @@ bool is_character_delimiter(char *delimiters, int delimiter)
     return false;
 }
 
+// Function will return dimensions of table
 void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
 {
     table_index rows = 0;
@@ -155,6 +165,79 @@ void get_table_size(FILE *table_file, char *delimiters, TableSize *size)
     rewind(table_file); // back to the start of file
 }
 
+// Function will remove invalid rows, in case smth in creating new ones fails.
+void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    for (table_index row = size->rows; row < resize_to->rows; row++)
+    {
+        for (table_index column = 0; column < size->columns; column++)
+            free(table->rows[row]->cells[column]);
+        free(table->rows[row]);
+    }
+}
+
+char * get_empty_cell()
+{
+    char *cell = (char *) calloc(1, sizeof(bool));     // allocating bool size to save memory
+    if (!cell)
+        return NULL;
+
+    return cell;
+}
+
+// Function will allocate and set cells to row.
+int fill_with_empty_cells(Table *table, TableSize size, table_index row, table_index column)
+{
+    for (table_index column_to_add = column + 1; column_to_add < size.columns; column_to_add++) // +1 because it is last cell in row, so we r adding new cell behind it
+    {
+        char *empty_cell = get_empty_cell();
+        if (!empty_cell)
+        {
+            print_error("Could not allocate memory for table cells!");
+            return EXIT_FAILURE;
+        }
+        table->rows[row]->cells[column_to_add] = empty_cell;
+    }
+    return EXIT_SUCCESS;
+}
+
+// Function will resize rows to match size from resize_to
+unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
+{
+    TableRow  **rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * resize_to->rows);
+    if (!rows)
+        return EXIT_FAILURE;
+    table->rows = rows;
+
+    bool rollback = false;
+    for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
+    {
+        TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
+        char **row_cells = (char **)calloc(size->columns, sizeof(char *));
+        if (!new_row || !row_cells)
+        {
+            rollback = true;    // smth fails, table will be resized to original size for correct dealloc
+            break;
+        }
+        table->rows[row] = new_row;
+        table->rows[row]->cells = row_cells;
+
+        int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
+
+        if (filling_result == 1)
+        {
+            rollback = true;
+            break;
+        }
+    }
+    if (rollback)
+    {
+        rollback_rows(table, size, resize_to);
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 Table * initialize_table(TableSize dimensions, int *result)
 {
     if (!dimensions.rows || !dimensions.columns) {
@@ -169,30 +252,17 @@ Table * initialize_table(TableSize dimensions, int *result)
         return table;
     }
 
-    TableRow  **rows = (TableRow **)malloc(sizeof(TableRow *) * dimensions.rows);
-    table->rows = rows;
-    if (!rows) {
+    TableRow **rows = (TableRow **)calloc(1, sizeof(TableRow *));
+    if (!rows)
+    {
         *result = EXIT_FAILURE;
         return table;
     }
+    table->rows = rows;
 
-    for (table_index row_index = 0; row_index < dimensions.rows; row_index++)
-    {
-        TableRow *row = (TableRow *)malloc(sizeof(TableRow));
-        rows[row_index] = row;
-        if (!row) {
-            *result = EXIT_FAILURE;
-            return table;
-        }
-        row->cells = NULL;
+    TableSize temp_size = {0, dimensions.columns};
+    add_rows(table, &temp_size, &dimensions);
 
-        char **row_cells = (char **)calloc(dimensions.columns, sizeof(char *));
-        row->cells = row_cells;
-        if (!row_cells) {
-            *result = EXIT_FAILURE;
-            return table;
-        }
-    }
     return table;
 }
 
@@ -219,19 +289,21 @@ void dealloc_unused_array_part(char **cell, table_index size)
         *cell = reallocated_cell;
 }
 
+// Function removes special characters, invalid escaping, ... from cell
 void remove_special_characters(char *cell, table_index cell_size)
 {
 
     char *found_backslash;
-    while ((found_backslash = strchr(cell, '\\')) != NULL)
+    while ((found_backslash = strchr(cell, '\\')) != NULL)  // removes all the invalid backslashes in text
     {
-        if (found_backslash && found_backslash[1] != '"') {
-            memmove(found_backslash, &found_backslash[1], sizeof(char) * (strlen(found_backslash) - 1));
-            cell[(cell_size--) - 1] = '\0';
+        if (found_backslash && found_backslash[1] != '"')
+        {
+            memmove(found_backslash, &found_backslash[1], sizeof(char) * (strlen(found_backslash) - 1));    // -1 bcs we are removing 1 character
+            cell[(--cell_size)] = '\0';     // 1 character has been removed so -- is necessary
         }
     }
 
-    if (cell[0] == '"' && cell[cell_size - 1]  == '"')
+    if (cell[0] == '"' && cell[cell_size - 1]  == '"')      // removing leading and trailing "
     {
         memmove(&cell[0], &cell[1], sizeof(char) * (cell_size - 2));
         cell[cell_size - 2] = '\0';
@@ -239,12 +311,15 @@ void remove_special_characters(char *cell, table_index cell_size)
 
 }
 
-char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
+// Function will load cell from file and resize array to used memory only,
+char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell, char *cell)
 {
     table_index cell_length = INITIAL_CELL_SIZE;
-    char *cell = (char *) calloc(cell_length + 1, sizeof(char));
-    if (!cell)
+    char *resized = (char *)realloc(cell, sizeof(char) * cell_length);  // cell is allocated to sizeof(bool) by default
+    if (!resized)
         return NULL;
+    memset((resized + 1), 0, sizeof(char) * (cell_length));         // initialize added space by reallocation
+    cell = resized;
 
     table_index position = 0;
     bool inside_quotation = false;  // used to prevent counting delimiters inside " " block
@@ -278,38 +353,14 @@ char * load_table_cell(FILE *table_file, char *delimiters, bool *last_cell)
     return cell;
 }
 
-char * get_empty_cell()
-{
-    char *cell = (char *) malloc(sizeof(bool));     // allocating bool size to save memory
-    if (!cell)
-        return NULL;
-
-    cell[0] = '\0';
-    return cell;
-}
-
-int fill_with_empty_cells(Table *table, TableSize size, table_index row, table_index column)
-{
-    for (table_index column_to_add = column + 1; column_to_add < size.columns; column_to_add++)
-    {
-        char *empty_cell = get_empty_cell();
-        if (!empty_cell)
-        {
-            print_error("Could not allocate memory for table cells!");
-            return EXIT_FAILURE;
-        }
-        table->rows[row]->cells[column_to_add] = empty_cell;
-    }
-    return EXIT_SUCCESS;
-}
-
+// Function will load table to the memory.
 int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
 {
     for (table_index row = 0; row < size.rows; row++) {
         bool last_cell = false;
         for (table_index column = 0; column < size.columns; column++)
         {
-            char *cell = load_table_cell(table_file, delimiters, &last_cell);
+            char *cell = load_table_cell(table_file, delimiters, &last_cell, table->rows[row]->cells[column]);
             if (!cell)
             {
                 print_error("Could not allocate memory for table cells!");
@@ -329,6 +380,7 @@ int load_table(FILE *table_file, Table *table, char *delimiters, TableSize size)
     return EXIT_SUCCESS;
 }
 
+// drow function
 unsigned short drow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
     (void)command;  // voiding it to prevent unused error, bcs drow is called from common function
@@ -424,26 +476,12 @@ TableSize get_savable_table_size(Table *table, TableSize size)
     return savable_size;
 }
 
-void print_table(Table *table, TableSize size)
-{
-    for (table_index row = 0; row < size.rows; row++)
-    {
-        for (table_index column = 0; column < size.columns; column++) {
-            if (!table->rows[row]->cells[column])
-                continue;
-            printf("%s", table->rows[row]->cells[column]);
-            if (column < (size.columns - 1))
-                printf(",");
-        }
-        printf("\n");
-    }
-}
-
+// Function checks if cell contains delimiter character.
 bool contains_delimiter(char *cell, char *delimiters)
 {
     size_t cell_len = strlen(cell);
     bool contains = false;
-    for (table_index position = 0; position < cell_len && !contains; position++)
+    for (table_index position = 0; position < cell_len && !contains; position++)    // loop will be executed until contains == false
         contains = is_character_delimiter(delimiters, cell[position]);
 
     return contains;
@@ -468,19 +506,12 @@ void save_table(Table *table, FILE *table_file, TableSize size, char *delimiters
             if (column < (size.columns - 1))    // write delimiter behind not last columns
                 fputc(delimiters[0], table_file);
         }
-        fputc('\n', table_file);
+        if (size.columns)   // skip empty rows
+            fputc('\n', table_file);
     }
 }
 
-void print_commands(Command_t *command, unsigned short count)
-{
-    printf("===COMMANDS: %d===\n", count);
-    for (unsigned short i = 0; i < count; i++) {
-        printf("%d.: command:\t%s, type:\t%d\n", i, command[i].name, command[i].command_category);
-    }
-    printf("===COMMANDS===\n");
-}
-
+// Parsing commands from argument
 char *get_command_from_argument(char **cell_start, bool first_command, unsigned short *command_length)
 {
     size_t remaining_commands_size = strlen(*cell_start);
@@ -601,6 +632,7 @@ unsigned short process_special_selectors(CellsSelector *selector, Command_t *com
     return EXIT_SUCCESS;
 }
 
+// Function returns pointer to corresponding selector
 table_index * get_selector_from_index(unsigned short index, CellsSelector *selector)
 {
     table_index *save_to = &selector->starting_row;
@@ -613,6 +645,7 @@ table_index * get_selector_from_index(unsigned short index, CellsSelector *selec
     return save_to;
 }
 
+// Function will process selectors that contains "-"
 unsigned short process_relative_selector(CellsSelector *selector, TableSize size, char selectors[][21])
 {
     bool first_is_comma = selectors[0][0] == '_';
@@ -621,9 +654,9 @@ unsigned short process_relative_selector(CellsSelector *selector, TableSize size
     bool valid = true;
 
     if (first_is_comma && second_is_comma)
-        set_to_selector(selector, 0, 0, size.rows - 1, size.columns - 1);
+        set_to_selector(selector, 0, 0, size.rows - 1, size.columns - 1);   // adjusting indexes
     else if ((first_is_comma && !second_is_comma) || (!first_is_comma && second_is_comma)) {
-        valid = get_numeric_cell_value(selectors[first_is_comma ? 1 : 0], &value);
+        valid = get_numeric_cell_value(selectors[first_is_comma ? 1 : 0], &value);          // selecting corresponding selector
         if (!valid)
         {
             print_error("Invalid selector!");
@@ -703,60 +736,15 @@ bool is_range(CellsSelector *selector)
     return false;
 }
 
-void rollback_rows(Table *table, TableSize *size, TableSize *resize_to)
-{
-    for (table_index row = size->rows; row < resize_to->rows; row++)
-    {
-        for (table_index column = 0; column < size->columns; column++)
-            free(table->rows[row]->cells[column]);
-        free(table->rows[row]);
-    }
-}
-
-unsigned short add_rows(Table *table, TableSize *size, TableSize *resize_to)
-{
-    TableRow  **rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * resize_to->rows);
-    if (!rows)
-        return EXIT_FAILURE;
-    table->rows = rows;
-
-    bool rollback = false;
-    for (table_index row = size->rows; row < resize_to->rows && !rollback; row++)
-    {
-        TableRow *new_row = (TableRow *)malloc(sizeof(TableRow));
-        char **row_cells = (char **)calloc(size->columns, sizeof(char *));
-        if (!new_row || !row_cells)
-        {
-            rollback = true;
-            break;
-        }
-        table->rows[row] = new_row;
-        table->rows[row]->cells = row_cells;
-
-        int filling_result = fill_with_empty_cells(table, *size, row, -1);    // -1 as column because that funcion have +1 to that value
-
-        if (filling_result == 1)
-        {
-            rollback = true;
-            break;
-        }
-    }
-    if (rollback)
-    {
-        rollback_rows(table, size, resize_to);
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
+// Function removes added cells in case addking has failed.
 void rollback_cells(Table *table, TableSize *size, TableSize *resize_to)
 {
     for (table_index row = 0; row < resize_to->rows; row++)
         for (table_index column = size->columns; column < resize_to->columns; column++)
             free(table->rows[row]->cells[column]);
-
 }
 
+// Function adds columns to match resize_to size.
 unsigned short add_columns(Table *table, TableSize *size, TableSize *resize_to)
 {
     bool rollback = false;
@@ -772,12 +760,13 @@ unsigned short add_columns(Table *table, TableSize *size, TableSize *resize_to)
         }
         table->rows[row]->cells = row_cells;
 
+        // initializing new cells pointers
         for (table_index starting_column = size->columns; starting_column < resize_to->columns; starting_column++)
             table->rows[row]->cells[starting_column] = NULL;
 
         if (fill_with_empty_cells(table, *resize_to, row, size->columns - 1))
         {
-            rollback = true;
+            rollback = true;        // in case adding fails, rollback table to correct dealloc
             break;
         }
     }
@@ -790,6 +779,7 @@ unsigned short add_columns(Table *table, TableSize *size, TableSize *resize_to)
     return EXIT_SUCCESS;
 }
 
+// Function adds rows/columns depends at selector.
 unsigned short resize_table(Table *table, TableSize *size, TableSize *resize_to)
 {
     if (resize_to->rows != size->rows && add_rows(table, size, resize_to))
@@ -842,6 +832,7 @@ unsigned short set_to_cell(char **cell, char *to_set, size_t to_set_length)
     return EXIT_SUCCESS;
 }
 
+// set command
 unsigned short set(Table *table, Command_t *command, CellsSelector *selector)
 {
     char *to_set = command->name + 4;
@@ -857,6 +848,7 @@ unsigned short set(Table *table, Command_t *command, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+// clear command
 unsigned short clear(Table *table, Command_t *command, CellsSelector *selector)
 {
     (void)command;
@@ -868,12 +860,13 @@ unsigned short clear(Table *table, Command_t *command, CellsSelector *selector)
             {
                 resized_cell = table->rows[row]->cells[column];
             }
-            copy_to_array(resized_cell, "", 0);
+            copy_to_array(resized_cell, "", 0); // it will set \0 at index 0
             table->rows[row]->cells[column] = resized_cell;
         }
     return EXIT_SUCCESS;
 }
 
+// swap command
 unsigned short swap(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector swap_with = {0};
@@ -942,6 +935,7 @@ unsigned short count(Table *table, Command_t *command, CellsSelector *selector)
     return cell_counting_commands(table, command, selector, 2);
 }
 
+// len commands, it counts non empty cells
 unsigned short len(Table *table, Command_t *command, CellsSelector *selector)
 {
     CellsSelector save_to = {0};
@@ -953,6 +947,7 @@ unsigned short len(Table *table, Command_t *command, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+// returns pointer to user variable (_X)
 char **get_variable_pointer(char *variable_index, char **variables)
 {
     float index;
@@ -965,6 +960,7 @@ char **get_variable_pointer(char *variable_index, char **variables)
     return &variables[(unsigned short)index];
 }
 
+// def command
 unsigned short def(Table *table, char **variable, CellsSelector *selector)
 {
     char *cell = table->rows[selector->starting_row]->cells[selector->starting_cell];
@@ -981,17 +977,19 @@ unsigned short def(Table *table, char **variable, CellsSelector *selector)
     return EXIT_SUCCESS;
 }
 
+// use command
 unsigned short use(Table *table, char **variable, CellsSelector *selector)
 {
     return set_to_cell(&table->rows[selector->starting_row]->cells[selector->starting_cell], *variable, strlen(*variable));
 }
 
+// inc command
 unsigned short inc(char **variable)
 {
     float value;
     bool is_number = get_numeric_cell_value(*variable, &value);
 
-    value = is_number ? (value + 1) : 1;
+    value = is_number ? (value + 1) : 1;    // if value is not numeric, set 1 to cell
 
     int no_of_digits = snprintf(NULL, 0, "%g", value);
     char *resized = (char *)realloc(*variable, no_of_digits + 1);
@@ -1006,6 +1004,7 @@ unsigned short inc(char **variable)
     return EXIT_SUCCESS;
 }
 
+// returns pointer to index of user variable in command
 char *get_variable_index_position(char *command)
 {
     char *found = strchr(command, '_');
@@ -1029,7 +1028,7 @@ unsigned short process_temporary_selectors(Table *table, Command_t *command, Cel
         return EXIT_FAILURE;
     }
 
-    if (command->processing_function == def)
+    if (command->processing_function == def)    // command def does not support calling in range
         return command->processing_function(table, variable, selector);
 
     for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
@@ -1048,6 +1047,7 @@ unsigned short process_temporary_selectors(Table *table, Command_t *command, Cel
     return EXIT_SUCCESS;
 }
 
+// common function for irow and arow function
 unsigned short irow_arow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
     TableSize resize_to = {size->rows + 1, size->columns};
@@ -1064,6 +1064,7 @@ unsigned short irow_arow(Table *table, TableSize *size, CellsSelector *selector,
     return EXIT_SUCCESS;
 }
 
+// common function for icol and acol commands
 unsigned short icol_acol(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
     TableSize resize_to = {size->rows, size->columns + 1};
@@ -1072,7 +1073,7 @@ unsigned short icol_acol(Table *table, TableSize *size, CellsSelector *selector,
 
     bool acol = string_compare(command->name, "acol");
 
-    for (table_index row = 0; row < size->rows; row++)
+    for (table_index row = 0; row < size->rows; row++)      // add new column to every row
     {
         char *new_cell = table->rows[row]->cells[resize_to.columns - 1];
         table_index destination_index = acol ? (selector->ending_cell + 1) : selector->starting_cell;
@@ -1084,9 +1085,10 @@ unsigned short icol_acol(Table *table, TableSize *size, CellsSelector *selector,
     return EXIT_SUCCESS;
 }
 
+// dcol function
 unsigned short dcol(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
-    (void )command;
+    (void )command;     // it is called from same place as function, that needs command argument
     table_index removed = (selector->ending_cell + 1) - selector->starting_cell;
     table_index remaining = size->columns - removed;
 
@@ -1095,6 +1097,7 @@ unsigned short dcol(Table *table, TableSize *size, CellsSelector *selector, Comm
         for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
         {
             free(table->rows[row]->cells[column]);
+            // move remaining cells to the place of first deleted cell
             for (table_index moving = column + removed; moving < size->columns; moving++)
             {
                 table->rows[row]->cells[moving - removed] = table->rows[row]->cells[moving];
@@ -1135,10 +1138,12 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
     {
         unsigned short command_category =  commands[command_index].command_category;
 
+        // process selectors
         if (command_category == SPECIAL_SELECTOR_TYPE || command_category == NORMAL_SELECTOR_TYPE)
             if (process_selector(&selected, &commands[command_index], table, &users_saved_selector, *size))
                 return EXIT_FAILURE;
 
+        // process commands by it's category
         if (resize_table_if_necessary(table, size, &selected) ||
             (command_category == CONTENT_EDIT_TYPE && process_command(table, &commands[command_index], &selected)) ||
             (command_category == TEMPORARY_VAR_COMMANDS && process_temporary_selectors(table, &commands[command_index], &selected, user_variables)) ||
@@ -1158,15 +1163,6 @@ char ** initialize_user_variables()
         return NULL;
     }
     return variables;
-}
-
-void print_variables(char **variables)
-{
-    printf("==USED VARIABLES==\n");
-    for (int i = 0; i < USER_VARIABLES_COUNT; i++)
-        if (variables[i])
-            printf("%d. : '%s'\n", i, variables[i]);
-    printf("==VARIABLES==\n");
 }
 
 void copy_command_definitions(Command_t *destination_array)
@@ -1199,6 +1195,7 @@ void copy_command_definitions(Command_t *destination_array)
         destination_array[command_index] = commands[command_index];
 }
 
+// Function will copy commands from file to array
 unsigned short copy_commands_file_content(FILE *file, char **commands, unsigned int array_capacity)
 {
     int loaded_character;
@@ -1216,7 +1213,7 @@ unsigned short copy_commands_file_content(FILE *file, char **commands, unsigned 
             }
             *commands = resized;
         }
-        if (loaded_character == '\n')// replace \n commands delimiter with correct delimiter
+        if (loaded_character == '\n')   // replace \n commands delimiter with correct delimiter
         {
             int next_char = getc(file);
             loaded_character = '\0';
@@ -1232,6 +1229,7 @@ unsigned short copy_commands_file_content(FILE *file, char **commands, unsigned 
     return EXIT_SUCCESS;
 }
 
+// Function will load commands from file
 char *get_commands_from_file(char *filename)
 {
     FILE *commands_file = file_loader(filename, "r");
@@ -1256,6 +1254,7 @@ char *get_commands_from_file(char *filename)
     return file_commands;
 }
 
+// Allocating memory for commands
 Command_t *allocate_commands_array()
 {
     Command_t *commands = (Command_t *)calloc(1, sizeof(bool));  // it is reallocated on-demand, so saving memory for now
@@ -1267,6 +1266,7 @@ Command_t *allocate_commands_array()
     return commands;
 }
 
+// Returns index of command definition
 unsigned short get_command_def_index(Command_t *command_definitions, char *command_start)
 {
     unsigned short command_def_index = SUPPORTED_COMMANDS_COUNT + 1;    // initializing with value behind valid range
@@ -1283,6 +1283,7 @@ unsigned short get_command_def_index(Command_t *command_definitions, char *comma
     return command_def_index;
 }
 
+// Parsing command by command from array
 Command_t get_command_from_arguments(char *command_start, unsigned short command_length, Command_t command_def)
 {
     char *command_content = (char *)malloc(sizeof(char) * command_length + 1);
@@ -1299,6 +1300,7 @@ Command_t get_command_from_arguments(char *command_start, unsigned short command
     return command;
 }
 
+// Saving commands to array of commands from array
 short save_commands(char *commands_source, Command_t *command_definitions, Command_t **commands)
 {
     short commands_array_size = 0;
@@ -1308,7 +1310,7 @@ short save_commands(char *commands_source, Command_t *command_definitions, Comma
     bool first_command = true;
     unsigned short command_length = 0;
 
-    while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)
+    while ((command_end = get_command_from_argument(&command_end, first_command, &command_length)) != NULL)     // saving command by command
     {
         if (command_length > MAXIMUM_COMMAND_LENGTH)
             return commands_array_size;
@@ -1340,6 +1342,7 @@ short save_commands(char *commands_source, Command_t *command_definitions, Comma
     return commands_array_size;
 }
 
+// Load commands from arguments/file
 Command_t *load_commands(int arg_count, char *arguments[], unsigned short *count)
 {
     Command_t command_definitions[SUPPORTED_COMMANDS_COUNT];
@@ -1351,7 +1354,7 @@ Command_t *load_commands(int arg_count, char *arguments[], unsigned short *count
     char *commands_source = arguments[arg_count - 2];
     bool free_commands_source = false;
 
-    if (strstr(commands_source, "-c") == commands_source)
+    if (strstr(commands_source, "-c") == commands_source)   // checks if commands source is file
     {
         commands_source = get_commands_from_file((commands_source + 2));
         if (!commands_source)
@@ -1389,7 +1392,6 @@ int main(int arg_count, char *arguments[])
     Command_t *commands = load_commands(arg_count, arguments, &commands_count);
     if (commands_count > MAXIMUM_COMMAND_LENGTH)
         print_error("There is more than allowed commands, but program supports it.");
-    print_commands(commands, commands_count);
 
     FILE *table_file = file_loader(arguments[arg_count - 1], "r");
     if (!table_file)
@@ -1409,8 +1411,6 @@ int main(int arg_count, char *arguments[])
         {
             if (!parse_commands(table, &size, commands, commands_count, user_variables))
             {
-                print_variables(user_variables);
-                print_table(table, size);
                 save_table(table, table_file, size, delimiter);
             }
         }
