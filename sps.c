@@ -1174,14 +1174,12 @@ int parse_commands(Table *table, TableSize *size, Command_t *commands, unsigned 
 // Function initializes array for user variables. Using char because it could be string.
 char ** initialize_user_variables()
 {
-    char **variables = (char **)malloc(sizeof(char *) * USER_VARIABLES_COUNT);   // user could define 10 variables
+    char **variables = (char **)calloc(USER_VARIABLES_COUNT, sizeof(char *));
     if (!variables)
     {
         print_error("Could not allocate memory for user variables!");
         return NULL;
     }
-    for (short var_index = 0; var_index < USER_VARIABLES_COUNT; var_index++)
-        variables[var_index] = NULL;
     return variables;
 }
 
