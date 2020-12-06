@@ -636,7 +636,7 @@ unsigned short process_relative_selector(CellsSelector *selector, TableSize size
         if (first_is_comma)
             set_to_selector(selector, 0, (table_index)value, size.rows - 1, (table_index)value);
         else
-            set_to_selector(selector, (table_index)value, 0, (table_index)value, size.rows - 1);
+            set_to_selector(selector, (table_index)value, 0, (table_index)value, size.columns - 1);
     }
 
     return EXIT_SUCCESS;
