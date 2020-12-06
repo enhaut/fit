@@ -1081,6 +1081,60 @@ unsigned short icol_acol(Table *table, TableSize *size, CellsSelector *selector,
     return EXIT_SUCCESS;
 }
 
+unsigned short dcol(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    (void )command;
+    table_index removed = (selector->ending_cell + 1) - selector->starting_cell;
+    table_index remaining = size->columns - removed;
+
+    for (table_index row = 0; row < size->rows; row++)
+    {
+        for (table_index column = selector->starting_cell; column <= selector->ending_cell; column++)
+        {
+            free(table->rows[row]->cells[column]);
+            for (table_index moving = column + removed; moving < size->columns; moving++)
+            {
+                table->rows[row]->cells[moving - removed] = table->rows[row]->cells[moving];
+                table->rows[row]->cells[moving] = NULL;
+            }
+        }
+        char **resized = (char **)realloc(table->rows[row]->cells, sizeof(char *) * remaining);
+        if (resized)
+            table->rows[row]->cells = resized;
+    }
+    size->columns -= removed;
+
+    return EXIT_SUCCESS;
+}
+
+unsigned short drow(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
+{
+    (void)command;  // voiding it to prevent unused error, bcs drow is called from common function
+    table_index removed = (selector->ending_row + 1) - selector->starting_row;
+    table_index remaining = size->rows - removed;
+
+    for (table_index row = selector->starting_row; row <= selector->ending_row; row++)
+    {
+        for (table_index column = 0; column < size->columns; column++)
+            free(table->rows[row]->cells[column]);
+
+        free(table->rows[row]->cells);              // dealloc cells array
+        free(table->rows[row]);                     // dealloc row
+
+        for (table_index moving = row + removed; moving < size->rows; moving++) // move remaining rows at correct position
+        {
+            table->rows[moving - removed] = table->rows[moving];
+            table->rows[moving] = NULL;
+        }
+    }
+    TableRow **resized_rows = (TableRow **)realloc(table->rows, sizeof(TableRow *) * remaining);
+    if (resized_rows)   // in case, realloc fails, bigger array will be used, it's already allocated
+        table->rows = resized_rows;
+
+    size->rows -= removed;
+    return EXIT_SUCCESS;
+}
+
 unsigned short process_table_struct_commands(Table *table, TableSize *size, CellsSelector *selector, Command_t *command)
 {
     return command->processing_function(table, size, selector, command);
@@ -1164,10 +1218,10 @@ void copy_command_definitions(Command_t *destination_array)
             {"inc",   5,          inc},
             {"irow", 6,           irow_arow},
             {"arow", 6,           irow_arow},
-            {"drow", 6,           NULL},
+            {"drow", 6,           drow},
             {"icol", 6, icol_acol},
             {"acol", 6, icol_acol},
-            {"dcol", 6, NULL},
+            {"dcol", 6, dcol},
             {"SLCTRS",  4,        process_selector},   // selectors have to be last
             //{"def", 2, def},
             //{"len", 1, len},
