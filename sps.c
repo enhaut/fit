@@ -514,12 +514,12 @@ char *get_command_from_argument(char **cell_start, bool first_command, unsigned 
     return command_end;
 }
 
-void set_cell_directions(CellsSelector *selector, table_index row, table_index column)
+void set_to_selector(CellsSelector *selector, table_index s_row, table_index s_cell, table_index e_row, table_index e_cell)
 {
-    selector->starting_row = row;
-    selector->starting_cell = column;
-    selector->ending_row = row;
-    selector->ending_cell = column;
+    selector->starting_row = s_row;
+    selector->starting_cell = s_cell;
+    selector->ending_row = e_row;
+    selector->ending_cell = e_cell;
 }
 
 unsigned short process_min_max_selectors(CellsSelector *selector, Table *table, Command_t *command)
@@ -539,14 +539,14 @@ unsigned short process_min_max_selectors(CellsSelector *selector, Table *table, 
 
             if ((min && cell_value < selected_value) || (!min && cell_value > selected_value))
             {
-                set_cell_directions(&selected, row, column);
+                set_to_selector(&selected, row, column, row, column);
                 selected_value = cell_value;
                 found = true;
             }
         }
 
     if (found)
-        set_cell_directions(selector, selected.starting_row, selected.starting_cell);
+        set_to_selector(selector, selected.starting_row, selected.starting_cell, selected.starting_row, selected.starting_cell);
 
     return EXIT_SUCCESS;
 }
@@ -575,7 +575,7 @@ unsigned short process_find_selector(CellsSelector *selector, Table *table, Comm
             char *contains = strstr(table->rows[row]->cells[column], to_find);
             if (contains)
             {
-                set_cell_directions(selector, row, column);
+                set_to_selector(selector, row, column, row, column);
                 found = true;
                 break;
             }
@@ -585,11 +585,7 @@ unsigned short process_find_selector(CellsSelector *selector, Table *table, Comm
 
 unsigned short swap_selectors(CellsSelector *destination, CellsSelector *source)
 {
-    destination->starting_row  = source->starting_row;
-    destination->starting_cell = source->starting_cell;
-    destination->ending_row    = source->ending_row;
-    destination->ending_cell   = source->ending_cell;
-
+    set_to_selector(destination, source->starting_row, source->starting_cell, source->ending_row, source->ending_cell);
     return EXIT_SUCCESS;
 }
 
@@ -616,14 +612,6 @@ table_index * get_selector_from_index(unsigned short index, CellsSelector *selec
     else if (index == 3)
         save_to = &selector->ending_cell;
     return save_to;
-}
-
-void set_to_selector(CellsSelector *selector, table_index s_row, table_index s_cell, table_index e_row, table_index e_cell)
-{
-    selector->starting_row = s_row;
-    selector->starting_cell = s_cell;
-    selector->ending_row = e_row;
-    selector->ending_cell = e_cell;
 }
 
 unsigned short process_relative_selector(CellsSelector *selector, TableSize size, char selectors[][21])
