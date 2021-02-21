@@ -2,11 +2,12 @@ image:
     gcc
 
 stages:
+    - install
     - build
     - test
 
 install:
-    stage: build
+    stage: install
     script:
         - apt-get update --yes
         - apt-get install git --yes
