@@ -149,15 +149,31 @@ TEST_F(TreeAxioms, Axiom2)
     }
 }
 
-//============================================================================//
-// ** ZDE DOPLNTE TESTY **
-//
-// Zde doplnte testy Red-Black Tree, testujte nasledujici:
-// 2. Axiomy (tedy vzdy platne vlastnosti) Red-Black Tree:
-//    - Vsechny listove uzly stromu jsou *VZDY* cerne.
-//    - Kazdy cerveny uzel muze mit *POUZE* cerne potomky.
-//    - Vsechny cesty od kazdeho listoveho uzlu ke koreni stromu obsahuji
-//      *STEJNY* pocet cernych uzlu.
-//============================================================================//
+TEST_F(TreeAxioms, Axiom3)
+{
+    std::vector<Node_t *> leafs;
+    bintree.GetLeafNodes(leafs);
+
+    int reference_black_count = -1;
+
+    for (auto leaf_node : leafs)
+    {
+        int black_count = 0;
+
+        auto leaf = leaf_node;
+        while (leaf && leaf != bintree.GetRoot())
+        {
+            if (leaf->color == BLACK)
+                black_count++;
+
+            leaf = leaf->pParent;
+        }
+
+        if (reference_black_count < 0)           // set reference count
+            reference_black_count = black_count;
+
+        ASSERT_EQ(black_count, reference_black_count);
+    }
+}
 
 /*** Konec souboru black_box_tests.cpp ***/
