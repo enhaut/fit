@@ -44,7 +44,31 @@ PriorityQueue::~PriorityQueue()
 
 void PriorityQueue::Insert(int value)
 {
+    auto *new_element = new Element_t{nullptr, value};
 
+    Element_t *actual = GetHead();
+    if (!actual)
+        m_pHead = new_element;
+
+    Element_t *before = nullptr;
+    while (actual)
+    {
+        if (value > actual->value)
+        {
+            new_element->pNext = actual;
+            if (!before)    // actual item is the first one
+                m_pHead = new_element;
+            else
+                before->pNext = new_element;
+            break;
+        }else if (value < actual->value && !actual->pNext)
+        {
+            actual->pNext = new_element;
+            break;
+        }
+        before = actual;
+        actual = actual->pNext;
+    }
 }
 
 bool PriorityQueue::Remove(int value)
