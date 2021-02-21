@@ -5,15 +5,13 @@ stages:
     - build
     - test
 
-before_script:
-    - apt-get update --yes
-    - apt-get install git --yes
-    - apt-get install cmake --yes
-    - apt-get install lcov --yes
-
 build:
     stage: build
     script:
+        - apt-get update --yes
+        - apt-get install git --yes
+        - apt-get install cmake --yes
+        - apt-get install lcov --yes
         - cd assignment/build
         - cmake ..
         - make
@@ -21,4 +19,5 @@ build:
 tdd:
     stage: test
     script:
+        - cd assignment/build
         - ./tdd_test
