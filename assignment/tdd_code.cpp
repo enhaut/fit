@@ -73,6 +73,25 @@ void PriorityQueue::Insert(int value)
 
 bool PriorityQueue::Remove(int value)
 {
+    Element_t *before = nullptr;
+    Element_t *actual = GetHead();
+
+    while (actual)
+    {
+        if (actual->value == value)
+        {
+            if (!before)    // actual item is the first one
+                m_pHead = actual->pNext;
+            else
+                before->pNext = actual->pNext;
+
+            delete actual;
+            return true;
+        }
+        before = actual;
+        actual = actual->pNext;
+    }
+
     return false;
 }
 
