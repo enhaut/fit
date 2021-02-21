@@ -1,0 +1,14 @@
+image:
+    gcc
+
+before_script:
+    - apt-get update --yes
+    - apt-get install git --yes
+    - apt-get install cmake --yes
+    - apt-get install lcov --yes
+
+build:
+    script:
+        - cd assignment/build
+        - cmake ..
+        - make
