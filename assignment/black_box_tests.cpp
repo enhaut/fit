@@ -131,10 +131,23 @@ TEST_F(TreeAxioms, Axiom1)
 
     for (auto leaf : leafs)
     {
-        ASSERT_TRUE(leaf->color == BinaryTree::BLACK);
+        ASSERT_TRUE(leaf->color == BLACK);
     }
 }
 
+TEST_F(TreeAxioms, Axiom2)
+{
+    std::vector<Node_t *> leafs;
+    bintree.GetAllNodes(leafs);
+
+    for (auto leaf : leafs)
+    {
+        if (leaf->color != RED)     // just skipping non red leafnodes
+            continue;
+        ASSERT_TRUE(leaf->pLeft->color == BLACK);
+        ASSERT_TRUE(leaf->pRight->color == BLACK);
+    }
+}
 
 //============================================================================//
 // ** ZDE DOPLNTE TESTY **
