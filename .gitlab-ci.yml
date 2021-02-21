@@ -20,4 +20,6 @@ tdd:
     stage: test
     script:
         - cd assignment/build
+        - cmake ..
+        - make
         - ./tdd_test
