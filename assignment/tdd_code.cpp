@@ -104,7 +104,16 @@ PriorityQueue::Element_t *PriorityQueue::Find(int value)
 
 size_t PriorityQueue::Length()
 {
-	return 0;
+    int length = 0;
+    Element_t *next_element = GetHead();
+
+    while (next_element)
+    {
+        length++;
+        next_element = next_element->pNext;
+    }
+
+	return length;
 }
 
 PriorityQueue::Element_t *PriorityQueue::GetHead()
