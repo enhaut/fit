@@ -41,6 +41,19 @@ protected:
     BinaryTree bintree;
 };
 
+class TreeAxioms : public ::testing::Test
+{
+protected:
+    virtual void SetUp() {
+
+        for(int value : keys)
+            bintree.InsertNode(value);
+    }
+
+    int keys[10] = {-1, 0, 1, 2, 3, 4, 5, 6, 7, 8};
+    BinaryTree bintree;
+};
+
 TEST_F(EmptyTree, InsertNode)
 {
     for (auto node_key : keys)
@@ -110,6 +123,18 @@ TEST_F(NonEmptyTree, FindNode)
         ASSERT_EQ(bintree.FindNode(node_key), nullptr);
     }
 }
+
+TEST_F(TreeAxioms, Axiom1)
+{
+    std::vector<Node_t *> leafs;
+    bintree.GetLeafNodes(leafs);
+
+    for (auto leaf : leafs)
+    {
+        ASSERT_TRUE(leaf->color == BinaryTree::BLACK);
+    }
+}
+
 
 //============================================================================//
 // ** ZDE DOPLNTE TESTY **
