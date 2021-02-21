@@ -1,6 +1,10 @@
 image:
     gcc
 
+stages:
+    - build
+    - test
+
 before_script:
     - apt-get update --yes
     - apt-get install git --yes
@@ -8,11 +12,13 @@ before_script:
     - apt-get install lcov --yes
 
 build:
+    stage: build
     script:
         - cd assignment/build
         - cmake ..
         - make
 
 tdd:
+    stage: test
     script:
         - ./tdd_test
