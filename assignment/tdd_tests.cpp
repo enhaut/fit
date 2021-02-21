@@ -3,8 +3,8 @@
 // Purpose:     Test Driven Development - priority queue test suite
 //
 // $NoKeywords: $ivs_project_1 $tdd_tests.cpp
-// $Author:     JMENO PRIJMENI <xlogin00@stud.fit.vutbr.cz>
-// $Date:       $2021-01-04
+// $Author:     SAMUEL DOBROŇ <xdobro23@stud.fit.vutbr.cz>
+// $Date:       $2021-02-21
 //============================================================================//
 /**
  * @file tdd_tests.cpp
