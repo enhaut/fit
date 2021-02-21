@@ -39,7 +39,9 @@ PriorityQueue::PriorityQueue()
 
 PriorityQueue::~PriorityQueue()
 {
-
+    Element_t *to_delete;
+    while ((to_delete = GetHead()))
+        Remove(to_delete->value);
 }
 
 void PriorityQueue::Insert(int value)
