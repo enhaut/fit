@@ -60,9 +60,6 @@ TEST_F(EmptyTree, DeleteNode)
     for (auto node_key : keys)
     {
         ASSERT_FALSE(bintree.DeleteNode(node_key));     // node_key is not in the tree, it should return "false"
-        bintree.InsertNode(node_key);
-        ASSERT_TRUE(bintree.DeleteNode(node_key));      // node_key has been added, so it should returns "true"
-        ASSERT_FALSE(bintree.DeleteNode(node_key));     // node_key is not in the tree again
     }
 }
 
@@ -71,9 +68,6 @@ TEST_F(EmptyTree, FindNode)
     for (auto node_key : keys)
     {
         ASSERT_EQ(bintree.FindNode(node_key), nullptr);
-        bintree.InsertNode(node_key);
-        EXPECT_EQ(bintree.FindNode(node_key)->key, node_key);
-        ASSERT_NE(bintree.FindNode(node_key), nullptr);
     }
 }
 
