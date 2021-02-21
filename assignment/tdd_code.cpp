@@ -64,7 +64,7 @@ size_t PriorityQueue::Length()
 
 PriorityQueue::Element_t *PriorityQueue::GetHead()
 {
-    return NULL;
+    return m_pHead;
 }
 
 /*** Konec souboru tdd_code.cpp ***/
