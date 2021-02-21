@@ -99,7 +99,16 @@ bool PriorityQueue::Remove(int value)
 
 PriorityQueue::Element_t *PriorityQueue::Find(int value)
 {
-    return NULL;
+    Element_t *next = GetHead();
+
+    while (next)
+    {
+        if (next->value == value)
+            break;
+
+        next = next->pNext;
+    }
+    return next;
 }
 
 size_t PriorityQueue::Length()
