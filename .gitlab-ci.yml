@@ -7,6 +7,9 @@ stages:
 
 build:
     stage: build
+    artifacts:
+        paths:
+            - assignment/build/
     script:
         - apt-get update --yes
         - apt-get install git --yes
@@ -18,8 +21,8 @@ build:
 
 tdd:
     stage: test
+    dependencies:
+        - build
     script:
         - cd assignment/build
-        - cmake ..
-        - make
         - ./tdd_test
