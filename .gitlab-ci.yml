@@ -12,3 +12,7 @@ build:
         - cd assignment/build
         - cmake ..
         - make
+
+tdd:
+    script:
+        - ./tdd_test
