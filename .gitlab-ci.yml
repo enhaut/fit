@@ -1,14 +1,28 @@
 image:
     gcc
 
-before_script:
-    - apt-get update --yes
-    - apt-get install git --yes
-    - apt-get install cmake --yes
-    - apt-get install lcov --yes
+stages:
+    - build
+    - test
 
 build:
+    stage: build
+    artifacts:
+        paths:
+            - assignment/build/
     script:
+        - apt-get update --yes
+        - apt-get install git --yes
+        - apt-get install cmake --yes
+        - apt-get install lcov --yes
         - cd assignment/build
         - cmake ..
         - make
+
+tdd:
+    stage: test
+    dependencies:
+        - build
+    script:
+        - cd assignment/build
+        - ./tdd_test

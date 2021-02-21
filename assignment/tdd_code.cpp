@@ -39,32 +39,95 @@ PriorityQueue::PriorityQueue()
 
 PriorityQueue::~PriorityQueue()
 {
-
+    Element_t *to_delete;
+    while ((to_delete = GetHead()))
+        Remove(to_delete->value);
 }
 
 void PriorityQueue::Insert(int value)
 {
+    auto *new_element = new Element_t{nullptr, value};
 
+    Element_t *actual = GetHead();
+    if (!actual)
+        m_pHead = new_element;
+
+    Element_t *before = nullptr;
+    while (actual)
+    {
+        if (value > actual->value)
+        {
+            new_element->pNext = actual;
+            if (!before)    // actual item is the first one
+                m_pHead = new_element;
+            else
+                before->pNext = new_element;
+            break;
+        }else if (value < actual->value && !actual->pNext)
+        {
+            actual->pNext = new_element;
+            break;
+        }
+        before = actual;
+        actual = actual->pNext;
+    }
 }
 
 bool PriorityQueue::Remove(int value)
 {
+    Element_t *before = nullptr;
+    Element_t *actual = GetHead();
+
+    while (actual)
+    {
+        if (actual->value == value)
+        {
+            if (!before)    // actual item is the first one
+                m_pHead = actual->pNext;
+            else
+                before->pNext = actual->pNext;
+
+            delete actual;
+            return true;
+        }
+        before = actual;
+        actual = actual->pNext;
+    }
+
     return false;
 }
 
 PriorityQueue::Element_t *PriorityQueue::Find(int value)
 {
-    return NULL;
+    Element_t *next = GetHead();
+
+    while (next)
+    {
+        if (next->value == value)
+            break;
+
+        next = next->pNext;
+    }
+    return next;
 }
 
 size_t PriorityQueue::Length()
 {
-	return 0;
+    int length = 0;
+    Element_t *next_element = GetHead();
+
+    while (next_element)
+    {
+        length++;
+        next_element = next_element->pNext;
+    }
+
+	return length;
 }
 
 PriorityQueue::Element_t *PriorityQueue::GetHead()
 {
-    return NULL;
+    return m_pHead;
 }
 
 /*** Konec souboru tdd_code.cpp ***/
