@@ -94,5 +94,10 @@ TEST_F(BaseMatrix, set)
     ASSERT_FALSE(small.matrix.set(deformed_matrix));
 }
 
+TEST_F(BaseMatrix, get)
+{
+    ASSERT_THROW(small.matrix.get(-1, small.cols - 1), std::runtime_error);
+    ASSERT_THROW(small.matrix.get(small.rows - 1, -1), std::runtime_error);
+}
 
 /*** Konec souboru white_box_tests.cpp ***/
