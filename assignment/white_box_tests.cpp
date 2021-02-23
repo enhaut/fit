@@ -116,5 +116,19 @@ TEST_F(BaseMatrix, opratorEQ)
     EXPECT_TRUE((bool)(small.matrix == *same_matrix));
 }
 
+TEST_F(BaseMatrix, OperatorPlus)
+{
+    ASSERT_THROW((small.matrix + big.matrix), std::runtime_error);
+
+    Matrix to_add = Matrix(big.rows, big.cols);
+    for (int row = 0; row < big.rows; row++)
+        for (int col = 0; col < big.cols; col++)
+            to_add.set(row, col, big.matrix.get(row, col)*-1);
+
+   auto sum_result = big.matrix + to_add;
+
+   Matrix result = Matrix(big.rows, big.cols);
+   ASSERT_TRUE((bool)(sum_result == result));
+}
 
 /*** Konec souboru white_box_tests.cpp ***/
