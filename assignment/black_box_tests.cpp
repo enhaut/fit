@@ -8,7 +8,7 @@
 //============================================================================//
 /**
  * @file black_box_tests.cpp
- * @author JMENO PRIJMENI
+ * @author SAMUEL DOBROŇ
  * 
  * @brief Implementace testu binarniho stromu.
  */

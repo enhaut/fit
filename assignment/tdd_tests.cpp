@@ -8,7 +8,7 @@
 //============================================================================//
 /**
  * @file tdd_tests.cpp
- * @author JMENO PRIJMENI
+ * @author SAMUEL DOBROŇ
  * 
  * @brief Testy implementace prioritni fronty.
  */
