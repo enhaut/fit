@@ -131,4 +131,32 @@ TEST_F(BaseMatrix, OperatorPlus)
    ASSERT_TRUE((bool)(sum_result == result));
 }
 
+TEST_F(BaseMatrix, OperatorMatrixMultiply)
+{
+    ASSERT_THROW(small.matrix * big.matrix, std::runtime_error);
+
+    Matrix matrix1 = Matrix(small.cols, small.rows);
+    matrix1.set({{1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12}});
+
+    Matrix result = Matrix(3, 3);     // matrix * so parameters are switched
+    result.set({{48, 54, 60}, {70, 80, 90}, {92, 106, 120}});
+
+    Matrix calculated_result = small.matrix * matrix1;
+    ASSERT_TRUE((bool)(calculated_result == result));
+}
+
+TEST_F(BaseMatrix, OperatorScalarMultiply)
+{
+    double multipliers[] = {0, 3.14, -5};
+    for (auto multiplier : multipliers)
+    {
+        Matrix result = Matrix(big.rows, big.cols);
+        for (int row = 0; row < big.rows; row++)
+            for (int col = 0; col < big.cols; col++)
+                result.set(row, col, big.matrix.get(row, col) * multiplier);
+
+        EXPECT_TRUE((big.matrix * multiplier) == result);
+    }
+}
+
 /*** Konec souboru white_box_tests.cpp ***/
