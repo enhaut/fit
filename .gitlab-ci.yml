@@ -34,3 +34,11 @@ black_box_testing:
     script:
         - cd assignment/build
         - ./black_box_test
+
+white_box_testing:
+    stage: test
+    dependencies:
+        - build
+    script:
+        - cd assignment/build
+        - ./white_box_test
