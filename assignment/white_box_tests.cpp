@@ -196,4 +196,30 @@ TEST_F(BaseMatrix, transpose)
     ASSERT_TRUE((bool)(big.matrix.transpose() == transposed));
 }
 
+TEST_F(BaseMatrix, inverse)
+{
+    EXPECT_THROW(big.matrix.inverse(), std::runtime_error);
+
+    auto matrix_22 = Matrix(2, 2);
+
+    matrix_22.set({{1, 1}, {2, 2}});
+    ASSERT_THROW(matrix_22.inverse(), std::runtime_error);
+
+
+    matrix_22.set({{4, 2}, {1, 3}});
+    auto inverse_matrix_22 = Matrix(2, 2);
+    inverse_matrix_22.set({{0.3, -0.2}, {-0.1, 0.4}});
+    ASSERT_TRUE((bool)(inverse_matrix_22 == matrix_22.inverse()));
+
+
+    auto matrix_33 = Matrix(3, 3);
+    matrix_33.set({{1, 2, -1}, {-2, 0, 1}, {1, -1, 0}});
+
+    auto inverse_matrix_33 = Matrix(3, 3);
+    inverse_matrix_33.set({{1, 1, 2}, {1, 1, 1}, {2, 3, 4}});
+
+    ASSERT_TRUE((bool)(inverse_matrix_33 == matrix_33.inverse()));
+
+}
+
 /*** Konec souboru white_box_tests.cpp ***/
