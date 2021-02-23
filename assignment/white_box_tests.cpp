@@ -186,4 +186,14 @@ TEST_F(BaseMatrix, solveEquation)
     EXPECT_EQ(matrix.solveEquation({0}), (std::vector<double>){0});
 }
 
+TEST_F(BaseMatrix, transpose)
+{
+    Matrix transposed = Matrix(big.cols, big.rows);
+    for (int row = 0; row < big.cols; row++)
+        for (int col = 0; col < big.rows; col++)
+            transposed.set(row, col, big.matrix.get(col, row));
+
+    ASSERT_TRUE((bool)(big.matrix.transpose() == transposed));
+}
+
 /*** Konec souboru white_box_tests.cpp ***/
