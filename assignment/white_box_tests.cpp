@@ -100,4 +100,21 @@ TEST_F(BaseMatrix, get)
     ASSERT_THROW(small.matrix.get(small.rows - 1, -1), std::runtime_error);
 }
 
+TEST_F(BaseMatrix, opratorEQ)
+{
+    auto zero_matrix = new Matrix();
+    ASSERT_THROW((bool)(small.matrix == *zero_matrix), std::runtime_error);
+
+    auto same_matrix = new Matrix(small.rows, small.cols);
+    EXPECT_FALSE((bool)(small.matrix == *same_matrix));
+
+
+    for (int row = 0; row < small.rows; row++)
+        for (int col = 0; col < small.cols; col++)
+            same_matrix->set(row, col, small.matrix.get(row, col));
+
+    EXPECT_TRUE((bool)(small.matrix == *same_matrix));
+}
+
+
 /*** Konec souboru white_box_tests.cpp ***/
