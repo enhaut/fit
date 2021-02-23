@@ -65,5 +65,34 @@ TEST_F(BaseMatrix, Constructor)
     }
 }
 
+TEST_F(BaseMatrix, set)
+{
+    for (int row = 0; row < small.rows; row++)
+    {
+        for (int col = 0; col < small.cols; col++)
+        {
+            ASSERT_TRUE(small.matrix.set(row, col, row + col + 10));
+            EXPECT_EQ(small.matrix.get(row, col), row + col + 10);
+        }
+    }
+
+    ASSERT_FALSE(small.matrix.set(small.rows + 1, small.cols, 0));
+    ASSERT_FALSE(small.matrix.set(small.rows, small.cols + 1, 0));
+
+    std::vector<std::vector< double >> matrix_to_set = {
+                                                        {10.0, 5.7, 3.3, 9},
+                                                        {8.2, 3.14, 9.9, 100.22},
+                                                        {0.8, 0.1, 7.7, -9.0}
+                                                        };
+
+    ASSERT_TRUE(small.matrix.set(matrix_to_set));
+
+    std::vector<std::vector< double >> deformed_matrix = {{1, 2, 3}, {3, 4, 5}};
+    ASSERT_FALSE(small.matrix.set(deformed_matrix));
+
+    deformed_matrix[1] = {3, 4};
+    ASSERT_FALSE(small.matrix.set(deformed_matrix));
+}
+
 
 /*** Konec souboru white_box_tests.cpp ***/
