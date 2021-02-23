@@ -159,4 +159,31 @@ TEST_F(BaseMatrix, OperatorScalarMultiply)
     }
 }
 
+TEST_F(BaseMatrix, solveEquation)
+{
+    EXPECT_THROW(small.matrix.solveEquation({1, 2, 3}), std::runtime_error);
+
+    auto simple_matrix = Matrix(2, 1);
+    EXPECT_THROW(simple_matrix.solveEquation({0}), std::runtime_error);
+
+    EXPECT_THROW(Matrix().solveEquation({0}), std::runtime_error);
+
+    auto to_solve = Matrix(4, 4);
+    to_solve.set({{0, 1, 1, -2},
+                  {1, 2, -1, 0},
+                  {2, 4, 1, -3},
+                  {1, -4, -7, -1}});
+
+    std::vector<double> right_side = {-3, 2, -2, -19};
+    std::vector<double> results = {-1, 2, 1, 3};
+
+    ASSERT_EQ(to_solve.solveEquation(right_side), results);
+
+
+    auto matrix = Matrix();
+    matrix.set(0, 0, 1);
+    matrix.solveEquation({0});
+    EXPECT_EQ(matrix.solveEquation({0}), (std::vector<double>){0});
+}
+
 /*** Konec souboru white_box_tests.cpp ***/
