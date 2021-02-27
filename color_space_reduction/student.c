@@ -72,7 +72,26 @@ void grayScale()
 
 void orderedDithering()
 {
-    // todo
+    /* Prevedeme obrazek na grayscale */
+    grayScale();
+
+    /* Projdeme vsechny pixely obrazku */
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            /* Nacteme soucasnou barvu */
+            S_RGBA color = getPixel(x, y);
+
+            int i, j, threshold;
+            i = x % M_SIDE;
+            j = y % M_SIDE;
+            threshold = M[j * M_SIDE + i];
+
+            if (color.red > threshold)
+                putPixel(x, y, COLOR_WHITE);
+            else
+                putPixel(x, y, COLOR_BLACK);
+        }
 }
 
 /******************************************************************************
