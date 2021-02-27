@@ -54,7 +54,15 @@ void putPixel(int x, int y, S_RGBA color)
  Ukol za 0.5 bodu */
 void grayScale()
 {
-    // todo
+    for (int x = 0; x < width; x++)
+        for (int y = 0; y < height; y++)
+        {
+            S_RGBA pixel = getPixel(x, y);
+            double intensity = pixel.red * .299 + pixel.green * .587 + pixel.blue * .114;
+
+            S_RGBA gray_scaled_pixel = {ROUND(intensity), ROUND(intensity), ROUND(intensity)};
+            putPixel(x, y, gray_scaled_pixel);
+        }
 }
 
 /******************************************************************************
