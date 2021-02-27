@@ -31,9 +31,10 @@ const int M_SIDE = 4;
  Ukol za 0.25 bodu */
 S_RGBA getPixel(int x, int y)
 {
-    // todo
-    
-    return COLOR_BLACK; //vraci barvu (0, 0, 0)
+    if (x >= width || y >= height || 0 > x || 0 > y)
+        return COLOR_BLACK;
+
+    return frame_buffer[x + (y * width)];
 }
 /******************************************************************************
  ******************************************************************************
