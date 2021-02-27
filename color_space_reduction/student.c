@@ -43,7 +43,10 @@ S_RGBA getPixel(int x, int y)
  Ukol za 0.25 bodu */
 void putPixel(int x, int y, S_RGBA color)
 {
-    // todo
+    if (x >= width || y >= height || 0 > x || 0 > y)
+        return;
+
+    frame_buffer[x + (y * width)] = color;
 }
 /******************************************************************************
  ******************************************************************************
