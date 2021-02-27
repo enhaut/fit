@@ -98,9 +98,41 @@ void orderedDithering()
  ******************************************************************************
  Funkce prevadi obrazek na cernobily pomoci algoritmu distribuce chyby.
  Ukol za 1 bod */
+void saveDistribution(int x, int y, double error)
+{
+    S_RGBA color = getPixel(x, y);
+    int new_color = ROUND(color.red + error);
+
+    if (new_color < 0)
+        new_color = 0;
+    else if (new_color > 255)
+        new_color = 255;
+
+    color.red = color.green = color.blue = new_color;
+    putPixel(x, y, color);
+}
+
 void errorDistribution()
-{   
-    // todo
+{
+    grayScale();
+
+    for (int x = 0; x < width; x++)
+        for (int y = 0; y < height; y++)
+        {
+            S_RGBA color = getPixel(x, y);
+            int original_color = color.red;
+
+            if (original_color > 127)
+                color = COLOR_WHITE;
+            else
+                color = COLOR_BLACK;
+
+            double error = original_color - color.red;
+            putPixel(x, y, color);
+            saveDistribution(x + 1, y, 3.0/8.0 * error);
+            saveDistribution(x + 1, y + 1, 2.0/8.0 * error);
+            saveDistribution(x, y + 1, 3.0/8.0 * error);
+        }
 }
 
 /******************************************************************************
