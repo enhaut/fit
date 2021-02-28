@@ -65,14 +65,33 @@ void drawLine(int x1, int y1, int x2, int y2, S_RGBA color)
     auto dx{ x2 - x1 };
     auto dy{ y2 - y1 };
 
-    // #1 : Doplnte kod pro kontrolu vstupu a upravu koordinatu pro ruzne kvadranty.
+    if (!dx and !dy)
+        return;
 
+    bool swapped = false;
+    if (abs(dy) > abs(dx))
+    {
+        SWAP(x1, y1);
+        SWAP(x2, y2);
+        swapped = true;
+    }
+
+    if (x1 > x2)
+    {
+        SWAP(x1, x2);
+        SWAP(y1, y2);
+    }
+
+    dx = x2-x1;
+    dy = y2-y1;
     auto y{ y1 << FRAC_BITS };
     auto k{ (dy << FRAC_BITS) / dx };
     for (int x = x1; x <= x2; ++x)
     {
-        // #2 : Doplnte kod pro upravu koordinatu pro ruzne kvadranty, pripadne upravte i putPixel(...).
-        setPixel( x, y >> FRAC_BITS, color);
+        if (swapped)
+            setPixel(y >> FRAC_BITS, x, color);
+        else
+            setPixel( x, y >> FRAC_BITS, color);
 
         y += k;
     }
