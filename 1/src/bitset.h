@@ -20,3 +20,7 @@ typedef unsigned long bitset_index_t;
 #define bitset_alloc(jmeno_pole,velikost) static_assert(velikost > 0 && velikost < MAX_ARRAY_SIZE,"Nesprávna délka pole");unsigned long *jmeno_pole = calloc(ULONG_ARRAY_SIZE(velikost), sizeof(unsigned long));if(!jmeno_pole){fprintf(stderr, "bitset_alloc: Chyba alokace paměti\n");return 1;}
 #define bitset_free(jmeno_pole) free(jmeno_pole)
 #define bitset_size(jmeno_pole) (jmeno_pole[0])
+
+
+#define bitset_setbit(jmeno_pole,index,vyraz) (vyraz ? (jmeno_pole[1 + (index / BITS_PER_ULONG)] |= 1UL << index % BITS_PER_ULONG) : (jmeno_pole[1 + (index / BITS_PER_ULONG)] &= ~(1UL << (index % BITS_PER_ULONG))))
+#define bitset_getbit(jmeno_pole,index) ((jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0)
