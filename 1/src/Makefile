@@ -3,9 +3,9 @@ CC=gcc
 CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
 LDFLAGS= -m32
 
-primes.o: primes.c
+primes.o: primes.c primes.h
 bitset.o: bitset.c bitset.h
-eratosthenes.o: eratosthenes.c
+eratosthenes.o: eratosthenes.c eratosthenes.h
 
 primes: primes.o bitset.o eratosthenes.o
 	$(CC) $(CFLAGS) primes.o bitset.o eratosthenes.o -o primes
