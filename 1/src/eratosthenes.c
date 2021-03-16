@@ -15,7 +15,7 @@ void Eratosthenes(bitset_t pole)
     bitset_setbit(pole, 1, 1);  // number "1" also
 
     bitset_index_t available_values = bitset_size(pole);  // faster than using macro everywhere (~20ms on my machine at average of 200tries)
-    memset(&(pole[1]), 0x55, available_values / 8 + 1); // +1 for mark the last even number
+    memset(&(pole[1]), 0x55, available_values / 8 + 1); // +1 because of not using the first element in array
 
     bitset_index_t size = (bitset_index_t)sqrt(available_values);
     for (bitset_index_t i = 2; i < size; i++)
