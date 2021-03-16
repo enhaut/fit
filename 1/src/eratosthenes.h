@@ -7,4 +7,4 @@
 #include "bitset.h"
 
 
-int Eratosthenes(bitset_t bitset_array);
+void Eratosthenes(bitset_t pole);

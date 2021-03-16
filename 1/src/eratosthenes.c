@@ -9,24 +9,21 @@
 #include "eratosthenes.h"
 
 
-int Eratosthenes(bitset_t bitset_array)
+void Eratosthenes(bitset_t pole)
 {
-    bitset_setbit(bitset_array, 0, 1);
-    bitset_setbit(bitset_array, 1, 1);
+    bitset_setbit(pole, 0, 1);  // number "0" is not even
+    bitset_setbit(pole, 1, 1);  // number "1" also
 
-    bitset_index_t available_values = bitset_size(bitset_array);  // faster than using macro everywhere
-    memset(&(bitset_array[1]), 0x55, available_values / BITS_PER_ULONG);
+    bitset_index_t available_values = bitset_size(pole);  // faster than using macro everywhere (~20ms on my machine at average of 200tries)
+    memset(&(pole[1]), 0x55, available_values / 8 + 1); // +1 for mark the last even number
 
     bitset_index_t size = (bitset_index_t)sqrt(available_values);
-    for (bitset_index_t i = 3; i < size; i += 2)
+    for (bitset_index_t i = 2; i < size; i++)
     {
-        if (bitset_getbit(bitset_array, i))  // skip prime numbers
+        if (bitset_getbit(pole, i))  // skip prime numbers
             continue;
 
         for (bitset_index_t n = i+i; n < available_values; n += i)
-            bitset_setbit(bitset_array, n, 1);
-
+            bitset_setbit(pole, n, 1);
     }
-
-    return 0;
 }
