@@ -3,6 +3,7 @@
 //
 
 #include <math.h>
+#include <string.h>
 #include "eratosthenes.h"
 
 
@@ -11,18 +12,16 @@ int Eratosthenes(bitset_t bitset_array)
     bitset_setbit(bitset_array, 0, 1);
     bitset_setbit(bitset_array, 1, 1);
 
+    bitset_index_t available_values = bitset_size(bitset_array);  // faster than using macro everywhere
+    memset(&(bitset_array[1]), 0x55, available_values / BITS_PER_ULONG);
 
-    unsigned long array_size = bitset_size(bitset_array);  // in average, this is faster
-    for (bitset_index_t i = 2; i < array_size; i += 2)
-        bitset_setbit(bitset_array, i, 1);
-
-    bitset_index_t size = sqrt(bitset_size(bitset_array));
-    for (bitset_index_t i = 2; i < size; i++)
+    bitset_index_t size = (bitset_index_t)sqrt(available_values);
+    for (bitset_index_t i = 3; i < size; i += 2)
     {
         if (bitset_getbit(bitset_array, i))  // skip prime numbers
             continue;
 
-        for (bitset_index_t n = i+i; n < array_size; n += i)
+        for (bitset_index_t n = i+i; n < available_values; n += i)
             bitset_setbit(bitset_array, n, 1);
 
     }
