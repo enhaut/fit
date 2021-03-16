@@ -1,5 +1,7 @@
-//
-// Created by enhaut on 13. 3. 2021.
+// eratosthenes.c
+// Řešení IJC-DU1, příklad a), 6.3.2021
+// Autor: Samuel Dobroň, FIT
+// Přeloženo: gcc 10.2.1
 //
 
 #include <math.h>
