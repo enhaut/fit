@@ -25,6 +25,8 @@ int main(void)
         got_primes++;
     }
 
+    bitset_free(bitset_array);
+
     fprintf(stderr, "Time=%.3g\n", (double)(clock() - start) / CLOCKS_PER_SEC);
     return 0;
 }
