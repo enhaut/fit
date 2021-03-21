@@ -16,7 +16,8 @@ int main(void)
     Eratosthenes(bitset_array);
 
     int got_primes = 0;
-    for (bitset_index_t i = bitset_size(bitset_array); i > 0  && got_primes < 10; i--)
+    for (bitset_index_t i = bitset_size(bitset_array) - 1; i > 0  && got_primes < 10; i--)
+    //                                                ^^ -1 because array is indexed from 0
     {
         if (bitset_getbit(bitset_array, i))
             continue;
