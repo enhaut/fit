@@ -46,7 +46,7 @@
         inline void bitset_setbit(bitset_t jmeno_pole, bitset_index_t index, int vyraz)
         {
             if (index > bitset_size(jmeno_pole))
-                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%luXXX",(unsigned long)index, bitset_size(jmeno_pole));
+                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",(unsigned long)index, bitset_size(jmeno_pole));
 
             if (vyraz)
                 jmeno_pole[1 + (index / BITS_PER_ULONG)] |= 1UL << index % BITS_PER_ULONG;
@@ -57,7 +57,7 @@
         inline int bitset_getbit(bitset_t jmeno_pole, bitset_index_t index)
         {
             if (index > bitset_size(jmeno_pole))
-                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%luYYYY",(unsigned long)index, bitset_size(jmeno_pole));
+                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",(unsigned long)index, bitset_size(jmeno_pole));
 
             return ((jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0);
         }
