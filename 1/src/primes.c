@@ -16,12 +16,12 @@ int main(void)
     Eratosthenes(bitset_array);
 
     int got_primes = 0;
-    for (bitset_index_t i = 0; i < bitset_size(bitset_array) && got_primes < 10; i++)
+    for (bitset_index_t i = bitset_size(bitset_array); i > 0  && got_primes < 10; i--)
     {
-        if (bitset_getbit(bitset_array, (bitset_size(bitset_array) - i)))
+        if (bitset_getbit(bitset_array, i))
             continue;
 
-        printf("%ld\n", bitset_size(bitset_array) -i);
+        printf("%ld\n", i);
         got_primes++;
     }
 
