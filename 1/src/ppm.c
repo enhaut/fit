@@ -48,10 +48,11 @@ bool read_bin_data(struct ppm *image, FILE *image_file)
     } else if (readed < image_bytes) {
         warning_msg("Soubor neobsahuje dostatek dat!");
         return false;
-    }/* else if ((q = fgetc(image_file)) != EOF) {
-        warning_msg("Soubor obsahuje víc obrazových dat, než je povoleno! %c", q);
+    } else if (fgetc(image_file) != EOF) {
+        warning_msg("Soubor obsahuje víc obrazových dat, než je povoleno!");
         return false;
-    }*/
+    }
+
     return true;
 }
 
