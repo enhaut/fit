@@ -89,6 +89,7 @@ struct ppm* ppm_read(const char *filename)
         CORRECT_ERR_RETURN(image_file);
     }
 
+    fclose(image_file);
     return image;
 }
 #undef CORRECT_ERR_RETURN
