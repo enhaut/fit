@@ -70,8 +70,8 @@ struct ppm* ppm_read(const char *filename)
 
     size_t size_x = -1;
     size_t size_y = -1;
-    int deph = -1;
-    fscanf(image_file, "P6 %zu %zu %d", &size_x, &size_y, &deph);   // there is space at the end to catch ws in front of binary data
+    int deph = -1;  // using int because at specific architectures CHAR could have 7bites so 255 won't fit into it
+    fscanf(image_file, "P6 %zu %zu %d ", &size_x, &size_y, &deph);   // there is space at the end to catch whitespaces in front of binary data
 
     if (size_x <= 0 || size_y <= 0 || (deph < 0 || deph > 255))
     {
