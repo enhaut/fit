@@ -8,7 +8,8 @@
 #include <string.h>
 #include "eratosthenes.h"
 
-
+// Function will set 1 to index of non prime numbers in bit array.
+// It uses Eratosthenes method.
 void Eratosthenes(bitset_t pole)
 {
     bitset_index_t available_values = bitset_size(pole);  // faster than using macro everywhere (~20ms on my machine at average of 200tries)
@@ -24,7 +25,7 @@ void Eratosthenes(bitset_t pole)
         if (bitset_getbit(pole, i))  // skip prime numbers
             continue;
 
-        for (bitset_index_t n = i*i; n <= available_values; n += i*2)
+        for (bitset_index_t n = i*i; n <= available_values; n += i*2)   // setting multiples of the number, because it's dividable by that number
             bitset_setbit(pole, n, 1);
     }
 }
