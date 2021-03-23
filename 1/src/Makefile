@@ -24,8 +24,9 @@ primes-i: primes-i.o bitset-i.o eratosthenes-i.o error.o
 primes: primes.o bitset.o eratosthenes.o error.o
 steg-decode: ppm.o steg-decode.o error.o eratosthenes.o
 
-run: primes
+run: primes primes-i
 	-time ./primes
+	-time ./primes-i
 
 clean:
 	rm *.o primes primes-i steg-decode 2> /dev/null || true
