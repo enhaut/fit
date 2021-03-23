@@ -15,6 +15,8 @@ int main(void)
     bitset_alloc(bitset_array, 200000000);
     Eratosthenes(bitset_array);
 
+    unsigned long primes_to_print[10];
+
     int got_primes = 0;
     for (bitset_index_t i = bitset_size(bitset_array) - 1; i > 0  && got_primes < 10; i--)
     //                                                ^^ -1 because array is indexed from 0
@@ -22,9 +24,12 @@ int main(void)
         if (bitset_getbit(bitset_array, i))
             continue;
 
-        printf("%ld\n", i);
+        primes_to_print[got_primes] = i;
         got_primes++;
     }
+
+    for (int i = 9; i >= 0; i--)
+        printf("%ld\n", primes_to_print[i]);
 
     bitset_free(bitset_array);
 
