@@ -6,6 +6,7 @@ LDFLAGS= -m32
 primes.o: primes.c primes.h
 bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
+error.o: error.c error.h
 
 primes: primes.o bitset.o eratosthenes.o
 	$(CC) $(CFLAGS) primes.o bitset.o eratosthenes.o -o primes
