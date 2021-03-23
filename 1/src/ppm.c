@@ -36,24 +36,20 @@ struct ppm* allocate_struct(size_t size_x, size_t size_y)
 
 bool read_bin_data(struct ppm *image, FILE *image_file)
 {
-    size_t readed;
     unsigned image_bytes = image->xsize * image->ysize * 3;
 
-    readed = fread(image->data, sizeof(char), image_bytes, image_file);
+    size_t readed = fread(image->data, sizeof(char), image_bytes, image_file);
 
     if (!readed)
-    {
         warning_msg("Soubor se nepodařilo přečíst!");
-        return false;
-    } else if (readed < image_bytes) {
+    else if (readed < image_bytes)
         warning_msg("Soubor neobsahuje dostatek dat!");
-        return false;
-    } else if (fgetc(image_file) != EOF) {
+    else if (fgetc(image_file) != EOF)
         warning_msg("Soubor obsahuje víc obrazových dat, než je povoleno!");
-        return false;
-    }
+    else
+        return true;
 
-    return true;
+    return false;
 }
 
 
