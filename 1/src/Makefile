@@ -8,11 +8,10 @@ bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
 error.o: error.c error.h
 
-primes: primes.o bitset.o eratosthenes.o
-	$(CC) $(CFLAGS) primes.o bitset.o eratosthenes.o -o primes
+primes: primes.o bitset.o eratosthenes.o error.o
 
 run: primes
 	-time ./primes
 
 clean:
-	rm *.o primes 2> /dev/null || true
+	rm *.o primes primes-i steg-decode 2> /dev/null || true
