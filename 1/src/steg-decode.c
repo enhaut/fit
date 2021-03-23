@@ -9,19 +9,17 @@
 #include "eratosthenes.h"
 #include <stdio.h>
 
-
+// Function will add character to message array, in case there is no space left it will resize the array.
+// In case, the first character is being added message==NULL, so function will allocate space also.
 char *add_character_to_message(char *message, char character, unsigned index)
 {
     unsigned message_size = index ? index : 100; // first message size has to be != 0
-    if (!message)
-    {
+
+    if (!message)   // message array is not allocated yet
         message = malloc(message_size + 1);
-    }
-    else if (index == message_size && character != 0)
-    {
-        message_size *= 2;
-        message = realloc(message, message_size + 1);
-    }
+    else if (index == message_size && character != 0)   // there is no reason to "resize" array if ending \0 can fit
+        message = realloc(message, message_size * 2 + 1);
+
     if (!message)
     {
         warning_msg("Nepodařilo se alokovat místo pro zprávu!");
@@ -33,16 +31,17 @@ char *add_character_to_message(char *message, char character, unsigned index)
     return message;
 }
 
+// Function reads encoded message from loaded image data.
 void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
 {
-    char message_character = 0;
-    unsigned character_index = 0;
+    char message_character = 0;     // character that is being read from image data
+    unsigned character_index = 0;   // index of character in message
+    int message_correct_ending = 0; // check if message has been correctly ended
     char *message = NULL;
-    int message_correct_ending = 0;
 
     for (size_t i = 23, char_index = 0; i < bitset_size(primes); i++)
     {
-        if (bitset_getbit(primes, i))       // skipping primes
+        if (bitset_getbit(primes, i))       // skipping non primes
             continue;
 
         if (loaded_image->data[i] % 2)      // LSb determines that number is odd/even
@@ -50,7 +49,7 @@ void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
 
         char_index++;
 
-        if (char_index == CHAR_BIT)
+        if (char_index == CHAR_BIT) // character has been completely read
         {
             message = add_character_to_message(message, message_character, character_index);
 
@@ -86,7 +85,9 @@ int main(int argc, char *args[])
     if (!loaded_image)
         return 1;
 
-    size_t image_size = loaded_image->xsize * loaded_image->ysize * 3;
+    // message characters are at bytes not bites so i need up to (image_bites)/no_of_bites_in_byte prime numbers
+    // +1 to fix possible round error
+    size_t image_size = (loaded_image->xsize * loaded_image->ysize * 3) / CHAR_BIT + 1;
     bitset_alloc(primes, image_size);
     Eratosthenes(primes);
 
