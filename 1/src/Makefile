@@ -3,6 +3,8 @@ CC=gcc
 CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
 LDFLAGS= -m32 -lm
 
+.PHONY: run clean
+
 # primes
 bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
