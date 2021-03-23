@@ -19,7 +19,7 @@
 
     #define BITS_PER_ULONG (sizeof(unsigned long) * CHAR_BIT)
     #define ULONG_ARRAY_SIZE(velikost) (1 + (velikost / BITS_PER_ULONG) + (velikost % BITS_PER_ULONG ? 1 : 0))
-    #define MAX_ARRAY_SIZE 4294967295
+    #define MAX_ARRAY_SIZE 4294967295   // 2^32
 
 
     #define bitset_create(jmeno_pole,velikost) static_assert(velikost > 0 && velikost < MAX_ARRAY_SIZE, "Velikost pole musí byt větší než 0!");unsigned long jmeno_pole[ULONG_ARRAY_SIZE(velikost)] = {velikost, 0};
