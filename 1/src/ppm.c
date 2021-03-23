@@ -10,7 +10,7 @@
 #include "ppm.h"
 #include "error.h"
 
-
+// Function allocates memory for image struct. It returns NULL if fails.
 struct ppm* allocate_struct(size_t size_x, size_t size_y)
 {
     size_t image_size = 3 * size_x * size_y;
@@ -34,6 +34,7 @@ struct ppm* allocate_struct(size_t size_x, size_t size_y)
     return image;
 }
 
+// Function reads binary data of image colors. It returns NULL if fails.
 bool read_bin_data(struct ppm *image, FILE *image_file)
 {
     unsigned image_bytes = image->xsize * image->ysize * 3;
@@ -54,6 +55,7 @@ bool read_bin_data(struct ppm *image, FILE *image_file)
 
 
 #define CORRECT_ERR_RETURN(file) {fclose(file);return NULL;}
+// Function is responsible for whole process of reading file.
 struct ppm* ppm_read(const char *filename)
 {
     FILE *image_file = fopen(filename, "rb");
