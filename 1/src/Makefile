@@ -3,11 +3,12 @@ CC=gcc
 CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
 LDFLAGS= -m32 -lm
 
-primes.o: primes.c
+# primes
 bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
 error.o: error.c error.h
 
+# primes-i
 primes-i.o: primes.c
 	$(CC) $(CFLAGS) -c $< -o $@
 bitset-i.o: bitset.c bitset.h
@@ -15,8 +16,8 @@ bitset-i.o: bitset.c bitset.h
 eratosthenes-i.o: eratosthenes.c eratosthenes.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# steg-decode
 ppm.o: ppm.c ppm.h
-steg-decode.o: steg-decode.c
 
 primes-i: CFLAGS += -DUSE_INLINE
 primes-i: primes-i.o bitset-i.o eratosthenes-i.o error.o
