@@ -3,7 +3,7 @@ CC=gcc
 CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
 LDFLAGS= -m32
 
-primes.o: primes.c primes.h
+primes.o: primes.c
 bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
 error.o: error.c error.h
