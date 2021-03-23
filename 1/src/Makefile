@@ -8,9 +8,18 @@ bitset.o: bitset.c bitset.h
 eratosthenes.o: eratosthenes.c eratosthenes.h
 error.o: error.c error.h
 
+primes-i.o: primes.c
+	$(CC) $(CFLAGS) -c $< -o $@
+bitset-i.o: bitset.c bitset.h
+	$(CC) $(CFLAGS) -c $< -o $@
+eratosthenes-i.o: eratosthenes.c eratosthenes.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
 ppm.o: ppm.c ppm.h
 steg-decode.o: steg-decode.c
 
+primes-i: CFLAGS += -DUSE_INLINE
+primes-i: primes-i.o bitset-i.o eratosthenes-i.o error.o
 primes: primes.o bitset.o eratosthenes.o error.o
 steg-decode: ppm.o steg-decode.o error.o eratosthenes.o
 
