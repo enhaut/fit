@@ -12,7 +12,7 @@ int main(void)
 {
     clock_t start = clock();
 
-    bitset_alloc(bitset_array, 200000000);
+    bitset_create(bitset_array, 200000000);
     Eratosthenes(bitset_array);
 
     unsigned long primes_to_print[10];
@@ -31,7 +31,7 @@ int main(void)
     for (int i = 9; i >= 0; i--)
         printf("%ld\n", primes_to_print[i]);
 
-    bitset_free(bitset_array);
+    //bitset_free(bitset_array);    // free() at stack array is undefined
 
     fprintf(stderr, "Time=%.3g\n", (double)(clock() - start) / CLOCKS_PER_SEC);
     return 0;

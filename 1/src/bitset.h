@@ -22,8 +22,8 @@
     #define MAX_ARRAY_SIZE 4294967295   // 2^32
 
 
-    #define bitset_create(jmeno_pole,velikost) static_assert(velikost > 0 && velikost < MAX_ARRAY_SIZE, "Velikost pole musí byt větší než 0!");unsigned long jmeno_pole[ULONG_ARRAY_SIZE(velikost)] = {velikost, 0};
-    #define bitset_alloc(jmeno_pole,velikost) assert((velikost > 0 && velikost < MAX_ARRAY_SIZE) && "Nesprávna velikost pole!");bitset_t jmeno_pole = calloc(ULONG_ARRAY_SIZE(velikost), sizeof(unsigned long));if(!jmeno_pole){error_exit("bitset_alloc: Chyba alokace paměti\n");}jmeno_pole[0]=velikost;
+    #define bitset_create(jmeno_pole,velikost) static_assert(velikost > 0 && velikost < MAX_ARRAY_SIZE, "Velikost pole musí byt větší než 0!");unsigned long jmeno_pole[ULONG_ARRAY_SIZE(velikost)] = {velikost, 0}
+    #define bitset_alloc(jmeno_pole,velikost) assert((velikost > 0 && velikost < MAX_ARRAY_SIZE) && "Nesprávna velikost pole!");bitset_t jmeno_pole = calloc(ULONG_ARRAY_SIZE(velikost), sizeof(unsigned long));if(!jmeno_pole){error_exit("bitset_alloc: Chyba alokace paměti\n");}jmeno_pole[0]=velikost
 
 
     #ifndef USE_INLINE
