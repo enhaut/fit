@@ -6,7 +6,7 @@ RUNNABLE_TARGETS=dependencies.txt primes primes-i
 
 .PHONY: run clean all
 
-all: $(RUNNABLE_TARGETS)
+all: $(RUNNABLE_TARGETS) steg-decode
 run: $(RUNNABLE_TARGETS)
 	time ./primes
 	time ./primes-i
