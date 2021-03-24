@@ -23,6 +23,6 @@ primes-i: primes-i.o bitset-i.o eratosthenes-i.o error.o
 primes: primes.o bitset.o eratosthenes.o error.o
 steg-decode: ppm.o steg-decode.o error.o eratosthenes.o
 
-# primes-i
+# inline files for primes-i
 %-i.o: %.c
 	$(CC) $(CFLAGS) -DUSE_INLINE -c $< -o $@
