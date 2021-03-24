@@ -18,19 +18,20 @@ char *add_character_to_message(char *message, char character, unsigned index)
     if (!message)   // message array is not allocated yet
         message = malloc(message_size + 1);
     else if (index == message_size && character != 0)   // there is no reason to "resize" array if ending \0 can fit
-        message = realloc(message, message_size * 2 + 1);
-
-    if (!message)
     {
-        warning_msg("Nepodařilo se alokovat místo pro zprávu!");
-        return NULL;
+        char *resized_message = realloc(message, message_size * 2 + 1);
+        if (!resized_message)
+            free(message);
+        message = resized_message;
     }
 
-    message[index] = character;
+    if (message)
+        message[index] = character;
 
     return message;
 }
 
+#define DEALLOC_MEMORY_BEFORE_EXIT(primes, message, image) bitset_free(primes);if(message){free(message);}ppm_free(image)
 // Function reads encoded message from loaded image data.
 void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
 {
@@ -52,6 +53,11 @@ void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
         if (char_index == CHAR_BIT) // character has been completely read
         {
             message = add_character_to_message(message, message_character, character_index);
+            if (!message)
+            {
+                DEALLOC_MEMORY_BEFORE_EXIT(primes, message, loaded_image);
+                error_exit("Nepodařilo se alokovat místo pro zprávu!");
+            }
 
             if (message_character == '\0')
             {
@@ -66,9 +72,7 @@ void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
     }
     if (!message_correct_ending)
     {
-        bitset_free(primes);
-        free(message);
-        ppm_free(loaded_image);
+        DEALLOC_MEMORY_BEFORE_EXIT(primes, message, loaded_image);
         error_exit("Zpráva není korektně zakončená!");
     }
 
@@ -93,7 +97,6 @@ int main(int argc, char *args[])
 
     read_encoded_message(loaded_image, primes);
 
-    bitset_free(primes);
-    ppm_free(loaded_image);
+    DEALLOC_MEMORY_BEFORE_EXIT(primes, NULL, loaded_image);
     return 0;
 }
