@@ -31,7 +31,7 @@ char *add_character_to_message(char *message, char character, unsigned index)
     return message;
 }
 
-#define DEALLOC_MEMORY_BEFORE_EXIT(primes, message, image) bitset_free(primes);if(message){free(message);}ppm_free(image)
+#define DEALLOC_MEMORY_BEFORE_EXIT(primes, message, image) do{bitset_free(primes);if(message){free(message);}ppm_free(image);}while(0)
 // Function reads encoded message from loaded image data.
 void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
 {
