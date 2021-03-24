@@ -29,7 +29,7 @@
     #ifndef USE_INLINE
         #define bitset_free(jmeno_pole) free(jmeno_pole)
         #define bitset_size(jmeno_pole) (jmeno_pole[0])
-        #define bitset_setbit(jmeno_pole,index,vyraz) (index > bitset_size(jmeno_pole) ? (error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",(unsigned long)index, bitset_size(jmeno_pole)), 0):(vyraz ? (jmeno_pole[1 + (index / BITS_PER_ULONG)] |= 1UL << index % BITS_PER_ULONG) : (jmeno_pole[1 + (index / BITS_PER_ULONG)] &= ~(1UL << (index % BITS_PER_ULONG)))))
+        #define bitset_setbit(jmeno_pole,index,vyraz) (index > bitset_size(jmeno_pole) ? (error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",index, bitset_size(jmeno_pole)), 0) : (vyraz ? (jmeno_pole[1 + (index / BITS_PER_ULONG)] |= 1UL << index % BITS_PER_ULONG) : (jmeno_pole[1 + (index / BITS_PER_ULONG)] &= ~(1UL << (index % BITS_PER_ULONG)))))
         #define bitset_getbit(jmeno_pole,index) (index > bitset_size(jmeno_pole) ? (error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",index, bitset_size(jmeno_pole)), 0) : (jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0)
         #else
 
@@ -46,7 +46,7 @@
         inline void bitset_setbit(bitset_t jmeno_pole, bitset_index_t index, int vyraz)
         {
             if (index > bitset_size(jmeno_pole))
-                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",(unsigned long)index, bitset_size(jmeno_pole));
+                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole));
 
             if (vyraz)
                 jmeno_pole[1 + (index / BITS_PER_ULONG)] |= 1UL << index % BITS_PER_ULONG;
@@ -57,7 +57,7 @@
         inline int bitset_getbit(bitset_t jmeno_pole, bitset_index_t index)
         {
             if (index > bitset_size(jmeno_pole))
-                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu",(unsigned long)index, bitset_size(jmeno_pole));
+                error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole));
 
             return ((jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0);
         }
