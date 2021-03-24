@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
+// Function prints warning message to standard error output
 void warning_msg(const char *fmt, ...)
 {
     va_list args;
@@ -22,6 +22,7 @@ void warning_msg(const char *fmt, ...)
     va_end(args);
 }
 
+// Function prints message to standard error output and then exits the whole program.
 void error_exit(const char *fmt, ...)
 {
     warning_msg(fmt);
