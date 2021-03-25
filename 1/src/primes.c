@@ -28,8 +28,11 @@ int main(void)
         got_primes++;
     }
 
-    for (int i = 9; i >= 0; i--)
-        printf("%ld\n", primes_to_print[i]);
+    if (got_primes < 10)
+        warning_msg("Zadaný rozsah neobsahuje dostatek (10) prvočísel!");
+    else
+        for (int i = 9; i >= 0; i--)
+            printf("%ld\n", primes_to_print[i]);
 
     //bitset_free(bitset_array);    // free() at stack array is undefined
 
