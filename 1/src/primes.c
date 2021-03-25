@@ -15,7 +15,7 @@ int main(void)
     bitset_create(bitset_array, 200000000);
     Eratosthenes(bitset_array);
 
-    unsigned long primes_to_print[10];
+    unsigned long primes_to_print[10] = {0};
 
     int got_primes = 0;
     for (bitset_index_t i = bitset_size(bitset_array) - 1; i > 0  && got_primes < 10; i--)
