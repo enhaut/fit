@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <assert.h>
-#include "stdlib.h"
+#include <stdlib.h>
 #include "error.h"
 
 #ifndef BITSET_H
