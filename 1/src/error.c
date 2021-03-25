@@ -25,6 +25,13 @@ void warning_msg(const char *fmt, ...)
 // Function prints message to standard error output and then exits the whole program.
 void error_exit(const char *fmt, ...)
 {
-    warning_msg(fmt);
+    va_list args;
+    va_start(args, fmt);
+
+    fprintf(stderr, "CHYBA: ");
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+
+    va_end(args);
     exit(1);
 }
