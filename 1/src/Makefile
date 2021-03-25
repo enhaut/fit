@@ -1,3 +1,8 @@
+# Makefile
+# Řešení IJC-DU1, příklad a), 20.3.2111
+# Autor: Samuel Dobroň, FIT
+# Přeloženo: gcc 10.2.1
+
 LC_ALL=cs_CZ.utf8
 CC=gcc
 CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
