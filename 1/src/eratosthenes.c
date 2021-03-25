@@ -20,7 +20,10 @@ void Eratosthenes(bitset_t pole)
     bitset_setbit(pole, 1, 1);  // 1 is not prime
 
     for (bitset_index_t i = array_elements * CHAR_BIT; i < available_values; i++)
-        bitset_setbit(pole, i, 1);  // setting numbers dividable by 2 of last array element
+    {
+        if (i % 2 == 0)
+            bitset_setbit(pole, i, 1);  // setting numbers dividable by 2 of last array element
+    }
 
     bitset_index_t size = (bitset_index_t)sqrt(available_values);
     for (bitset_index_t i = 3; i < size; i += 2)
