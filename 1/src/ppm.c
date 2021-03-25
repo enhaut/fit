@@ -13,7 +13,7 @@
 // Function allocates memory for image struct. It returns NULL if fails.
 struct ppm* allocate_struct(size_t size_x, size_t size_y)
 {
-    size_t image_size = 3 * size_x * size_y;
+    unsigned image_size = 3 * size_x * size_y;
 
     if (image_size > PPM_IMAGE_MAX_SIZE)
     {
