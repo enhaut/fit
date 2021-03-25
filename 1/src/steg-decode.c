@@ -68,8 +68,9 @@ void read_encoded_message(struct ppm *loaded_image, bitset_t primes)
             character_index++;
             char_index = 0;
             message_character = 0;
-        }
-    }
+        } // if (char_index == CHAR_BIT)
+    } // for
+
     if (!message_correct_ending)
     {
         DEALLOC_MEMORY_BEFORE_EXIT(primes, message, loaded_image);
