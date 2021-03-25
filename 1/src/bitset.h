@@ -2,7 +2,7 @@
 // Řešení IJC-DU1, příklad a), 6.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Modul obsahujúci všetky potrebné makrá a funkcie pre prácu s bitovým polom.
 
 #include <stdio.h>
 #include <limits.h>

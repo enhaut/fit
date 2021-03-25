@@ -2,7 +2,7 @@
 // Řešení IJC-DU1, příklad b), 11.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Modul slúžiaci pre čítanie "zašifrovaných" správ.
 
 #include "ppm.h"
 #include "bitset.h"

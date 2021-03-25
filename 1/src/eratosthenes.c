@@ -2,7 +2,7 @@
 // Řešení IJC-DU1, příklad a), 6.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Modul s funkciou pre výpočet prvočísel pomocou metody Eratosthenesovho sita
 
 #include <math.h>
 #include <string.h>
@@ -19,7 +19,8 @@ void Eratosthenes(bitset_t pole)
     bitset_setbit(pole, 2, 0);  // 2 is prime
     bitset_setbit(pole, 1, 1);  // 1 is not prime
 
-    for (bitset_index_t i = array_elements * CHAR_BIT; i < available_values; i++)
+    // The last array member may not have set numbers dividable by 2 as non primes
+    for (bitset_index_t i = array_elements * CHAR_BIT; i < available_values; i++)   // divided value * divider returns # of numbers, that has been marked by memset
     {
         if (i % 2 == 0)
             bitset_setbit(pole, i, 1);  // setting numbers dividable by 2 of last array element

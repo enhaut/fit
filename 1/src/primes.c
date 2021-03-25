@@ -2,7 +2,7 @@
 // Řešení IJC-DU1, příklad a), 6.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Testovací program pre otestovanie bitoveho pola a výpoćtu prvočísiel.
 
 #include <time.h>
 #include "bitset.h"

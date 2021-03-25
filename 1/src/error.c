@@ -2,7 +2,8 @@
 // Řešení IJC-DU1, příklad b), 10.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Modul pre výpis chýb. Samotny výpis by sa mohol presunúť do samostatnej funkcie, kde by sa parametrom predávali nepovinné
+// parametre z warning_msg() a error_msg() a tam by ostal len va_start() ale keďže ide len o pár riadkov tak tá duplicita až tak nevadí.
 
 #include "error.h"
 #include <stdarg.h>

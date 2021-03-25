@@ -2,7 +2,7 @@
 // Řešení IJC-DU1, příklad b), 10.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-//
+// Modul slúžiaci pre načítanie ppm obrázka.
 
 #include <stdio.h>
 #include <stdlib.h>
