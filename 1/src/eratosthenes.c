@@ -16,6 +16,9 @@ void Eratosthenes(bitset_t pole)
     size_t array_elements = (available_values / CHAR_BIT);
     memset(&(pole[1]), 0x55, array_elements);
 
+    bitset_setbit(pole, 2, 0);  // 2 is prime
+    bitset_setbit(pole, 1, 1);  // 1 is not prime
+
     for (bitset_index_t i = array_elements * CHAR_BIT; i < available_values; i++)
         bitset_setbit(pole, i, 1);  // setting numbers dividable by 2 of last array element
 
