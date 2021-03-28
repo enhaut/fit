@@ -5,7 +5,7 @@
 
 LC_ALL=cs_CZ.utf8
 CC=gcc
-CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra -lm
+CFLAGS= -O2 -m32 -g -std=c11 -pedantic -Wall -Wextra
 LDFLAGS= -m32 -lm
 RUNNABLE_TARGETS=dependencies.txt primes primes-i
 
