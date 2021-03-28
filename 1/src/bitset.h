@@ -39,7 +39,7 @@
         #define bitset_size(jmeno_pole) (jmeno_pole[0])
         // Macro sets bit "index" to "vyraz" value
         #define bitset_setbit(jmeno_pole,index,vyraz) do{                                                                                                   \
-                                                        if(index > bitset_size(jmeno_pole))                                                                 \
+                                                        if(index >= bitset_size(jmeno_pole) || index + 1 < 1)                                                \
                                                         {                                                                                                   \
                                                             error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole));      \
                                                         }                                                                                                   \
@@ -53,7 +53,7 @@
                                                         }                                                                                                   \
                                                       }while(0)
         // Macro returns "index" bit from array
-        #define bitset_getbit(jmeno_pole,index) (index > bitset_size(jmeno_pole) ?                                                                          \
+        #define bitset_getbit(jmeno_pole,index) ((index >= bitset_size(jmeno_pole) || index + 1 < 1) ?                                                       \
                                                     (error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole)), 0)          \
                                                  :                                                                                                          \
                                                     (jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0)
@@ -71,7 +71,7 @@
         // Function sets bit "index" to "vyraz" value
         inline void bitset_setbit(bitset_t jmeno_pole, bitset_index_t index, int vyraz)
         {
-            if (index > bitset_size(jmeno_pole))
+            if (index >= bitset_size(jmeno_pole) || index + 1 < 1)
                 error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole));
 
             if (vyraz)
@@ -83,7 +83,7 @@
         // Function returns "index" bit from array
         inline int bitset_getbit(bitset_t jmeno_pole, bitset_index_t index)
         {
-            if (index > bitset_size(jmeno_pole))
+            if (index >= bitset_size(jmeno_pole) || index + 1 < 1)
                 error_exit("bitset_getbit: Index %lu mimo rozsah 0..%lu", index, bitset_size(jmeno_pole));
 
             return ((jmeno_pole[1 + (index / BITS_PER_ULONG)] & (1UL << (index) % BITS_PER_ULONG)) != 0);
