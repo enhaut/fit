@@ -15,25 +15,39 @@
 
 unsigned get_lines_count(int argc, char *args[], bool *start_at)
 {
-    unsigned long starting_line = 0;
-    bool is_n_parameter = false;
-    if (argc >= 3 && argc <= 4 && (is_n_parameter = strncpy(args[1], "-n", 3)))
+    unsigned long starting_line;    // will be initialized in switch cases or function will be returned before using the variable
+
+    switch (argc)
     {
-        if (args[2][0] == '+')
-            *start_at = true;
-        else if(args[2][0] == '-')
-            ERROR_AND_RETURN("Číslo řádku musí být větší než 0!", 0);
+        case 1:     // "tail <soubor"
+            starting_line = DEFAULT_LINES_TO_PRINT;
+            break;
+        case 2:     // "tail soubor" / "tail -n"
+            if (strncmp(args[1], "-n", 3) == 0)
+                ERROR_AND_RETURN("Zadej číslo řádku!", 0);
+            starting_line = DEFAULT_LINES_TO_PRINT;
+            break;
+        case 3:     // "tail -n 3 <soubor"
+        case 4:     // "tail -n 3 soubor"
+            if (strncmp(args[1], "-n", 3) != 0)
+                ERROR_AND_RETURN("Nesprávne argumenty!", 0);
 
-        char *correctly_converted = NULL;
-        starting_line = strtoul(args[2], &correctly_converted, 10);
+            if (args[2][0] == '+')
+                *start_at = true;
+            else if(args[2][0] == '-')
+                ERROR_AND_RETURN("Číslo řádku musí být větší než 0!", 0);
 
-        if (!correctly_converted || !starting_line)
-            ERROR_AND_RETURN("Nesprávne číslo řádku!", 0);
+            char *correctly_converted = NULL;
+            starting_line = strtoul(args[2], &correctly_converted, 10);
 
-    }else if(argc == 2 && is_n_parameter)
-        ERROR_AND_RETURN("Nesprávne argumenty!", 0);
+            if (!correctly_converted || !starting_line)
+                ERROR_AND_RETURN("Nesprávne číslo řádku!", 0);
+            break;
+        default:
+            ERROR_AND_RETURN("Nesprávne argumenty!", 0);
+    }
 
-    return starting_line ? starting_line : DEFAULT_LINES_TO_PRINT;
+    return starting_line;
 }
 
 int main(int argc, char *args[])
