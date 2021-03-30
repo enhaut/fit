@@ -13,7 +13,8 @@
 #define DEFAULT_LINES_TO_PRINT 10
 #define ERROR_AND_RETURN(error_message, what_to_return) do{fprintf(stderr, error_message); return what_to_return;}while(0)
 
-unsigned get_lines_count(int argc, char *args[], bool *start_at)
+// Function parses -n argument also checks the count of arguments.
+unsigned get_tail_start(int argc, char **args, bool *start_at)
 {
     unsigned long starting_line;    // will be initialized in switch cases or function will be returned before using the variable
 
@@ -40,6 +41,8 @@ unsigned get_lines_count(int argc, char *args[], bool *start_at)
             char *correctly_converted = NULL;
             starting_line = strtoul(args[2], &correctly_converted, 10);
 
+            // TODO: check maximum num_row
+
             if (!correctly_converted || !starting_line)
                 ERROR_AND_RETURN("Nesprávne číslo řádku!", 0);
             break;
@@ -53,9 +56,9 @@ unsigned get_lines_count(int argc, char *args[], bool *start_at)
 int main(int argc, char *args[])
 {
     bool start_at = false;
-    unsigned long staring_line = get_lines_count(argc, args, &start_at);
-    //if (!staring_line)
-    //    return 1;
+    unsigned long staring_line = get_tail_start(argc, args, &start_at);
+    if (!staring_line)  // 0 is not valid row number so it is used as "signal" value
+        return 1;
 
     printf("\n%lu, %d", staring_line, start_at);
 }
