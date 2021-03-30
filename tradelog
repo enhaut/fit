@@ -1,0 +1,22 @@
+#!/bin/sh
+
+export POSIXLY_CORRECT=yes
+export LC_NUMERIC=en_US.UTF-8
+
+print_help()
+{
+  echo "Usage: tradelog [-h|--help] [FILTER] [COMMAND] [FILE [FILE [...]]]"
+  echo "Filters:"
+  echo "    -a DATETIME   records after the entered DATETIME (YYYY-MM-DD HH:MM:SS)"
+  echo "    -b DATETIME   records before the entered DATETIME (YYYY-MM-DD HH:MM:SS)"
+  echo "    -t TICKER     records matching tickers"
+  echo "    -w WIDTH      sets width of graph"
+  echo "Commands:"
+  echo "    list-tick     prints list of all the tickers"
+  echo "    profit        prints total profit"
+  echo "    pos           prints opened positions sorted descending"
+  echo "    last-price    prints last price for every ticker"
+  echo "    hist-ord      prints histogram of the count of tickers"
+  echo "    graph-pos     prints graph of positions of tickers"
+  echo "  -h|--help       prints help"
+}
