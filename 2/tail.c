@@ -90,6 +90,30 @@ char **allocate_rows_memory(unsigned long rows_num)
     return rows;
 }
 
+FILE *get_input(int argc, char *args[])
+{
+    FILE *input = NULL;
+
+    switch (argc)
+    {
+        case 1:
+        case 3:
+            input = stdin;
+            printf("stdin");
+            break;
+        case 2:
+        case 4:
+            printf("file");
+            input = fopen(args[argc-1], "r");   // filename is always last argument
+            if (!input)
+                ERROR_AND_RETURN("Nepodařilo se otevřít soubor!", NULL);
+            break;
+        default:
+            break;   // do nothing - function get_tail_start() returns in this case 1 so program ends before calling this function
+    }
+    return input;
+}
+
 int main(int argc, char *args[])
 {
     bool start_at = false;
@@ -98,7 +122,13 @@ int main(int argc, char *args[])
         return 1;
 
     char **rows = allocate_rows_memory(staring_line);
+    FILE *input = get_input(argc, args);
+    if (!input)
+        return 1;
 
+
+
+    fclose(input);
     free_rows(rows, staring_line);
     printf("\n%lu, %d", staring_line, start_at);
 }
