@@ -53,6 +53,43 @@ unsigned get_tail_start(int argc, char **args, bool *start_at)
     return starting_line;
 }
 
+void free_rows(char **rows, unsigned long rows_num)
+{
+    if (rows)
+    {
+        for (unsigned long row = 0; row < rows_num; row++)
+        {
+            if (rows[row])
+                free(rows[row]);
+            else
+                break;
+        }
+        free(rows);
+    }
+}
+
+char **allocate_rows_memory(unsigned long rows_num)
+{
+    bool failed = false;
+    char **rows = calloc(rows_num, sizeof(char *));
+    if (!rows)
+        failed = true;
+
+    for (unsigned long row = 0; row < rows_num && !failed; row++)
+    {
+        char *row = malloc(MAXIMUM_LINE_LENGTH * sizeof(char));
+        if (!row)
+            failed = true;
+    }
+
+    if (failed)
+    {
+        free_rows(rows, rows_num);
+        ERROR_AND_RETURN("Nepodařilo se alokovat paměť pro řádky!", NULL);
+    }
+    return rows;
+}
+
 int main(int argc, char *args[])
 {
     bool start_at = false;
@@ -60,5 +97,8 @@ int main(int argc, char *args[])
     if (!staring_line)  // 0 is not valid row number so it is used as "signal" value
         return 1;
 
+    char **rows = allocate_rows_memory(staring_line);
+
+    free_rows(rows, staring_line);
     printf("\n%lu, %d", staring_line, start_at);
 }
