@@ -83,7 +83,7 @@ while [ "$#" -gt 0 ]; do
           GZ_FILES="$GZ_FILES $1"
           ;;
         *)
-          FILES="$FILES $1"
+          FILES="$FILES$1"
           ;;
       esac
       shift
