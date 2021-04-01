@@ -20,3 +20,55 @@ print_help()
   echo "    graph-pos     prints graph of positions of tickers"
   echo "  -h|--help       prints help"
 }
+
+check_date()
+{
+  if ! date -d "$1" 2> /dev/null 1> /dev/null; then  # TODO: check format of date
+    echo "Invalid date format!"
+    exit 1
+  fi
+}
+
+
+FILTERS="cat"
+
+GZ_FILES=""
+FILES=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      print_help
+      exit 0
+      ;;
+    -a)
+      check_date "$2"
+      FILTERS="$FILTERS | awk '$NF > \"$2\"'"
+      shift 2
+      ;;
+    -b)
+      FILTERS="$FILTERS | awk '$NF < \"$2\"'"
+      check_date "$2"
+      shift 2
+      ;;
+    -t)
+      FILTERS="$FILTERS; t;"
+      shift 2
+      ;;
+    -w)
+      FILTERS="$FILTERS; w;"
+      shift 2
+      ;;
+    *)
+      case "$1" in
+        *".gz")
+          GZ_FILES="$GZ_FILES $1"
+          ;;
+        *)
+          FILES="$FILES $1"
+          ;;
+      esac
+      shift
+    ;;
+  esac
+done # set positional arguments in their proper place
