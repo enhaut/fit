@@ -21,6 +21,13 @@ print_help()
   echo "  -h|--help       prints help"
 }
 
+DELIMITER="';'"
+
+FILTERS=""
+GZ_FILES=""
+FILES=""
+GRAPH_WIDTH=-1
+
 check_date()
 {
   if ! date -d "$1" 2> /dev/null 1> /dev/null; then  # TODO: check format of date
@@ -29,11 +36,14 @@ check_date()
   fi
 }
 
-
-FILTERS="cat"
-
-GZ_FILES=""
-FILES=""
+add_to_filters()
+{
+  if [ -z "$FILTERS" ]; then
+    FILTERS="$1"
+  else
+    FILTERS="$FILTERS | $1"
+  fi
+}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
