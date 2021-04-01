@@ -106,5 +106,6 @@ done # set positional arguments in their proper place
 
 echo "$FILTERS"
 echo "log $FILES"
+echo "wid: $GRAPH_WIDTH"
 
 (eval "$FILES") | eval "$FILTERS" | cat
