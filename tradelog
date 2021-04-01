@@ -114,4 +114,4 @@ echo "$FILTERS"
 echo "log $FILES"
 echo "wid: $GRAPH_WIDTH"
 
-(eval "$FILES") | eval "$FILTERS" | cat
+(eval "$FILES") | eval "$FILTERS" | sort -u | cat
