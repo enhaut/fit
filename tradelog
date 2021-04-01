@@ -72,3 +72,16 @@ while [ "$#" -gt 0 ]; do
     ;;
   esac
 done # set positional arguments in their proper place
+
+
+if [ -n "$GZ_FILES" ]; then
+  GZ_FILES="gunzip -c$GZ_FILES"
+fi
+
+
+echo "$FILTERS"
+echo "gz $GZ_FILES"
+echo "log $FILES"
+
+# shellcheck disable=SC2091
+($GZ_FILES ; cat "$FILES") | ($FILTERS)
