@@ -26,6 +26,7 @@ DELIMITER="';'"
 FILTERS=""
 FILES=""
 GRAPH_WIDTH=-1
+COMMAND=""
 
 check_date()
 {
@@ -94,6 +95,11 @@ while [ "$#" -gt 0 ]; do
         GRAPH_WIDTH=$2
       fi
       shift 2
+      ;;
+    list-tick)
+      COMMAND=""  # it is implemented as filter
+      add_to_filters "awk -F $DELIMITER '{print \$2}'"
+      shift
       ;;
     *)
       add_to_files "$1"
