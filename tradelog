@@ -102,4 +102,4 @@ echo "gz $GZ_FILES"
 echo "log $FILES"
 
 # shellcheck disable=SC2091
-($GZ_FILES ; cat "$FILES") | ($FILTERS)
+($GZ_FILES ; cat "$FILES") | eval "$FILTERS" | cat
