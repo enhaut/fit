@@ -24,7 +24,6 @@ print_help()
 DELIMITER="';'"
 
 FILTERS=""
-GZ_FILES=""
 FILES=""
 GRAPH_WIDTH=-1
 
@@ -42,6 +41,25 @@ add_to_filters()
     FILTERS="$1"
   else
     FILTERS="$FILTERS | $1"
+  fi
+}
+
+add_to_files()
+{
+  FILE_COMMAND=""
+  case "$1" in
+    *".gz")
+      FILE_COMMAND="gunzip -c"
+      ;;
+    *)
+      FILE_COMMAND="cat"
+      ;;
+  esac
+
+  if [ -z "$FILES" ]; then
+    FILES="$FILE_COMMAND $1"
+  else
+    FILES="$FILES ; $FILE_COMMAND $1"
   fi
 }
 
@@ -78,28 +96,15 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     *)
-      case "$1" in
-        *".gz")
-          GZ_FILES="$GZ_FILES $1"
-          ;;
-        *)
-          FILES="$FILES$1"
-          ;;
-      esac
+      add_to_files "$1"
       shift
     ;;
   esac
 done # set positional arguments in their proper place
 
 
-if [ -n "$GZ_FILES" ]; then
-  GZ_FILES="gunzip -c$GZ_FILES"
-fi
-
 
 echo "$FILTERS"
-echo "gz $GZ_FILES"
 echo "log $FILES"
 
-# shellcheck disable=SC2091
-($GZ_FILES ; cat "$FILES") | eval "$FILTERS" | cat
+(eval "$FILES") | eval "$FILTERS" | cat
