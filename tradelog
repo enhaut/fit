@@ -154,6 +154,11 @@ while [ "$#" -gt 0 ]; do
       add_command "awk -F ';' '{if(\$3 == \"buy\")profit -= (\$4 * \$6); else profit += \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
       shift
       ;;
+    pos)
+      add_command "awk -F ';' '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s : %*.2f\n\", ticker, len, tickers[ticker] * units[ticker]}}'"
+      SORTER="sort -n -r -t ':' -k 2,2"
+      shift
+      ;;
     last-price)
       add_command "awk -F ';' '{if(\$2 != \"\" && \$4 != \"\")tickers[\$2]=\$4} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-8s :%*.2f\n\", ticker, len, tickers[ticker]}}'"
       shift
