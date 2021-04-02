@@ -1,5 +1,14 @@
 #!/bin/sh
 
+################################################
+#       This is my first program in bash       #
+#       so don't judge me. It's not even       #
+#    optimized for speed, but it's working     #
+#                 Samuel Dobroň                #
+#         xdobro23, FIT VUT, 2.4.2021          #
+################################################
+
+
 export POSIXLY_CORRECT=yes
 export LC_NUMERIC=en_US.UTF-8
 
