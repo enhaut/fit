@@ -33,6 +33,7 @@ print_help()
 DELIMITER="';'"
 
 FILTERS=""
+TICKERS=""
 FILES=""
 GRAPH_WIDTH=-1
 COMMAND=""
@@ -51,6 +52,26 @@ add_to_filters()
     FILTERS="$1"
   else
     FILTERS="$FILTERS | $1"
+  fi
+}
+
+add_to_tickers()
+{
+  AWK_COMMAND="\$2 == \"$1\""
+  if [ -z "$TICKERS" ]; then
+    TICKERS=$AWK_COMMAND
+  else
+    TICKERS="$TICKERS || $AWK_COMMAND"
+  fi
+}
+
+add_tickers_to_filters()
+{
+  AWK_COMMAND="awk -F $DELIMITER '{if($TICKERS) {print}}'"
+  if [ -z "$FILTERS" ]; then
+    FILTERS="$AWK_COMMAND"
+  else
+    FILTERS="$AWK_COMMAND | $FILTERS"
   fi
 }
 
@@ -90,7 +111,7 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     -t)
-      add_to_filters "awk -F $DELIMITER '{if(\$2 == \"$2\") {print}}'"
+      add_to_tickers "$2"
       shift 2
       ;;
     -w)
@@ -118,6 +139,9 @@ while [ "$#" -gt 0 ]; do
 done # set positional arguments in their proper place
 
 
+echo "tickers: $TICKERS"
+
+add_tickers_to_filters
 
 echo "$FILTERS"
 echo "log $FILES"
