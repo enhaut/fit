@@ -163,7 +163,9 @@ done # set positional arguments in their proper place
 
 echo "tickers: $TICKERS"
 
-add_tickers_to_filters
+if [ -n "$TICKERS" ]; then
+  add_tickers_to_filters
+fi
 
 echo "$FILTERS"
 echo "log $FILES"
