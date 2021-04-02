@@ -137,8 +137,11 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     list-tick)
-      add_command "list-tick"
-      add_to_filters "awk -F $DELIMITER '{print \$2}'"  # it is implemented as filter
+      add_command "awk -F $DELIMITER '{print \$2}'"
+      shift
+      ;;
+    profit)
+      add_command "awk -F ';' '{if(\$3 == \"buy\")profit += (\$4 * \$6); else profit -= \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
       shift
       ;;
     *)
