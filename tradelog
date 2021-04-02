@@ -151,7 +151,7 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     profit)
-      add_command "awk -F ';' '{if(\$3 == \"buy\")profit += (\$4 * \$6); else profit -= \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
+      add_command "awk -F ';' '{if(\$3 == \"buy\")profit -= (\$4 * \$6); else profit += \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
       shift
       ;;
     last-price)
