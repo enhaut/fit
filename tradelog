@@ -167,8 +167,9 @@ if [ -n "$TICKERS" ]; then
   add_tickers_to_filters
 fi
 
-echo "$FILTERS"
+echo "commands: $COMMAND"
+echo "filters: $FILTERS"
 echo "log $FILES"
 echo "wid: $GRAPH_WIDTH"
 
-(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | sort -u | cat
+(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | sort -u
