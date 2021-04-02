@@ -104,7 +104,7 @@ add_command()
   fi
 }
 
-process_if_not_valid()
+process()
 {
   if [ -n "$1" ]; then
     eval "$1"
@@ -171,4 +171,4 @@ echo "$FILTERS"
 echo "log $FILES"
 echo "wid: $GRAPH_WIDTH"
 
-(eval "$FILES") | process_if_not_valid "$FILTERS" | process_if_not_valid "$COMMAND" | sort -u | cat
+(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | sort -u | cat
