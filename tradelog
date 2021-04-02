@@ -94,6 +94,16 @@ add_to_files()
   fi
 }
 
+add_command()
+{
+  if [ -z "$COMMAND" ]; then
+    COMMAND="$1"
+  else
+    echo "EROR DO PICE"
+    exit 1
+  fi
+}
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -h|--help)
@@ -127,8 +137,8 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     list-tick)
-      COMMAND=""  # it is implemented as filter
-      add_to_filters "awk -F $DELIMITER '{print \$2}'"
+      add_command "list-tick"
+      add_to_filters "awk -F $DELIMITER '{print \$2}'"  # it is implemented as filter
       shift
       ;;
     *)
