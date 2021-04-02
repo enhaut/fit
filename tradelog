@@ -37,6 +37,7 @@ TICKERS=""
 FILES=""
 GRAPH_WIDTH=-1
 COMMAND=""
+SORTER="sort -u"
 
 check_date()
 {
@@ -175,5 +176,6 @@ echo "commands: $COMMAND"
 echo "filters: $FILTERS"
 echo "log $FILES"
 echo "wid: $GRAPH_WIDTH"
+echo "sorter: $SORTER"
 
-(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | sort -u
+(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | eval "$SORTER"
