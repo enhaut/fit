@@ -187,6 +187,10 @@ if [ -n "$TICKERS" ]; then
   add_tickers_to_filters
 fi
 
+if [ -z "$FILES" ]; then
+  FILES="cat"
+fi
+
 echo "commands: $COMMAND"
 echo "filters: $FILTERS"
 echo "log $FILES"
