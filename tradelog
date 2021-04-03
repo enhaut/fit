@@ -163,6 +163,11 @@ while [ "$#" -gt 0 ]; do
       add_command "awk -F ';' '{if(\$2 != \"\" && \$4 != \"\")tickers[\$2]=\$4} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker]}}'"
       shift
       ;;
+    hist-ord)
+      add_command "awk -v w=$GRAPH_WIDTH -F ';' '{transactions[\$2]++}END{for (ticker in transactions){printf \"%-9s : \", ticker; {i=0; do{printf \"#\";i++}while(w && i<int((transactions[ticker]/w))) printf \"\n\";}}}'"
+      SORTER="sort -n -t ':' -k1,1"
+      shift
+      ;;
     *)
       add_to_files "$1"
       shift
