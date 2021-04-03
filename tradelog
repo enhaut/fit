@@ -157,7 +157,7 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     pos)
-      add_command "awk -F $DELIMITER '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker] * units[ticker])){len=length(tickers[ticker] * units[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len, tickers[ticker] * units[ticker]}}'"
+      add_command "awk -F $DELIMITER '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker] * units[ticker]}}'"
       SORTER="sort -n -r -t ':' -k 2,2"
       shift
       ;;
