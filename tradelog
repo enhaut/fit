@@ -178,7 +178,7 @@ while [ "$#" -gt 0 ]; do
       shift
     ;;
   esac
-done # set positional arguments in their proper place
+done
 
 
 echo "tickers: $TICKERS"
