@@ -151,25 +151,25 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     profit)
-      add_command "awk -F ';' '{if(\$3 == \"buy\")profit -= (\$4 * \$6); else profit += \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
+      add_command "awk -F $DELIMITER '{if(\$3 == \"buy\")profit -= (\$4 * \$6); else profit += \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
       shift
       ;;
     pos)
-      add_command "awk -F ';' '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker] * units[ticker]}}'"
+      add_command "awk -F $DELIMITER '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker] * units[ticker]}}'"
       SORTER="sort -n -r -t ':' -k 2,2"
       shift
       ;;
     last-price)
-      add_command "awk -F ';' '{if(\$2 != \"\" && \$4 != \"\")tickers[\$2]=\$4} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker]}}'"
+      add_command "awk -F $DELIMITER '{if(\$2 != \"\" && \$4 != \"\")tickers[\$2]=\$4} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker]}}'"
       shift
       ;;
     hist-ord)
-      add_command "awk -v w=$GRAPH_WIDTH -F ';' 'function abs(x){return ((x < 0.0) ? -x : x)} {transactions[\$2]++}END{if(w > 1){len=0; for (ticker in transactions){if (len < transactions[ticker]){len=transactions[ticker]}}}else{len=1} for (ticker in transactions) {printf \"%-9s :\", ticker; {for(i=0;i<int(abs(transactions[ticker]/len)*w);i++){if(i==0){printf \" \"} printf \"#\"} printf \"\n\";}}}'"
+      add_command "awk -v w=$GRAPH_WIDTH -F $DELIMITER 'function abs(x){return ((x < 0.0) ? -x : x)} {transactions[\$2]++}END{if(w > 1){len=0; for (ticker in transactions){if (len < transactions[ticker]){len=transactions[ticker]}}}else{len=1} for (ticker in transactions) {printf \"%-9s :\", ticker; {for(i=0;i<int(abs(transactions[ticker]/len)*w);i++){if(i==0){printf \" \"} printf \"#\"} printf \"\n\";}}}'"
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
     graph-pos)
-      add_command "awk -F ';' -v w=100 'function abs(x){return ((x < 0.0) ? -x : x)} {if(\$3 == \"buy\"){units[\$2]-=\$6}else{units[\$2]+=\$6} last_price[\$2]=\$4}END{max=0; for (ticker in last_price){values[ticker] = last_price[ticker] * units[ticker]; if(abs(values[ticker] > max)){max = abs(values[ticker])}} {for(ticker in values){printf \"%-9s :\", ticker; for(i=0;i<int(abs(values[ticker])*w/max);i++){if(i==0){printf \" \"} character=\"#\"; if(values[ticker] > 0){character=\"!\"} printf \"%s\", character;}printf \"\n\"}}}' "
+      add_command "awk -F $DELIMITER -v w=100 'function abs(x){return ((x < 0.0) ? -x : x)} {if(\$3 == \"buy\"){units[\$2]-=\$6}else{units[\$2]+=\$6} last_price[\$2]=\$4}END{max=0; for (ticker in last_price){values[ticker] = last_price[ticker] * units[ticker]; if(abs(values[ticker] > max)){max = abs(values[ticker])}} {for(ticker in values){printf \"%-9s :\", ticker; for(i=0;i<int(abs(values[ticker])*w/max);i++){if(i==0){printf \" \"} character=\"#\"; if(values[ticker] > 0){character=\"!\"} printf \"%s\", character;}printf \"\n\"}}}' "
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
