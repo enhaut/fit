@@ -164,7 +164,7 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     hist-ord)
-      add_command "awk -v w=$GRAPH_WIDTH -F ';' '{transactions[\$2]++}END{for (ticker in transactions){printf \"%-9s : \", ticker; {i=0; do{printf \"#\";i++}while(w && i<int((transactions[ticker]/w))) printf \"\n\";}}}'"
+      add_command "awk -v w=$GRAPH_WIDTH -F ';' 'function abs(x){return ((x < 0.0) ? -x : x)} {transactions[\$2]++}END{if(w > 1){len=0; for (ticker in transactions){if (len < transactions[ticker]){len=transactions[ticker]}}}else{len=1} for (ticker in transactions) {printf \"%-9s :\", ticker; {for(i=0;i<int(abs(transactions[ticker]/len)*w);i++){if(i==0){printf \" \"} printf \"#\"} printf \"\n\";}}}'"
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
