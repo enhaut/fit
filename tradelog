@@ -177,7 +177,7 @@ while [ "$#" -gt 0 ]; do
       if [ "$GRAPH_WIDTH" -eq -1 ]; then
         GRAPH_WIDTH=1000
       fi
-      add_command "awk -F $DELIMITER -v w=$GRAPH_WIDTH 'function abs(x){return ((x < 0.0) ? -x : x)} {if(\$3 == \"buy\"){units[\$2]-=\$6}else{units[\$2]+=\$6} last_price[\$2]=\$4}END{max=0; for (ticker in last_price){values[ticker] = last_price[ticker] * units[ticker]; if(abs(values[ticker] > max)){max = abs(values[ticker])}} {for(ticker in values){printf \"%-9s :\", ticker; for(i=0;i<int(abs(values[ticker])*w/max);i++){if(i==0){printf \" \"} character=\"#\"; if(values[ticker] > 0){character=\"!\"} printf \"%s\", character;}printf \"\n\"}}}' "
+      add_command "awk -F $DELIMITER -v w=$GRAPH_WIDTH 'function abs(x){return ((x < 0.0) ? -x : x)} {if(\$3 == \"buy\"){units[\$2]-=\$6}else{units[\$2]+=\$6} last_price[\$2]=\$4}END{max=0; for (ticker in last_price){values[ticker] = last_price[ticker] * units[ticker]; if(abs(values[ticker]) > max){max = abs(values[ticker])}} {for(ticker in values){printf \"%-9s :\", ticker; for(i=0;i<int(abs(values[ticker])*w/max);i++){if(i==0){printf \" \"} character=\"#\"; if(values[ticker] > 0){character=\"!\"} printf \"%s\", character;}printf \"\n\"}}}' "
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
