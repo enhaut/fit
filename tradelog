@@ -39,11 +39,16 @@ GRAPH_WIDTH=-1
 COMMAND=""
 SORTER="sort -u"
 
+error()
+{
+  echo "$1" >&2
+  exit 1
+}
+
 check_date()
 {
   if ! date -d "$1" 2> /dev/null 1> /dev/null; then  # TODO: check format of date
-    echo "Invalid date format!"
-    exit 1
+    error "Invalid date format!"
   fi
 }
 
@@ -100,8 +105,7 @@ add_command()
   if [ -z "$COMMAND" ]; then
     COMMAND="$1"
   else
-    echo "EROR DO PICE"
-    exit 1
+    error "Only one command per call is supported!"
   fi
 }
 
@@ -136,11 +140,9 @@ while [ "$#" -gt 0 ]; do
       ;;
     -w)
       if [ $GRAPH_WIDTH -ne "-1" ]; then
-        echo "Width could be set only once!"
-        exit 1
+        error "Width could be set only once!"
       elif [ "0" -ge "$2" ]; then
-        echo "Width has to be > 0!"
-        exit 1
+        error "Width has to be > 0!"
       else
         GRAPH_WIDTH=$2
       fi
