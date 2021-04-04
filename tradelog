@@ -39,12 +39,14 @@ GRAPH_WIDTH=-1
 COMMAND=""
 SORTER="sort -u"
 
+# Function for processing error messages. It prints message to stderr and then exit, with error code.
 error()
 {
   echo "$1" >&2
   exit 1
 }
 
+# Function for checking provided dates. It checks date validity and format.
 check_date()
 {
   if ! date -d "$1" 2> /dev/null 1> /dev/null; then  # TODO: check format of date
@@ -52,33 +54,36 @@ check_date()
   fi
 }
 
+# Function adds filter command to chain of filters whose are processed together.
 add_to_filters()
 {
-  if [ -z "$FILTERS" ]; then
+  if [ -z "$FILTERS" ]; then  # adding first filter
     FILTERS="$1"
-  else
+  else                        # adding Nth filter; N > 1
     FILTERS="$FILTERS | $1"
   fi
 }
 
+# Function adds ticker selector to chain of tickers whore are processed together.
 add_to_tickers()
 {
-  INVALID_TICKER=$(echo "$1" | grep "[[:space:]]\|;")
+  INVALID_TICKER=$(echo "$1" | grep "[[:space:]]\|;")   # grep is matching invalid characters
   if [ -z "$1" ] || [ -n "$INVALID_TICKER" ]; then
     error "Invalid ticker!"
   fi
 
   AWK_COMMAND="\$2 == \"$1\""
   if [ -z "$TICKERS" ]; then
-    TICKERS=$AWK_COMMAND
+    TICKERS="$AWK_COMMAND"
   else
     TICKERS="$TICKERS || $AWK_COMMAND"
   fi
 }
 
+# Function adds ticker filter to filters
 add_tickers_to_filters()
 {
-  AWK_COMMAND="awk -F $DELIMITER '{if($TICKERS) {print}}'"
+  AWK_COMMAND="awk -F $DELIMITER '{if($TICKERS) {print}}'"  # build awk command
   if [ -z "$FILTERS" ]; then
     FILTERS="$AWK_COMMAND"
   else
@@ -86,6 +91,7 @@ add_tickers_to_filters()
   fi
 }
 
+# Function adds provided argument to files. Program is processing input from these files or from stdin.
 add_to_files()
 {
   FILE_COMMAND=""
@@ -114,6 +120,7 @@ add_command()
   fi
 }
 
+# Function is processing command if provided, if not it just passes provided input to another command using cat.
 process()
 {
   if [ -n "$1" ]; then
@@ -197,7 +204,7 @@ if [ -n "$TICKERS" ]; then
   add_tickers_to_filters
 fi
 
-if [ -z "$FILES" ]; then
+if [ -z "$FILES" ]; then  # read from stdin if no files is define
   FILES="cat"
 fi
 
