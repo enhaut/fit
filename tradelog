@@ -63,6 +63,11 @@ add_to_filters()
 
 add_to_tickers()
 {
+  INVALID_TICKER=$(echo "$1" | grep "[[:space:]]\|;")
+  if [ -z "$1" ] || [ -n "$INVALID_TICKER" ]; then
+    error "Invalid ticker!"
+  fi
+
   AWK_COMMAND="\$2 == \"$1\""
   if [ -z "$TICKERS" ]; then
     TICKERS=$AWK_COMMAND
