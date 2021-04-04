@@ -198,8 +198,6 @@ while [ "$#" -gt 0 ]; do
 done
 
 
-echo "tickers: $TICKERS"
-
 if [ -n "$TICKERS" ]; then
   add_tickers_to_filters
 fi
@@ -208,11 +206,6 @@ if [ -z "$FILES" ]; then  # read from stdin if no files is define
   FILES="cat"
 fi
 
-echo "commands: $COMMAND"
-echo "filters: $FILTERS"
-echo "log $FILES"
-echo "wid: $GRAPH_WIDTH"
-echo "sorter: $SORTER"
 
 (eval "$FILES") | process "$FILTERS" | process "$COMMAND" | eval "$SORTER"
 
