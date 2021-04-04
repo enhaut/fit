@@ -208,3 +208,5 @@ echo "wid: $GRAPH_WIDTH"
 echo "sorter: $SORTER"
 
 (eval "$FILES") | process "$FILTERS" | process "$COMMAND" | eval "$SORTER"
+
+exit 0
