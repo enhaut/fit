@@ -105,6 +105,10 @@ add_to_files()
       ;;
   esac
 
+  if [ ! -r "$1" ]; then
+    error "Could not read file!"
+  fi
+
   if [ -z "$FILES" ]; then
     FILES="$FILE_COMMAND $1"
   else
