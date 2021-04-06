@@ -203,7 +203,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 
-if [ -n "$TICKERS" ]; then
+if [ -n "$TICKERS" ]; then  # tickers have to be filtered at first
   add_tickers_to_filters
 fi
 
