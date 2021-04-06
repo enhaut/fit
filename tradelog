@@ -49,7 +49,7 @@ error()
 # Function for checking provided dates. It checks date validity and format.
 check_date()
 {
-  DATE_FORMAT=$(echo "$1" | grep -e "[[:digit:]]\{4\}-[[:digit:]]\{2\}-[[:digit:]]\{2\}[[:space:]][[:digit:]]\{2\}:[[:digit:]]\{2\}:[[:digit:]]\{2\}")
+  DATE_FORMAT=$(echo "$1" | grep -E '[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}[[:space:]][[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}')
   if ! date -d "$1" 2> /dev/null 1> /dev/null || [ -z "$DATE_FORMAT" ]; then
     error "Invalid date format!"
   fi
