@@ -170,28 +170,125 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     profit)
-      add_command "awk -F $DELIMITER '{if(\$3 == \"buy\")profit -= (\$4 * \$6); else profit += \$4 * \$6;}END{printf \"%.2f\n\", profit}'"
+      add_command "awk -F $DELIMITER '{ if(\$3 == \"buy\")
+                                          profit -= (\$4 * \$6);
+                                        else
+                                          profit += \$4 * \$6;
+                                      }END{
+                                        printf \"%.2f\n\", profit
+                                      }'"
       shift
       ;;
     pos)
-      add_command "awk -F $DELIMITER '{tickers[\$2]=\$4;if(\$3 == \"buy\"){units[\$2]+=\$6}else{units[\$2] -= \$6}} END {len=0;for (ticker in tickers){if(len < (length(int(tickers[ticker] * units[ticker]))+2)){len=(length(int(tickers[ticker] * units[ticker]))+2);}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+2, tickers[ticker] * units[ticker] }}'"
+      add_command "awk -F $DELIMITER '{ tickers[\$2]=\$4;
+                                        if(\$3 == \"buy\")
+                                          units[\$2]+=\$6;
+                                        else
+                                          units[\$2] -= \$6;
+                                      }END{
+                                        len=0;
+                                        for (ticker in tickers)
+                                        {
+                                          if(len < (length(int(tickers[ticker] * units[ticker]))+2))  # +2 because of - and .
+                                            len=(length(int(tickers[ticker] * units[ticker]))+2);
+                                        }
+                                        for (ticker in tickers)
+                                          printf \"%-9s :%*.2f\n\", ticker, len+2, tickers[ticker] * units[ticker];
+                                      }'"
       SORTER="sort -n -r -t ':' -k 2,2"
       shift
       ;;
     last-price)
-      add_command "awk -F $DELIMITER '{if(\$2 != \"\" && \$4 != \"\")tickers[\$2]=\$4} END {len=0;for (ticker in tickers){if(len < length(tickers[ticker])){len=length(tickers[ticker])}} for (ticker in tickers) { printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker]}}'"
+      add_command "awk -F $DELIMITER '{ if(\$2 != \"\" && \$4 != \"\")
+                                          tickers[\$2]=\$4; # adding price to array
+                                      }END{
+                                        len=0;
+                                        for (ticker in tickers)
+                                        {
+                                          if(len < length(tickers[ticker]))
+                                            len=length(tickers[ticker])
+                                        }
+                                        for (ticker in tickers)
+                                          printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker];
+                                      }'"
       shift
       ;;
     hist-ord)
       if [ "$GRAPH_WIDTH" -eq -1 ]; then
         GRAPH_WIDTH=1
       fi
-      add_command "awk -v w=$GRAPH_WIDTH -F $DELIMITER 'function abs(x){return ((x < 0.0) ? -x : x)} {transactions[\$2]++}END{if(w > 1){len=0; for (ticker in transactions){if (len < transactions[ticker]){len=transactions[ticker]}}}else{len=1} for (ticker in transactions) {printf \"%-9s :\", ticker; {for(i=0;i<int(abs(transactions[ticker]/len)*w);i++){if(i==0){printf \" \"} printf \"#\"} printf \"\n\";}}}'"
+      add_command "awk -v w=$GRAPH_WIDTH -F $DELIMITER 'function abs(x){
+                                                          return ((x < 0.0) ? -x : x)
+                                                        }
+                                                        {
+                                                          transactions[\$2]++
+                                                        }END{
+                                                          if(w > 1){
+                                                            len=0;
+                                                            for (ticker in transactions)
+                                                            {
+                                                              if (len < transactions[ticker])
+                                                                len=transactions[ticker]
+                                                            }
+                                                          }else
+                                                            len=1;  # setting 1 because N/1 = N
+                                                          for (ticker in transactions)
+                                                          {
+                                                            printf \"%-9s :\", ticker;
+                                                            {
+                                                              for(i=0;i<int(abs(transactions[ticker]/len)*w);i++)
+                                                              {
+                                                                if(i==0)
+                                                                  printf \" \";
+                                                                printf \"#\";
+                                                              }
+                                                              printf \"\n\";
+                                                            }
+                                                          }
+                                                        }'"
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
     graph-pos)
-      add_command "awk -F $DELIMITER -v w=$GRAPH_WIDTH 'function abs(x){return ((x < 0.0) ? -x : x)} {if(\$3 == \"buy\"){units[\$2]-=\$6}else{units[\$2]+=\$6} last_price[\$2]=\$4}END{max=0; for (ticker in last_price){values[ticker] = last_price[ticker] * units[ticker]; if(abs(values[ticker]) > max){max = abs(values[ticker])}} {if (w == -1) {max = 1000; w = 1;}} {for(ticker in values){printf \"%-9s :\", ticker; for(i=0;i<int(abs(values[ticker])*w/max);i++){if(i==0){printf \" \"} character=\"#\"; if(values[ticker] > 0){character=\"!\"} printf \"%s\", character;}printf \"\n\"}}}' "
+      add_command "awk -F $DELIMITER -v w=$GRAPH_WIDTH 'function abs(x){
+                                                          return ((x < 0.0) ? -x : x)
+                                                        }
+                                                        {
+                                                          if(\$3 == \"buy\")
+                                                            units[\$2]-=\$6;
+                                                          else
+                                                            units[\$2]+=\$6;
+                                                          last_price[\$2]=\$4;
+                                                        }END{
+                                                          max=0;
+                                                          for (ticker in last_price)
+                                                          {
+                                                            values[ticker] = last_price[ticker] * units[ticker];
+                                                            if(abs(values[ticker]) > max){
+                                                              max = abs(values[ticker])}
+                                                          }
+                                                          {
+                                                            if (w == -1) {
+                                                              max = 1000; w = 1;  # in case w is not defined, one # or ! should represent 1000
+                                                            }
+                                                          }
+                                                          {
+                                                            for(ticker in values)
+                                                            {
+                                                              printf \"%-9s :\", ticker;
+                                                              for(i=0;i<int(abs(values[ticker])*w/max);i++)
+                                                              {
+                                                                if(i==0)
+                                                                  printf \" \";
+                                                                character=\"#\";
+                                                                if(values[ticker] > 0)
+                                                                  character=\"!\"
+                                                                printf \"%s\", character;
+                                                              }
+                                                              printf \"\n\"
+                                                            }
+                                                          }
+                                                        }' "
       SORTER="sort -n -t ':' -k1,1"
       shift
       ;;
