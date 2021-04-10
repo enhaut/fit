@@ -75,7 +75,7 @@ char **allocate_rows_memory(unsigned long rows_num)
     if (!rows)
         failed = true;
 
-    for (unsigned long row = 0; row < rows_num && !failed; row++)
+    for (unsigned long row_index = 0; row_index < rows_num && !failed; row_index++)
     {
         char *row = malloc(MAXIMUM_LINE_LENGTH * sizeof(char));
         if (!row)
