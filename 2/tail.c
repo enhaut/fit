@@ -80,6 +80,7 @@ char **allocate_rows_memory(unsigned long rows_num)
         char *row = malloc(MAXIMUM_LINE_LENGTH * sizeof(char));
         if (!row)
             failed = true;
+        rows[row_index] = row;  // assigning in case of failed malloc does not matter, it won't be used
     }
 
     if (failed)
