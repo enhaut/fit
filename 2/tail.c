@@ -100,11 +100,9 @@ FILE *get_input(int argc, char *args[])
         case 1:
         case 3:
             input = stdin;
-            printf("stdin");
             break;
         case 2:
         case 4:
-            printf("file");
             input = fopen(args[argc-1], "r");   // filename is always last argument
             if (!input)
                 ERROR_AND_RETURN("Nepodařilo se otevřít soubor!", NULL);
