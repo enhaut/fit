@@ -154,6 +154,43 @@ void print_lines(char **lines, unsigned long buffer_size, unsigned long buffer_s
     }
 }
 
+void print_non_trailing_lines(unsigned long starting_line, FILE *input)
+{
+    char line[MAXIMUM_LINE_LENGTH];
+    int character;
+    int character_index = 0;
+    unsigned long actual_line = 1;
+    bool longer_line = false;
+    bool reached_printing_line = (actual_line >= starting_line);
+
+    while ((character = getc(input)) != EOF)
+    {
+        if (character == '\n')
+        {
+            line[character_index] = '\0';
+            character_index = 0;
+            longer_line = false;
+            actual_line++;
+            if (reached_printing_line)
+                printf("%s\n", line);
+            reached_printing_line = (actual_line >= starting_line);
+            continue;
+        }
+
+        if (longer_line || !reached_printing_line)
+            continue;
+
+        if (character_index == MAXIMUM_LINE_LENGTH - 1)     // -1 because of character_index is indexed from 0
+        {
+            fprintf(stderr, "Řádek je delší, než je povoleno!");
+            longer_line = true;
+        }
+
+        line[character_index] = character;
+        character_index++;
+    }
+}
+
 int main(int argc, char *args[])
 {
     bool start_at = false;
@@ -161,17 +198,20 @@ int main(int argc, char *args[])
     if (!line_num)  // 0 is not valid row number so it is used as "signal" value
         return 1;
 
-    char **rows = allocate_rows_memory(line_num);
     FILE *input = get_input(argc, args);
     if (!input)
         return 1;
 
-    unsigned long buffer_start = 0;
-    read_lines(rows, line_num, &buffer_start, input);
-    print_lines(rows, line_num, buffer_start);
+    if (!start_at)
+    {
+        char **rows = allocate_rows_memory(line_num);
+        unsigned long buffer_start = 0;
+        read_lines(rows, line_num, &buffer_start, input);
+        print_lines(rows, line_num, buffer_start);
+        free_rows(rows, line_num);
+    }else
+        print_non_trailing_lines(line_num, input);
 
 
     fclose(input);
-    free_rows(rows, line_num);
-    //printf("\n%lu, %d\n", line_num, start_at);
 }
