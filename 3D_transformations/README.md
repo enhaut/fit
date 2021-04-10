@@ -1,5 +1,6 @@
 # 3D transformations
 The goal of this laboratory is to create Blender script written in Python to generate models of your school login in Blender scene.
+My version of the assignment: `Your name should be written backward and a little bit rotated` 
 
 ## Tasks
 - in `createView()` method
@@ -15,5 +16,8 @@ The goal of this laboratory is to create Blender script written in Python to gen
 - Press `Generate` button to generate characters of your login
 - Press `Align` to set the viewport
 
+## Example
+My school login is `xdobro23`.
+![Yeah, it should look like this](example.png)
 ## Rating
 3/3 points
