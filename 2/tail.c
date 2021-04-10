@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAXIMUM_LINE_LENGTH 1022
+#define MAXIMUM_LINE_LENGTH 1023    // maximum # of characters in line WITHOUT trailing \0
 #define DEFAULT_LINES_TO_PRINT 10
 #define ERROR_AND_RETURN(error_message, what_to_return) do{fprintf(stderr, error_message); return what_to_return;}while(0)
 
