@@ -113,6 +113,47 @@ FILE *get_input(int argc, char *args[])
     return input;
 }
 
+#define NEXT_ROW_INDEX(buffer_start, buffer_size) ((buffer_start + 1) % buffer_size)
+void read_lines(char *lines[], unsigned long buffer_size, unsigned long *buffer_start, FILE *input)
+{
+    int character;
+    int character_index = 0;
+    bool longer_line = false;   // variable used for skipping characters at position > MAXIMUM_LINE_LENGTH
+
+    while ((character = getc(input)) != EOF)
+    {
+        if (character == '\n')
+        {
+            lines[*buffer_start][character_index] = '\0';
+            *buffer_start = NEXT_ROW_INDEX(*buffer_start, buffer_size);
+            longer_line = false;
+            character_index = 0;
+            continue;
+        }
+        else if (longer_line)
+            continue;
+
+        if (character_index == MAXIMUM_LINE_LENGTH - 1)     // -1 because of character_index is indexed from 0
+        {
+            fprintf(stderr, "Řádek je delší, než je povoleno!");
+            longer_line = true;
+        }
+
+        lines[*buffer_start][character_index] = character;
+
+        character_index++;
+    }
+}
+
+void print_lines(char **lines, unsigned long buffer_size, unsigned long buffer_start)
+{
+    for (unsigned long i = 0; i < buffer_size; i++)
+    {
+        printf("%s\n", lines[buffer_start]);
+        buffer_start = NEXT_ROW_INDEX(buffer_start, buffer_size);
+    }
+}
+
 int main(int argc, char *args[])
 {
     bool start_at = false;
@@ -125,6 +166,9 @@ int main(int argc, char *args[])
     if (!input)
         return 1;
 
+    unsigned long buffer_start = 0;
+    read_lines(rows, line_num, &buffer_start, input);
+    print_lines(rows, line_num, buffer_start);
 
 
     fclose(input);
