@@ -7,9 +7,10 @@ Usually, we had to implement key features (based on knowledge from lectures) to 
 1. [Reduction of color space](color_space_reduction)
 2. Generating simple objects in raster graphics
 3. Filling closed objects
-4. 3D transformation
+4. [3D transformation](3D_transformations)
 5. Rendering 2D curves in raster graphics
 6. Rendering 3D scene, OpenGL introduction
 
 ## Ratings of laboratories
 1. 3/3
+4. 3/3
