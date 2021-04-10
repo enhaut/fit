@@ -116,11 +116,11 @@ FILE *get_input(int argc, char *args[])
 int main(int argc, char *args[])
 {
     bool start_at = false;
-    unsigned long staring_line = get_tail_start(argc, args, &start_at);
-    if (!staring_line)  // 0 is not valid row number so it is used as "signal" value
+    unsigned long line_num = get_tail_start(argc, args, &start_at);
+    if (!line_num)  // 0 is not valid row number so it is used as "signal" value
         return 1;
 
-    char **rows = allocate_rows_memory(staring_line);
+    char **rows = allocate_rows_memory(line_num);
     FILE *input = get_input(argc, args);
     if (!input)
         return 1;
@@ -128,6 +128,6 @@ int main(int argc, char *args[])
 
 
     fclose(input);
-    free_rows(rows, staring_line);
-    printf("\n%lu, %d", staring_line, start_at);
+    free_rows(rows, line_num);
+    //printf("\n%lu, %d\n", line_num, start_at);
 }
