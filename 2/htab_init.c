@@ -9,7 +9,7 @@
 */
 htab_t *htab_init(size_t n)
 {
-    htab_t *table = (htab_t *)malloc(sizeof(htab_t) + sizeof(htab_element_t *) * n);
+    htab_t *table = (htab_t *)malloc(sizeof(htab_t) + sizeof(htab_item *) * n);
     if (!table)
         return NULL;
     else

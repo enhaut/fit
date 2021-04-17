@@ -9,11 +9,11 @@ void htab_clear(htab_t * t)
 
     for (size_t i = 0; i < t->arr_size; i++)
     {
-        htab_element_t *next_same_index_element = t->data[i]->next;
+        htab_item *next_same_index_element = t->data[i]->next;
 
         while (next_same_index_element)
         {
-            htab_element_t *future_same_index_element = next_same_index_element->next;
+            htab_item *future_same_index_element = next_same_index_element->next;
 
             free(next_same_index_element);
             next_same_index_element = future_same_index_element;

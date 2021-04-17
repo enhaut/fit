@@ -10,12 +10,12 @@
 typedef struct htab_element {
     htab_pair_t element;
     struct htab_element *next;
-}htab_element_t;
+}htab_item;
 
 typedef struct htab {
     size_t size;
     size_t arr_size;
-    htab_element_t *data[];
+    htab_item *data[];
 }htab_t;
 
 #endif // __HTAB_PRIVATE_H__
