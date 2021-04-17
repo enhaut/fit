@@ -20,9 +20,11 @@ void htab_clear(htab_t * t)
         {
             htab_item *future_same_index_element = next_same_index_element->next;
 
+            free((void *)(next_same_index_element->element.key));
             free(next_same_index_element);
             next_same_index_element = future_same_index_element;
         }
+        free((void *)(t->data[i]->element.key));
         free(t->data[i]);
         t->data[i] = NULL;
     }
