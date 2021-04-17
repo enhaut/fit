@@ -24,7 +24,7 @@ htab_item * get_last_item_of_index(htab_item *item)
 htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
 {
     size_t key_size;
-    if (!t || !key || !(key_size = strlen(key)))
+    if (!t || !key || !(key_size = strlen(key)))    // "" as a key is not allowed
         return NULL;
 
     size_t pair_index = htab_hash_function(key) % htab_bucket_count(t);
