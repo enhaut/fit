@@ -7,6 +7,9 @@
 */
 void htab_free(htab_t * t)
 {
+    if (!t)
+        return;
+
     htab_clear(t);
     free(t);
 }
