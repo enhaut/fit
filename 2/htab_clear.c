@@ -2,6 +2,11 @@
 #include "htab.h"
 #include "htab_private.h"
 
+
+/** @brief Function clears all the data from table but
+ * table is not reallocated.
+ * @param t Pointer to the table.
+*/
 void htab_clear(htab_t * t)
 {
     if (!t)
