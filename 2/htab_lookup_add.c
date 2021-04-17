@@ -2,6 +2,19 @@
 #include "htab.h"
 #include "htab_private.h"
 
+
+htab_item * get_last_item_of_index(htab_item *item)
+{
+    while(item)
+    {
+        if (item->next)
+            item = item->next;
+        else
+            break;  // next item is NULL, so actual one is the last
+    }
+    return item;
+}
+
 /** @brief Function adds new pair to the table, in case key is already in table, it
  * just returns pointer to the existing one.
  * @param t Pointer to the table.
@@ -16,10 +29,7 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
 
     size_t pair_index = htab_hash_function(key) % htab_bucket_count(t);
 
-    if (t->data[pair_index])
-        return htab_find(t, key);
-
-    char *key_copy = (char *)malloc(sizeof(char) * key_size + 1);
+    char *key_copy = (char *)calloc(key_size + 1, sizeof(char));  // using calloc to add trailing \0
     if (!key_copy)
         return NULL;
 
@@ -35,7 +45,14 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
     new_item->element.value = 0;
     new_item->next = NULL;
 
-    t->data[pair_index] = new_item;
+    if (t->data[pair_index])
+    {
+        htab_item *last_item = get_last_item_of_index(t->data[pair_index]);
+        last_item->next = new_item;
+    }else
+        t->data[pair_index] = new_item;
+
+    t->size++;
 
     return &(new_item->element);
 }
