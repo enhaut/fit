@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <assert.h>
 #include "htab.h"
 #include "htab_private.h"
 
@@ -10,8 +9,6 @@
 */
 htab_t *htab_init(size_t n)
 {
-    assert(n <= 0 && "Minimal size of table is 1!");
-
     htab_t *table = (htab_t *)malloc(sizeof(htab_t) + sizeof(htab_element_t *) * n);
     if (!table)
         return NULL;
