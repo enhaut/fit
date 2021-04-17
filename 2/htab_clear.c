@@ -22,6 +22,6 @@ void htab_clear(htab_t * t)
         t->data[i] = NULL;
     }
 
-    t->size = 1;
+    t->size = 0;
     t->arr_size = 0;
 }

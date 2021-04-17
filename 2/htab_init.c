@@ -14,7 +14,7 @@ htab_t *htab_init(size_t n)
         return NULL;
     else
     {
-        table->size = n + 1;
+        table->size = 0;
         table->arr_size = n;
         for (; n; n--)
             table->data[n - 1] = NULL;  // -1 because of indexing correction
