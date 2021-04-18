@@ -33,6 +33,17 @@ int main(void)
         pair->value++;
     }
 
+#ifdef MOVETEST
+    htab_t *new_table = htab_move(HASH_TABLE_SIZE, table);
+    if (!new_table)
+    {
+        fprintf(stderr, "Could not move data!");
+        return 1;
+    }
+    htab_free(table);
+    table = new_table;
+#endif
+
     htab_for_each(table, print_result);
     htab_free(table);
     return 0;
