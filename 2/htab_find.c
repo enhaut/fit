@@ -15,6 +15,8 @@ htab_pair_t * htab_find(htab_t * t, htab_key_t key)
 
     size_t item_index = htab_hash_function(key) % t->arr_size;
     htab_item *item = t->data[item_index];
+    if (!item)
+        return NULL;
 
     if (item->next)
     {

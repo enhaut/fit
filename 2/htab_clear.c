@@ -14,6 +14,9 @@ void htab_clear(htab_t * t)
 
     for (size_t i = 0; i < t->arr_size; i++)
     {
+        if (!t->data[i])
+            continue;
+
         htab_item *next_same_index_element = t->data[i]->next;
 
         while (next_same_index_element)

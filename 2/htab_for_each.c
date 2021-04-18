@@ -13,6 +13,9 @@ void htab_for_each(const htab_t * t, void (*f)(htab_pair_t *data))
 
     for (size_t i = 0; i < t->arr_size; i++)
     {
+        if (!t->data[i])
+            continue;
+
         f(&(t->data[i]->element));  // user in worst scenario can free(key), but that's not my business
 
         htab_item *same_index_item = t->data[i]->next;
