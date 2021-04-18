@@ -28,6 +28,12 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
         return NULL;
 
     size_t pair_index = htab_hash_function(key) % htab_bucket_count(t);
+    if (t->data[pair_index])
+    {
+        htab_pair_t *pair = htab_find(t, key);
+        if (pair)
+            return pair;
+    }
 
     char *key_copy = (char *)calloc(key_size + 1, sizeof(char));  // using calloc to add trailing \0
     if (!key_copy)
@@ -40,7 +46,7 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
         return NULL;
     }
 
-    strncpy(key_copy, key, key_size);
+    strncpy(key_copy, key, key_size + 1);   // +1 to copy trailing \0
     new_item->element.key = key_copy;
     new_item->element.value = 0;
     new_item->next = NULL;
