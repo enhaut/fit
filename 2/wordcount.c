@@ -7,6 +7,7 @@
 #include "htab.h"
 #include "io.h"
 #define WORD_LIMIT 128
+#define HASH_TABLE_SIZE 128
 
 void print_result(htab_pair_t *pair)
 {
@@ -15,7 +16,12 @@ void print_result(htab_pair_t *pair)
 
 int main(void)
 {
-    htab_t *table = htab_init(128);
+    htab_t *table = htab_init(HASH_TABLE_SIZE);
+    if (!table)
+    {
+        fprintf(stderr, "Could not initialize table!");
+        return 1;
+    }
 
     char word[WORD_LIMIT] = {0};
     while (read_word(word, WORD_LIMIT, stdin) != EOF)
@@ -29,4 +35,5 @@ int main(void)
 
     htab_for_each(table, print_result);
     htab_free(table);
+    return 0;
 }
