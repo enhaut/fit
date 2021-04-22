@@ -12,6 +12,9 @@
 #include <sys/shm.h>
 
 #include "proj2.h"
+#include "santa.h"
+#include "elf.h"
+#include "reindeer.h"
 
 int get_number(bool *valid, signed int min, int max, char *raw_number)
 {
@@ -42,7 +45,7 @@ processes_t parse_arguments(int argc, char *args[])
         arguments.valid = valid;
     }
     if (!arguments.valid)
-        ERROR_MESSAGE("Invalid arguments!\n");
+        ERROR_EXIT("Invalid arguments!\n", arguments);
 
     return arguments;
 }
