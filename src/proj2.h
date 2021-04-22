@@ -10,7 +10,7 @@
 #ifndef SANTA_CALAUS_PROBLEM_PROJ2_H
 #define SANTA_CALAUS_PROBLEM_PROJ2_H
 
-#define ERROR_MESSAGE(message) do{fprintf(stderr, message);}while(0)
+#define ERROR_EXIT(message,to_return) do{fprintf(stderr, message); return to_return;}while(0)
 
 #define NE_LIMIT 1000
 #define NR_LIMIT 20

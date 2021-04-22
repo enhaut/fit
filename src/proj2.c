@@ -78,6 +78,22 @@ void destroy_semaphores(shared_data_t *data)
     sem_destroy(&(data->sems.santa));
 }
 
+void create_forks(shared_data_t *shared_data, processes_t *arguments)
+{
+    int santa_fork = fork();
+    if (santa_fork)
+        exit(santa(shared_data, arguments));
+
+    for (int i = 0; i < arguments->NE; i++)
+        if (fork())
+            exit(elf(shared_data, arguments, i));
+
+    for (int i = 0; i < arguments->NR; i++)
+        if(fork())
+            exit(reindeer(shared_data, arguments, i));
+
+}
+
 int main(int argc, char *args[])
 {
     processes_t arguments = parse_arguments(argc, args);
@@ -97,6 +113,9 @@ int main(int argc, char *args[])
     int initialized = initialize_semaphores(shared_data);
     if (initialized)
         return EXIT_FAILURE;
+
+
+    create_forks(shared_data, &arguments);
 
     destroy_semaphores(shared_data);
     if(shmdt(shared_data))
