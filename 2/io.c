@@ -31,14 +31,14 @@ int read_word(char *s, int max, FILE *f)
                         break;
                 }
 
-            break;
+            break;  // for
         }else if(character == EOF)
         {
             s[i] = '\0';
             return EOF;
         }
         s[i] = (char)character;
-    }
+    }   // for
     s[i] = '\0';
     return i;
 }
