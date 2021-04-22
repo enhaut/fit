@@ -24,7 +24,12 @@ int read_word(char *s, int max, FILE *f)
             int temp = getc(f);
             fprintf(stderr, "Word is longer than allowed!");
             if (!isspace(temp))
-                while ((temp = getc(f)) != EOF) {if (isspace(temp)) {break;}}   // jump to the next word
+                while ((temp = getc(f)) != EOF)     // jump to the next word
+                {
+                    i++;    // to return real length of word
+                    if (isspace(temp))
+                        break;
+                }
 
             break;
         }else if(character == EOF)
