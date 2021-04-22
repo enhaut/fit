@@ -1,3 +1,9 @@
+// htab_private.h
+// Řešení IJC-DU2, příklad b), 27.3.2021
+// Autor: Samuel Dobroň, FIT
+// Přeloženo: gcc 10.2.1
+// Privatne štruktúry
+
 #include <stdlib.h>
 #include "htab.h"
 

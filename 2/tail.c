@@ -2,7 +2,6 @@
 // Řešení IJC-DU2, příklad a), 27.3.2021
 // Autor: Samuel Dobroň, FIT
 // Přeloženo: gcc 10.2.1
-// ...popis příkladu - poznámky, omezení, atd
 
 #include <string.h>
 #include <stdbool.h>

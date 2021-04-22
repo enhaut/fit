@@ -1,3 +1,10 @@
+// htab_hash_function.c
+// Řešení IJC-DU2, příklad b), 27.3.2021
+// Autor: Samuel Dobroň, FIT
+// Přeloženo: gcc 10.2.1
+// htab_hash_function() sa nemusí použiť ak je definovaný prepínač HASHTEST,
+// vtedy sa použije htab_hash_function() zo súboru wordcount.c
+
 #include <stdint.h>
 #include "htab.h"
 

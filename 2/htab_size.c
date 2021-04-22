@@ -1,3 +1,8 @@
+// htab_size.c
+// Řešení IJC-DU2, příklad b), 27.3.2021
+// Autor: Samuel Dobroň, FIT
+// Přeloženo: gcc 10.2.1
+
 #include "htab.h"
 #include "htab_private.h"
 
