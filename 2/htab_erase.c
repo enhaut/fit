@@ -31,12 +31,13 @@ bool htab_erase(htab_t * t, htab_key_t key)
     }else
     {
         size_t max_key_size = strlen(to_erase->element.key);
-        if (strncpy((char *)to_erase->element.key, key, max_key_size) != 0)
+        if (strncmp((char *)to_erase->element.key, key, max_key_size) != 0)
             return false;   // key for erase is at the same index, but keys does not match (conflict)
 
         t->data[pair_index] = NULL; // no item remains
     }
 
+    t->size--;
     free((void *)(to_erase->element.key));  // deallocating memory for key
     free(to_erase); // deallocating memory for item
     return true;
