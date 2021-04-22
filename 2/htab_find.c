@@ -33,5 +33,9 @@ htab_pair_t * htab_find(htab_t * t, htab_key_t key)
             item = item->next;
         }
     }
+
+    if (!item)  // key at index of hash table not found
+        return NULL;
+
     return &(item->element);
 }
