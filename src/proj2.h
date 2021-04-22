@@ -5,6 +5,7 @@
 // 18. 4. 2021
 #include <stdbool.h>
 #include <stdio.h>
+#include "semaphore.h"
 
 #ifndef SANTA_CALAUS_PROBLEM_PROJ2_H
 #define SANTA_CALAUS_PROBLEM_PROJ2_H
@@ -27,7 +28,17 @@ typedef struct {
 
 
 typedef struct {
-    int elves;
+    int all_reindeers_back;
+    int waiting_elves;
+
+    struct{
+        sem_t santa;
+        sem_t reindeers;
+        sem_t elves_in;
+        sem_t mutex;
+    } sems;
+
+    int shm_key;
 }shared_data_t;
 
 #endif //SANTA_CALAUS_PROBLEM_PROJ2_H

@@ -3,6 +3,7 @@
 // Author: Samuel Dobroň (xdobro23), FIT VUTBR
 // Compiled: gcc 10.2.1
 // 18. 4. 2021
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -46,6 +47,37 @@ processes_t parse_arguments(int argc, char *args[])
     return arguments;
 }
 
+
+
+int initialize_semaphores(shared_data_t *data)
+{
+    int failed = sem_init(&(data->sems.reindeers), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+
+    failed = sem_init(&(data->sems.elves_in), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
+
+    failed = sem_init(&(data->sems.mutex), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize mutex semaphore!\n", EXIT_FAILURE);
+
+    failed = sem_init(&(data->sems.santa), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+
+   return EXIT_SUCCESS;
+}
+
+void destroy_semaphores(shared_data_t *data)
+{
+    sem_destroy(&(data->sems.reindeers));
+    sem_destroy(&(data->sems.elves_in));
+    sem_destroy(&(data->sems.mutex));
+    sem_destroy(&(data->sems.santa));
+}
+
 int main(int argc, char *args[])
 {
     processes_t arguments = parse_arguments(argc, args);
@@ -62,6 +94,11 @@ int main(int argc, char *args[])
 
     shared_data->shm_key = shared_mem_id;
 
+    int initialized = initialize_semaphores(shared_data);
+    if (initialized)
+        return EXIT_FAILURE;
+
+    destroy_semaphores(shared_data);
     if(shmdt(shared_data))
         return EXIT_FAILURE;
     shmctl(shared_mem_id, IPC_RMID, NULL);
