@@ -4,6 +4,12 @@
 // Compiled: gcc 10.2.1
 // 18. 4. 2021
 #include <stdlib.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
 #include "proj2.h"
 
 int get_number(bool *valid, signed int min, int max, char *raw_number)
@@ -46,6 +52,19 @@ int main(int argc, char *args[])
     if (!arguments.valid)
         return EXIT_FAILURE;
 
-    printf("%d, %d, %d, %d\n", arguments.NE, arguments.NR, arguments.TE, arguments.TR);
+    int shared_mem_id = shmget(895664986, sizeof(shared_data_t), 0666 | IPC_CREAT);
+    if (shared_mem_id < 0)
+        ERROR_EXIT("Could not allocate shared memory!!!!\n", EXIT_FAILURE);
+
+    shared_data_t *shared_data = shmat(shared_mem_id, NULL, 0);
+    if (shared_data == (shared_data_t *) -1)
+        ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
+
+    shared_data->shm_key = shared_mem_id;
+
+    if(shmdt(shared_data))
+        return EXIT_FAILURE;
+    shmctl(shared_mem_id, IPC_RMID, NULL);
+
     return EXIT_SUCCESS;
 }
