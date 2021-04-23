@@ -3,6 +3,7 @@
 // Author: Samuel Dobroň (xdobro23), FIT VUTBR
 // Compiled: gcc 10.2.1
 // 18. 4. 2021
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -70,6 +71,10 @@ int initialize_semaphores(shared_data_t *data)
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
+    failed = sem_init(&(data->sems.print), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+
    return EXIT_SUCCESS;
 }
 
@@ -79,6 +84,7 @@ void destroy_semaphores(shared_data_t *data)
     sem_destroy(&(data->sems.elves_in));
     sem_destroy(&(data->sems.mutex));
     sem_destroy(&(data->sems.santa));
+    sem_destroy(&(data->sems.print));
 }
 
 void create_forks(shared_data_t *shared_data, processes_t *arguments)
@@ -96,6 +102,24 @@ void create_forks(shared_data_t *shared_data, processes_t *arguments)
             exit(reindeer(shared_data, arguments, i));
 
 }
+
+
+void correct_print(shared_data_t *data, const char *fmt, ...)
+{
+    sem_wait(&(data->sems.print));
+
+    va_list args;
+    va_start(args, fmt);
+
+    vprintf(fmt, args);
+    printf("\n");
+    fflush(stdout);
+
+    va_end(args);
+
+    sem_post(&(data->sems.print));
+}
+
 
 int main(int argc, char *args[])
 {

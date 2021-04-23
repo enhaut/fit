@@ -36,9 +36,12 @@ typedef struct {
         sem_t reindeers;
         sem_t elves_in;
         sem_t mutex;
+        sem_t print;
     } sems;
 
     int shm_key;
 }shared_data_t;
+
+void correct_print(shared_data_t *data, const char *fmt, ...);
 
 #endif //SANTA_CALAUS_PROBLEM_PROJ2_H
