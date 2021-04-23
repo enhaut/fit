@@ -59,7 +59,7 @@ int initialize_semaphores(shared_data_t *data)
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.elves_in), 1, 1);
+    failed = sem_init(&(data->sems.elves_in), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
 
@@ -67,7 +67,7 @@ int initialize_semaphores(shared_data_t *data)
     if (failed)
         ERROR_EXIT("Could not initialize mutex semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.santa), 1, 1);
+    failed = sem_init(&(data->sems.santa), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
@@ -136,6 +136,9 @@ int main(int argc, char *args[])
         ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
 
     shared_data->shm_key = shared_mem_id;
+    shared_data->waiting_elves = 0;
+    shared_data->all_reindeers_back = 0;
+    shared_data->closed = false;
 
     int initialized = initialize_semaphores(shared_data);
     if (initialized)
