@@ -15,7 +15,7 @@ bool is_closed(shared_data_t *data, int elfID)
     if (!data->closed)
         return false;
 
-    correct_print(data, "A: Elf %d: taking holidays", elfID);
+    correct_print(data, "Elf %d: taking holidays", elfID);
     sem_post(&(data->sems.mutex));
     return true;
 }
@@ -25,7 +25,7 @@ bool work(processes_t *arguments, int elfID, shared_data_t *data)
     srand(getpid());
     int sleep_for = (rand() % (arguments->TE + 1));
     usleep(sleep_for*1000);
-    correct_print(data,"A: Elf %d: need help", elfID);
+    correct_print(data,"Elf %d: need help", elfID);
     return true;
 }
 
@@ -37,7 +37,7 @@ bool get_help(shared_data_t *data, int elfID)
         return false;
 
     data->waiting_elves -= 1;
-    correct_print(data, "A: Elf %d: get help", elfID);
+    correct_print(data, "Elf %d: get help", elfID);
     sem_post(&(data->sems.mutex));   // santa will release him
     return true;
 }
@@ -45,7 +45,7 @@ bool get_help(shared_data_t *data, int elfID)
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
 {
     elfID++;    // elf ids are indexed from 1
-    correct_print(data, "A: Elf %d: started", elfID);
+    correct_print(data, "Elf %d: started", elfID);
 
     while (true)
     {

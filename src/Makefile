@@ -13,4 +13,4 @@ proj2: proj2.o santa.o elf.o reindeer.o
 
 clean:
 	clear
-	rm *.o proj2  dependencies.txt 2> /dev/null || true
+	rm *.o proj2  dependencies.txt proj2.out 2> /dev/null || true

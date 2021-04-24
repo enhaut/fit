@@ -31,6 +31,8 @@ typedef struct {
     int all_reindeers_back;
     int waiting_elves;
     bool closed;
+    int message_counter;
+    FILE *log_file;
 
     struct{
         sem_t santa;

@@ -9,7 +9,7 @@
 void help(shared_data_t *data, bool silent)
 {
     if (!silent)
-        correct_print(data, "A: Santa: helping elves");
+        correct_print(data, "Santa: helping elves");
 
     int waiting = data->waiting_elves;
     for (int i = 0; i < waiting && i < 3; i++)   // help elves
@@ -19,12 +19,12 @@ void help(shared_data_t *data, bool silent)
 
 void sleep(shared_data_t *data)
 {
-    correct_print(data,"A: Santa: going to sleep");
+    correct_print(data,"Santa: going to sleep");
 }
 
 void close_workshop(shared_data_t *data)
 {
-    correct_print(data, "A: Santa: closing workshop");
+    correct_print(data, "Santa: closing workshop");
     int to_hitch = data->all_reindeers_back;
     for (int i = 0; i < to_hitch; i++)
         sem_post(&(data->sems.reindeers));

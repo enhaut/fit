@@ -111,15 +111,27 @@ void correct_print(shared_data_t *data, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    vprintf(fmt, args);
-    printf("\n");
-    fflush(stdout);
+    fprintf(data->log_file, "%d: ", ++(data->message_counter));
+    vfprintf(data->log_file, fmt, args);
+    fprintf(data->log_file, "\n");
+    fflush(data->log_file);
 
     va_end(args);
 
     sem_post(&(data->sems.print));
 }
 
+
+FILE *initialize_log_file()
+{
+    FILE *file = fopen("proj2.out", "w");
+    if (!file)
+    {
+        fprintf(stderr, "Could not open log file!");
+        return NULL;
+    }
+    return file;
+}
 
 int main(int argc, char *args[])
 {
@@ -138,7 +150,11 @@ int main(int argc, char *args[])
     shared_data->shm_key = shared_mem_id;
     shared_data->waiting_elves = 0;
     shared_data->all_reindeers_back = 0;
+    shared_data->message_counter = 0;
     shared_data->closed = false;
+    shared_data->log_file = initialize_log_file();
+    if (!shared_data->log_file)
+        return EXIT_FAILURE;
 
     int initialized = initialize_semaphores(shared_data);
     if (initialized)
@@ -148,6 +164,7 @@ int main(int argc, char *args[])
     create_forks(shared_data, &arguments);
     while(wait(NULL) > 0);  // waiting for child processes
 
+    fclose(shared_data->log_file);
     destroy_semaphores(shared_data);
     if(shmdt(shared_data))
         return EXIT_FAILURE;
