@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
     int all_reindeers_back;
     int waiting_elves;
+    bool closed;
 
     struct{
         sem_t santa;

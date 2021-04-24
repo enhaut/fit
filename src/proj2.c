@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <semaphore.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/wait.h>
 
 #include "proj2.h"
 #include "santa.h"
@@ -55,7 +55,7 @@ processes_t parse_arguments(int argc, char *args[])
 
 int initialize_semaphores(shared_data_t *data)
 {
-    int failed = sem_init(&(data->sems.reindeers), 1, 1);
+    int failed = sem_init(&(data->sems.reindeers), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
@@ -146,6 +146,7 @@ int main(int argc, char *args[])
 
 
     create_forks(shared_data, &arguments);
+    while(wait(NULL) > 0);  // waiting for child processes
 
     destroy_semaphores(shared_data);
     if(shmdt(shared_data))
