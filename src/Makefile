@@ -1,10 +1,16 @@
 CFLAGS=-std=gnu99 -Wall -Wextra -pedantic -pthread -g
 LDFLAGS=
 
-all: proj2
+all: dependencies.txt proj2
 
-proj2: proj2.c proj2.h santa.c santa.h elf.c elf.h reindeer.c reindeer.h
+-include dependencies.txt
+dependencies.txt:
+	$(CC) $(CFLAGS) -MM *.c > $@
+
+proj2: proj2.o santa.o elf.o reindeer.o
+	$(CC) $(CFLAGS) -o $@ $^
+
 
 clean:
 	clear
-	rm *.o proj2 2> /dev/null || true
+	rm *.o proj2  dependencies.txt 2> /dev/null || true
