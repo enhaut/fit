@@ -16,7 +16,7 @@ void htab_for_each(const htab_t * t, void (*f)(htab_pair_t *data))
     if (!t || !f)
         return;
 
-    for (size_t i = 0; i < t->arr_size; i++)
+    for (size_t i = 0; i < htab_bucket_count(t); i++)   // iterating through indexes, the same index pairs are processed by while bellow
     {
         if (!t->data[i])
             continue;
