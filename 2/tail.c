@@ -29,13 +29,13 @@ unsigned get_tail_start(int argc, char **args, bool *start_at)
             starting_line = DEFAULT_LINES_TO_PRINT;
             break;
         case 2:     // "tail soubor" / "tail -n"
-            if (strncmp(args[1], "-n", 3) == 0)
+            if (strncmp(args[1], "-n", 2) == 0)
                 ERROR_AND_RETURN("Zadej číslo řádku!", 0);
             starting_line = DEFAULT_LINES_TO_PRINT;
             break;
         case 3:     // "tail -n 3 <soubor"
         case 4:     // "tail -n 3 soubor"
-            if (strncmp(args[1], "-n", 3) != 0)
+            if (strncmp(args[1], "-n", 2) != 0)
                 ERROR_AND_RETURN("Nesprávne argumenty!", 0);
 
             if (args[2][0] == '+')
