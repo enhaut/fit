@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #define MAXIMUM_LINE_LENGTH 1023    // maximum # of characters in line WITHOUT trailing \0 and \n
 #define DEFAULT_LINES_TO_PRINT 10
@@ -46,7 +47,8 @@ unsigned get_tail_start(int argc, char **args, bool *start_at)
             char *correctly_converted = NULL;
             starting_line = strtoul(args[2], &correctly_converted, 10);
 
-            // TODO: check maximum num_row
+            if (errno == ERANGE)
+                ERROR_AND_RETURN("Číslo řádku je příliš veliké!", 0);
 
             if (!correctly_converted || !starting_line)
                 ERROR_AND_RETURN("Nesprávne číslo řádku!", 0);
