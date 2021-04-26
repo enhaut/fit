@@ -9,7 +9,8 @@
 #include "htab.h"
 
 /**
- * @param str Pointer to the string
+ * @brief Hash function, it returns hash of provided string
+ * @param str Pointer to the string to hash
  * @returns hash of provided string
  */
 size_t htab_hash_function(const char *str) {

@@ -8,11 +8,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAXIMUM_LINE_LENGTH 1023    // maximum # of characters in line WITHOUT trailing \0
+#define MAXIMUM_LINE_LENGTH 1023    // maximum # of characters in line WITHOUT trailing \0 and \n
 #define DEFAULT_LINES_TO_PRINT 10
 #define ERROR_AND_RETURN(error_message, what_to_return) do{fprintf(stderr, error_message); return what_to_return;}while(0)
 
-// Function parses -n argument also checks the count of arguments.
+/** @brief Function returns number of starting row. This function just parses the arguments.
+ * @param argc number of arguments provided to program
+ * @param args provided arguments
+ * @param start_at address to boolean variable that will store true in case the starting number is
+ * number where printing of lines starts, otherwise false.
+ * @returns Number of starting row.
+*/
 unsigned get_tail_start(int argc, char **args, bool *start_at)
 {
     unsigned long starting_line;    // will be initialized in switch cases or function will be returned before using the variable
@@ -52,6 +58,10 @@ unsigned get_tail_start(int argc, char **args, bool *start_at)
     return starting_line;
 }
 
+/** @brief Function frees the allocated memory
+ * @param rows pointer to the array with rows
+ * @param rows_num size of array
+*/
 void free_rows(char **rows, unsigned long rows_num)
 {
     if (rows)
@@ -67,6 +77,10 @@ void free_rows(char **rows, unsigned long rows_num)
     }
 }
 
+/** @brief Function allocates memory for rows circular buffer.
+ * @param rows_num size of buffer
+ * @returns pointer to the allocated memory
+*/
 char **allocate_rows_memory(unsigned long rows_num)
 {
     bool failed = false;
@@ -90,6 +104,12 @@ char **allocate_rows_memory(unsigned long rows_num)
     return rows;
 }
 
+
+/** @brief Function returns stdin or provided file depends at the arguments.
+ * @param argc number of arguments
+ * @param args arguments
+ * @returns pointer to the file to read
+*/
 FILE *get_input(int argc, char *args[])
 {
     FILE *input = NULL;
@@ -112,7 +132,13 @@ FILE *get_input(int argc, char *args[])
     return input;
 }
 
-#define NEXT_ROW_INDEX(buffer_start, buffer_size) ((buffer_start + 1) % buffer_size)
+/** @brief Function loads lines to the circular buffer
+ * @param lines pointer to the circular buffer
+ * @param size of circular buffer
+ * @param address of int variable, which stores the start of buffer
+ * @param input pointer to the file
+*/
+#define NEXT_ROW_INDEX(buffer_start, buffer_size) (((buffer_start) + 1) % (buffer_size))
 void read_lines(char *lines[], unsigned long buffer_size, unsigned long *buffer_start, FILE *input)
 {
     int character;
@@ -144,6 +170,11 @@ void read_lines(char *lines[], unsigned long buffer_size, unsigned long *buffer_
     }
 }
 
+/** @brief Function prints loaded lines.
+ * @param lines pointer to the circular buffer
+ * @param buffer_size size of buffer
+ * @param buffer_start start of the buffer
+*/
 void print_lines(char **lines, unsigned long buffer_size, unsigned long buffer_start)
 {
     for (unsigned long i = 0; i < buffer_size; i++)
@@ -153,6 +184,10 @@ void print_lines(char **lines, unsigned long buffer_size, unsigned long buffer_s
     }
 }
 
+/** @brief Function prints all the lines from starting_line.
+ * @param starting_line number of line of start
+ * @param input input file
+*/
 void print_non_trailing_lines(unsigned long starting_line, FILE *input)
 {
     char line[MAXIMUM_LINE_LENGTH];

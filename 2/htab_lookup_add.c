@@ -8,6 +8,10 @@
 #include "htab_private.h"
 
 
+/** @brief Function returns address of the last pair at the same index of table.
+ * @param t Same index element that has some "neighbors"
+ * @return pointer to the last (key, value) pair
+*/
 htab_item * get_last_item_of_index(htab_item *item)
 {
     while(item)
@@ -37,10 +41,11 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
     {
         htab_pair_t *pair = htab_find(t, key);
         if (pair)
-            return pair;
+            return pair;    // pair found
     }
 
-    char *key_copy = (char *)calloc(key_size + 1, sizeof(char));  // using calloc to add trailing \0
+    /* the pair does not exist */
+    char *key_copy = (char *)calloc(key_size + 1, sizeof(char));
     if (!key_copy)
         return NULL;
 
@@ -58,7 +63,7 @@ htab_pair_t * htab_lookup_add(htab_t * t, htab_key_t key)
 
     if (t->data[pair_index])
     {
-        htab_item *last_item = get_last_item_of_index(t->data[pair_index]);
+        htab_item *last_item = get_last_item_of_index(t->data[pair_index]);  // the pair has same index in table, we need to add it to the end
         last_item->next = new_item;
     }else
         t->data[pair_index] = new_item;

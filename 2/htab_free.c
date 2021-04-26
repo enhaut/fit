@@ -15,6 +15,6 @@ void htab_free(htab_t * t)
     if (!t)
         return;
 
-    htab_clear(t);
+    htab_clear(t);  // clear the content of table
     free(t);
 }

@@ -6,6 +6,10 @@
 #include "htab.h"
 #include "htab_private.h"
 
+/** @brief Function returns number of available indexes in table.
+ * @param t Pointer to the table.
+ * @returns number of elements
+*/
 size_t htab_bucket_count(const htab_t * t)
 {
     if (!t)

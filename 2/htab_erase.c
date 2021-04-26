@@ -7,6 +7,11 @@
 #include "htab.h"
 #include "htab_private.h"
 
+/** @brief Function removes one element from table.
+ * @param t Pointer to the table
+ * @param key key of pair to delete
+ * @returns true in case of success otherwise false
+*/
 bool htab_erase(htab_t * t, htab_key_t key)
 {
     if (!t || !key || !strlen(key)) // "" as a key is not allowed

@@ -23,13 +23,14 @@ htab_pair_t * htab_find(htab_t * t, htab_key_t key)
     if (!item)
         return NULL;
 
+    // at the same index could be more than 1 pair, so we need to find the right one
     if (item->next)
     {
         while (item)
         {
             size_t saved_key_size = strlen(item->element.key);
             if (strncmp(item->element.key, key, saved_key_size) == 0)
-                break;
+                break;  // wanted pair found
             item = item->next;
         }
     }

@@ -9,7 +9,7 @@
 
 
 /** @brief Function initializes hash table.
- * @param n Table elements.
+ * @param n Numbers of elements.
  * @return pointer to the initialized hash table
 */
 htab_t *htab_init(size_t n)

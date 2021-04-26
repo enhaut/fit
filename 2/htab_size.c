@@ -6,7 +6,7 @@
 #include "htab.h"
 #include "htab_private.h"
 
-/** @brief Function returns size of table.
+/** @brief Function returns pairs in the table.
  * @param t Pointer to the table.
  * @returns Size of table. In case of invalid table, it returns 0.
 */

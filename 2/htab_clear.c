@@ -17,14 +17,14 @@ void htab_clear(htab_t * t)
     if (!t)
         return;
 
-    for (size_t i = 0; i < t->arr_size; i++)
+    for (size_t i = 0; i < t->arr_size; i++)    // iterating through indexes, the same index pairs are processed by while bellow
     {
         if (!t->data[i])
             continue;
 
         htab_item *next_same_index_element = t->data[i]->next;
 
-        while (next_same_index_element)
+        while (next_same_index_element) // remove all the elements at the same index
         {
             htab_item *future_same_index_element = next_same_index_element->next;
 

@@ -6,6 +6,13 @@
 #include "stdio.h"
 #include <ctype.h>
 
+/** @brief Function reads word by word from provided file up to max characters,
+ * but it returns the real length of the word.
+ * @param s Pointer to the array which stores the word
+ * @param max Maximum number of characters to read
+ * @param f pointer to the file
+ * @returns Length of loaded word
+*/
 int read_word(char *s, int max, FILE *f)
 {
     if (!f || !s || max <= 0)   // reading N chars; N<=0 does not make sense
@@ -31,7 +38,7 @@ int read_word(char *s, int max, FILE *f)
                         break;
                 }
 
-            break;  // for
+            break;  // for (; i < max; i++)
         }else if(character == EOF)
         {
             s[i] = '\0';
