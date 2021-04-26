@@ -31,30 +31,30 @@ unsigned get_tail_start(int argc, char **args, bool *start_at)
             break;
         case 2:     // "tail soubor" / "tail -n"
             if (strncmp(args[1], "-n", 2) == 0)
-                ERROR_AND_RETURN("Zadej číslo řádku!", 0);
+                ERROR_AND_RETURN("Zadej číslo řádku!\n", 0);
             starting_line = DEFAULT_LINES_TO_PRINT;
             break;
         case 3:     // "tail -n 3 <soubor"
         case 4:     // "tail -n 3 soubor"
             if (strncmp(args[1], "-n", 2) != 0)
-                ERROR_AND_RETURN("Nesprávne argumenty!", 0);
+                ERROR_AND_RETURN("Nesprávne argumenty!\n", 0);
 
             if (args[2][0] == '+')
                 *start_at = true;
             else if(args[2][0] == '-')
-                ERROR_AND_RETURN("Číslo řádku musí být větší než 0!", 0);
+                ERROR_AND_RETURN("Číslo řádku musí být větší než 0!\n", 0);
 
             char *correctly_converted = NULL;
             starting_line = strtoul(args[2], &correctly_converted, 10);
 
             if (errno == ERANGE)
-                ERROR_AND_RETURN("Číslo řádku je příliš veliké!", 0);
+                ERROR_AND_RETURN("Číslo řádku je příliš veliké!\n", 0);
 
             if (!correctly_converted || !starting_line)
-                ERROR_AND_RETURN("Nesprávne číslo řádku!", 0);
+                ERROR_AND_RETURN("Nesprávne číslo řádku!\n", 0);
             break;
         default:
-            ERROR_AND_RETURN("Nesprávne argumenty!", 0);
+            ERROR_AND_RETURN("Nesprávne argumenty!\n", 0);
     }
 
     return starting_line;
@@ -101,7 +101,7 @@ char **allocate_rows_memory(unsigned long rows_num)
     if (failed)
     {
         free_rows(rows, rows_num);
-        ERROR_AND_RETURN("Nepodařilo se alokovat paměť pro řádky!", NULL);
+        ERROR_AND_RETURN("Nepodařilo se alokovat paměť pro řádky!\n", NULL);
     }
     return rows;
 }
@@ -126,7 +126,7 @@ FILE *get_input(int argc, char *args[])
         case 4:
             input = fopen(args[argc-1], "r");   // filename is always last argument
             if (!input)
-                ERROR_AND_RETURN("Nepodařilo se otevřít soubor!", NULL);
+                ERROR_AND_RETURN("Nepodařilo se otevřít soubor!\n", NULL);
             break;
         default:
             break;   // do nothing - function get_tail_start() returns in this case 1 so program ends before calling this function
@@ -162,7 +162,7 @@ void read_lines(char *lines[], unsigned long buffer_size, unsigned long *buffer_
 
         if (character_index == MAXIMUM_LINE_LENGTH - 1)     // -1 because of character_index is indexed from 0
         {
-            fprintf(stderr, "Řádek je delší, než je povoleno!");
+            fprintf(stderr, "Řádek je delší, než je povoleno!\n");
             longer_line = true;
         }
 
@@ -218,7 +218,7 @@ void print_non_trailing_lines(unsigned long starting_line, FILE *input)
 
         if (character_index == MAXIMUM_LINE_LENGTH - 1)     // -1 because of character_index is indexed from 0
         {
-            fprintf(stderr, "Řádek je delší, než je povoleno!");
+            fprintf(stderr, "Řádek je delší, než je povoleno!\n");
             longer_line = true;
         }
 
