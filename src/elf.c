@@ -6,9 +6,11 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include "proj2.h"
 #include "elf.h"
 
+FILE *elf_log_file = NULL;
 
 bool is_closed(shared_data_t *data, int elfID)
 {
@@ -41,8 +43,18 @@ bool get_help(shared_data_t *data, int elfID)
     return true;
 }
 */
+
+void elf_exit_handler(int signum)
+{
+    fclose(elf_log_file);
+    exit(1);
+}
+
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
 {
+    elf_log_file = data->log_file;
+    signal(SIGUSR1, elf_exit_handler);
+
     elfID++;    // elf ids are indexed from 1
     correct_print(data, "Elf %d: started", elfID);
 
@@ -85,7 +97,7 @@ int elf(shared_data_t *data, processes_t *arguments, int elfID)
         sem_post(&data->sems.mutex);
     }
     correct_print(data, "Elf %d: taking holidays", elfID);
-    fclose(data->log_file);
 
+    fclose(data->log_file);
     return EXIT_SUCCESS;
 }

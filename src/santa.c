@@ -3,9 +3,11 @@
 //
 
 #include <stdlib.h>
-#include "limits.h"
+#include <signal.h>
 #include "santa.h"
 #include "proj2.h"
+
+FILE *santa_log_file = NULL;
 
 void help(shared_data_t *data)
 {
@@ -29,8 +31,17 @@ void close_workshop(shared_data_t *data, processes_t *arguments)
     data->closed = true;
 }
 
+void santa_exit_handler(int signum)
+{
+    fclose(santa_log_file);
+    exit(1);
+}
+
 int santa(shared_data_t *data, processes_t *arguments)
 {
+    santa_log_file = data->log_file;
+    signal(SIGUSR1, santa_exit_handler);
+
     bool can_continue = true;
     while(can_continue)
     {
@@ -73,6 +84,5 @@ int santa(shared_data_t *data, processes_t *arguments)
     correct_print(data, "Santa: Christmas started");
 
     fclose(data->log_file);
-
     return EXIT_SUCCESS;
 }

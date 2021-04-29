@@ -6,8 +6,11 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include "reindeer.h"
 #include "proj2.h"
+
+FILE *reindeer_log_file = NULL;
 
 void vacation(shared_data_t *data, processes_t *arguments, int rdID)
 {
@@ -28,8 +31,17 @@ void wait_for_hitch(shared_data_t *data, int rdID)
     sem_post(&(data->sems.waiting_santa));
 }
 
+void reindeer_exit_handler(int signum)
+{
+    fclose(reindeer_log_file);
+    exit(1);
+}
+
 int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
 {
+    reindeer_log_file = data->log_file;
+    signal(SIGUSR1, reindeer_exit_handler);
+
     rdID++;     // reindeers are indexed from 1
     correct_print(data, "RD %d: rstarted", rdID);
 
