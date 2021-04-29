@@ -133,6 +133,11 @@ FILE *initialize_log_file()
     return file;
 }
 
+void wait_for_child_processes()
+{
+    while(wait(NULL) > 0);
+}
+
 int main(int argc, char *args[])
 {
     processes_t arguments = parse_arguments(argc, args);
@@ -162,7 +167,8 @@ int main(int argc, char *args[])
 
 
     create_forks(shared_data, &arguments);
-    while(wait(NULL) > 0);  // waiting for child processes
+
+    wait_for_child_processes();
 
     fclose(shared_data->log_file);
     destroy_semaphores(shared_data);
