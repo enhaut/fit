@@ -148,6 +148,19 @@ void wait_for_child_processes()
     while(wait(NULL) > 0);
 }
 
+int initialize_shared_memory(shared_data_t *shared_data)
+{
+    shared_data->waiting_elves = 0;
+    shared_data->reindeers = 0;
+    shared_data->message_counter = 0;
+    shared_data->closed = false;
+    shared_data->log_file = initialize_log_file();
+    if (!shared_data->log_file)
+        ERROR_EXIT("Could not open log file!\n", EXIT_FAILURE);
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *args[])
 {
     processes_t arguments = parse_arguments(argc, args);
@@ -162,13 +175,7 @@ int main(int argc, char *args[])
     if (shared_data == (shared_data_t *) -1)
         ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
 
-    shared_data->shm_key = shared_mem_id;
-    shared_data->waiting_elves = 0;
-    shared_data->all_reindeers_back = 0;
-    shared_data->message_counter = 0;
-    shared_data->closed = false;
-    shared_data->log_file = initialize_log_file();
-    if (!shared_data->log_file)
+    if (initialize_shared_memory(shared_data))
         return EXIT_FAILURE;
 
     int initialized = initialize_semaphores(shared_data);
