@@ -36,8 +36,10 @@ typedef struct {
 
     struct{
         sem_t santa;
+        sem_t waiting_santa;
         sem_t reindeers;
         sem_t elves_in;
+        sem_t elves_mutex;
         sem_t mutex;
         sem_t print;
     } sems;
