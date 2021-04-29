@@ -20,7 +20,7 @@ bool is_closed(shared_data_t *data, int elfID)
     return true;
 }
 
-bool work(processes_t *arguments, int elfID, shared_data_t *data)
+bool work(shared_data_t *data, processes_t *arguments, int elfID)
 {
     srand(getpid());
     int sleep_for = (rand() % (arguments->TE + 1));
@@ -28,20 +28,19 @@ bool work(processes_t *arguments, int elfID, shared_data_t *data)
     correct_print(data,"Elf %d: need help", elfID);
     return true;
 }
-
+/*
 bool get_help(shared_data_t *data, int elfID)
 {
-    sem_wait(&(data->sems.elves_in));   // santa will release him
-    sem_wait(&(data->sems.mutex));   // santa will release him
+    sem_wait(&(data->sems.getting_help));
+    sem_wait(&(data->sems.mutex));
     if (is_closed(data, elfID))
         return false;
-
-    data->waiting_elves -= 1;
     correct_print(data, "Elf %d: get help", elfID);
-    sem_post(&(data->sems.mutex));   // santa will release him
+    sem_post(&(data->sems.waiting_santa));
+    sem_post(&(data->sems.mutex));
     return true;
 }
-
+*/
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
 {
     elfID++;    // elf ids are indexed from 1
@@ -49,19 +48,44 @@ int elf(shared_data_t *data, processes_t *arguments, int elfID)
 
     while (true)
     {
-        work(arguments, elfID, data);
+        work(data, arguments, elfID);
 
-        sem_wait(&(data->sems.mutex));
-        if (is_closed(data, elfID))
+        sem_wait(&data->sems.elves_mutex);
+        sem_wait(&data->sems.mutex);
+        if (data->closed)
+        {
+            sem_post(&data->sems.mutex);
             break;
+        }
 
         data->waiting_elves += 1;
         if (data->waiting_elves == 3)
-            sem_post(&(data->sems.santa));
-        sem_post(&(data->sems.mutex));
+        {
+            //correct_print(data, "pijng %d", data->waiting_elves);
+            sem_post(&data->sems.santa);
+        }else
+            sem_post(&data->sems.elves_mutex);
+        sem_post(&data->sems.mutex);
 
-        if (!get_help(data, elfID))
+
+        sem_wait(&(data->sems.elves_in));
+
+        sem_wait(&data->sems.mutex);
+        if (data->closed)
+        {
+            sem_post(&data->sems.mutex);
             break;
+        }
+        correct_print(data, "Elf %d: get help", elfID);
+        sem_post(&data->sems.waiting_santa);
+        data->waiting_elves -= 1;
+        if (data->waiting_elves == 0)
+            sem_post(&(data->sems.elves_mutex));
+
+        sem_post(&data->sems.mutex);
     }
+    correct_print(data, "Elf %d: taking holidays", elfID);
+    fclose(data->log_file);
+
     return EXIT_SUCCESS;
 }
