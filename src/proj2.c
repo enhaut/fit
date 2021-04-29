@@ -63,11 +63,19 @@ int initialize_semaphores(shared_data_t *data)
     if (failed)
         ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
 
+    failed = sem_init(&(data->sems.elves_mutex), 1, 1);
+    if (failed)
+        ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
+
     failed = sem_init(&(data->sems.mutex), 1, 1);
     if (failed)
         ERROR_EXIT("Could not initialize mutex semaphore!\n", EXIT_FAILURE);
 
     failed = sem_init(&(data->sems.santa), 1, 0);
+    if (failed)
+        ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+
+    failed = sem_init(&(data->sems.waiting_santa), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
@@ -82,8 +90,10 @@ void destroy_semaphores(shared_data_t *data)
 {
     sem_destroy(&(data->sems.reindeers));
     sem_destroy(&(data->sems.elves_in));
+    sem_destroy(&(data->sems.elves_mutex));
     sem_destroy(&(data->sems.mutex));
     sem_destroy(&(data->sems.santa));
+    sem_destroy(&(data->sems.waiting_santa));
     sem_destroy(&(data->sems.print));
 }
 
