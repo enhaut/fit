@@ -22,7 +22,7 @@ void sleep(shared_data_t *data)
 void close_workshop(shared_data_t *data, processes_t *arguments)
 {
     correct_print(data, "Santa: closing workshop");
-    int to_hitch = data->all_reindeers_back;
+    int to_hitch = data->reindeers;
     for (int i = 0; i < to_hitch; i++)
         sem_post(&(data->sems.reindeers));
 
@@ -39,7 +39,7 @@ int santa(shared_data_t *data, processes_t *arguments)
         sem_wait(&(data->sems.mutex));      // waiting for mutex
 
         bool helping = false;
-        if (data->all_reindeers_back == arguments->NR)
+        if (data->reindeers == arguments->NR)
         {
             close_workshop(data, arguments);
             can_continue = false;

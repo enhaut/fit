@@ -28,7 +28,7 @@ typedef struct {
 
 
 typedef struct {
-    int all_reindeers_back;
+    int reindeers;
     int waiting_elves;
     bool closed;
     int message_counter;
@@ -43,8 +43,6 @@ typedef struct {
         sem_t mutex;
         sem_t print;
     } sems;
-
-    int shm_key;
 }shared_data_t;
 
 void correct_print(shared_data_t *data, const char *fmt, ...);
