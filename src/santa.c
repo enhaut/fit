@@ -7,7 +7,7 @@
 #include "santa.h"
 #include "proj2.h"
 
-FILE *santa_log_file = NULL;
+shared_data_t *santa_shared_data = NULL;  // this global variable is used by santa_exit_handler() ONLY, it is difficult to pass arguments to handler by signal() call
 
 void help(shared_data_t *data, bool *helping)
 {
@@ -46,7 +46,8 @@ void close_workshop(shared_data_t *data, processes_t *arguments, bool *can_conti
 void santa_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
-    fclose(santa_log_file);
+    fclose(santa_shared_data->log_file);
+    free(santa_shared_data->child_pids);
     exit(0);
 }
 
@@ -58,7 +59,7 @@ void wait_for_childs_to_process_help(shared_data_t *data, int wait_for)
 
 int santa(shared_data_t *data, processes_t *arguments)
 {
-    santa_log_file = data->log_file;
+    santa_shared_data = data;
     signal(SIGTERM, santa_exit_handler);
 
     bool can_continue = true;
@@ -83,6 +84,7 @@ int santa(shared_data_t *data, processes_t *arguments)
     wait_for_childs_to_process_help(data, arguments->NR);  // wait for all reindeers to get hitched
 
     correct_print(data, "Santa: Christmas started");
-    free(data->child_pids);
+
+    santa_exit_handler(0);
     return EXIT_SUCCESS;
 }

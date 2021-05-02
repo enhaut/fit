@@ -11,7 +11,7 @@
 #include "elf.h"
 #include "santa.h"
 
-FILE *elf_log_file = NULL;
+shared_data_t *elf_shared_data = NULL;  // this global variable is used by elf_exit_handler() ONLY, it is difficult to pass arguments to handler by signal() call
 
 bool is_closed(shared_data_t *data)
 {
@@ -43,13 +43,14 @@ void process_santas_help(shared_data_t *data, int elfID)
 void elf_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
-    fclose(elf_log_file);
+    fclose(elf_shared_data->log_file);
+    free(elf_shared_data->child_pids);
     exit(0);
 }
 
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
 {
-    elf_log_file = data->log_file;
+    elf_shared_data = data;
     signal(SIGTERM, elf_exit_handler);
 
     elfID++;    // elf ids are indexed from 1
@@ -82,6 +83,8 @@ int elf(shared_data_t *data, processes_t *arguments, int elfID)
         sem_post(&data->sems.mutex);
     }
     correct_print(data, "Elf %d: taking holidays", elfID);
-    free(data->child_pids);
+
+    elf_exit_handler(0);
+
     return EXIT_SUCCESS;
 }

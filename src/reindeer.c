@@ -10,7 +10,7 @@
 #include "reindeer.h"
 #include "proj2.h"
 
-FILE *reindeer_log_file = NULL;
+shared_data_t *reindeer_shared_data = NULL;  // this global variable is used by reindeer_exit_handler() ONLY, it is difficult to pass arguments to handler by signal() call
 
 void vacation(shared_data_t *data, processes_t *arguments, int rdID)
 {
@@ -34,13 +34,14 @@ void wait_for_hitch(shared_data_t *data, int rdID)
 void reindeer_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
-    fclose(reindeer_log_file);
+    fclose(reindeer_shared_data->log_file);
+    free(reindeer_shared_data->child_pids);
     exit(0);
 }
 
 int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
 {
-    reindeer_log_file = data->log_file;
+    reindeer_shared_data = data;
     signal(SIGTERM, reindeer_exit_handler);
 
     rdID++;     // reindeers are indexed from 1
@@ -56,7 +57,6 @@ int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
 
     wait_for_hitch(data, rdID);
 
-    fclose(data->log_file);
-    free(data->child_pids);
+    reindeer_exit_handler(0);
     return EXIT_SUCCESS;
 }
