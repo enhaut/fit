@@ -35,6 +35,7 @@ void reindeer_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
     fclose(reindeer_shared_data->log_file);
+    delete_pid(reindeer_shared_data->child_pids, getpid());
     free(reindeer_shared_data->child_pids);
     exit(0);
 }

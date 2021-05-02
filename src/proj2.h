@@ -47,10 +47,11 @@ typedef struct {
 }shared_data_t;
 
 void correct_print(shared_data_t *data, const char *fmt, ...);
+void delete_pid(int *pids, int pid);
 
 #define CREATE_FORK(failed, pid_index, pids, fork_function, ...) do{                                                  \
                                                                     int fork_pid = fork();                            \
-                                                                    pids[pid_index] = fork_pid;                       \
+                                                                    pids[pid_index+1] = fork_pid;                     \
                                                                     if (fork_pid == 0)                                \
                                                                         exit(fork_function(__VA_ARGS__));             \
                                                                     else if(fork_pid < 0)                             \

@@ -97,6 +97,13 @@ void destroy_semaphores()
     sem_destroy(&(shared_data->sems.print));
 }
 
+void kill_child_processes()
+{
+    for (int i = 1; i < shared_data->child_pids[0]; i++) // starting at 1 because 0. element is sizeof array
+        if (shared_data->child_pids[i])    // killing just successfully forked processes
+            kill(shared_data->child_pids[i], SIGTERM);
+}
+
 void initialize_pids_array(int size)
 {
     int *pids = calloc(size + 1, sizeof(int));  // +1 because first element is size of array
@@ -127,10 +134,7 @@ int create_forks(processes_t *arguments)
         CREATE_FORK(&failed, 1+arguments->NE + i, shared_data->child_pids, reindeer, shared_data, arguments, i);
     if (failed)
     {
-        for (int i = 1; i < shared_data->child_pids[0]; i++) // starting at 1 because 0. element is sizeof array
-            if (shared_data->child_pids[i])    // killing just successfully forked processes
-                kill(shared_data->child_pids[i], SIGTERM);
-
+        kill_child_processes();
         ERROR_EXIT("Could not start processes!\n", EXIT_FAILURE);
     }
 
@@ -153,6 +157,13 @@ void correct_print(shared_data_t *data, const char *fmt, ...)
     va_end(args);
 
     sem_post(&(data->sems.print));
+}
+
+void delete_pid(int *pids, int pid)
+{
+    for (int i = 1; i < pids[0]; i++)
+        if (pids[i] == pid)
+            pids[i] = 0;
 }
 
 FILE *initialize_log_file()

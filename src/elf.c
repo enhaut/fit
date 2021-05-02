@@ -44,6 +44,7 @@ void elf_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
     fclose(elf_shared_data->log_file);
+    delete_pid(elf_shared_data->child_pids, getpid());
     free(elf_shared_data->child_pids);
     exit(0);
 }

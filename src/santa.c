@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
 #include "santa.h"
 #include "proj2.h"
 
@@ -17,7 +18,7 @@ void help(shared_data_t *data, bool *helping)
     *helping = true;
 }
 
-void sleep(shared_data_t *data)
+void santa_sleep(shared_data_t *data)
 {
     correct_print(data,"Santa: going to sleep");
 }
@@ -47,6 +48,7 @@ void santa_exit_handler(int signum)
 {
     (void)signum;  // disable unused warnings
     fclose(santa_shared_data->log_file);
+    delete_pid(santa_shared_data->child_pids, getpid());
     free(santa_shared_data->child_pids);
     exit(0);
 }
@@ -65,7 +67,7 @@ int santa(shared_data_t *data, processes_t *arguments)
     bool can_continue = true;
     while(can_continue)
     {
-        sleep(data);
+        santa_sleep(data);
         sem_wait(&(data->sems.santa));      // waiting for wake up
         sem_wait(&(data->sems.mutex));      // waiting for mutex
 
