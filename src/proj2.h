@@ -33,6 +33,7 @@ typedef struct {
     bool closed;
     int message_counter;
     FILE *log_file;
+    int *child_pids;
 
     struct{
         sem_t santa;

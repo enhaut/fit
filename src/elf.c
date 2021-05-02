@@ -82,6 +82,6 @@ int elf(shared_data_t *data, processes_t *arguments, int elfID)
         sem_post(&data->sems.mutex);
     }
     correct_print(data, "Elf %d: taking holidays", elfID);
-
+    free(data->child_pids);
     return EXIT_SUCCESS;
 }

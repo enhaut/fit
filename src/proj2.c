@@ -97,29 +97,39 @@ void destroy_semaphores()
     sem_destroy(&(shared_data->sems.print));
 }
 
+void initialize_pids_array(int size)
+{
+    int *pids = calloc(size + 1, sizeof(int));  // +1 because first element is size of array
+    if (!pids)
+        return;
+    pids[0] = size;
+
+    shared_data->child_pids = pids;
+
+}
+
 int create_forks(processes_t *arguments)
 {
     int processes = 1 + arguments->NE + arguments->NR;
-    int pids[processes];
-    for (int i = 0; i < processes; i++)
-        pids[i] = 0;
+    initialize_pids_array(processes);
+    if (!shared_data->child_pids)
+        ERROR_EXIT("Could not allocate memory for PIDs array", EXIT_FAILURE);
 
     bool failed = false;
 
-    CREATE_FORK(&failed, 0, pids, santa, shared_data, arguments);
+    CREATE_FORK(&failed, 0, shared_data->child_pids, santa, shared_data, arguments);
 
     for (int i = 0; i < arguments->NE && !failed; i++)
-        CREATE_FORK(&failed, 1+i, pids, elf, shared_data, arguments, i);
+        CREATE_FORK(&failed, 1+i, shared_data->child_pids, elf, shared_data, arguments, i);
 
 
     for (int i = 0; i < arguments->NR && !failed; i++)
-        CREATE_FORK(&failed, 1+arguments->NE + i, pids, reindeer, shared_data, arguments, i);
-
+        CREATE_FORK(&failed, 1+arguments->NE + i, shared_data->child_pids, reindeer, shared_data, arguments, i);
     if (failed)
     {
-        for (int i = 0; i < processes; i++)
-            if (pids[i])    // killing just successfully forked processes
-                kill(pids[i], SIGTERM);
+        for (int i = 1; i < shared_data->child_pids[0]; i++) // starting at 1 because 0. element is sizeof array
+            if (shared_data->child_pids[i])    // killing just successfully forked processes
+                kill(shared_data->child_pids[i], SIGTERM);
 
         ERROR_EXIT("Could not start processes!\n", EXIT_FAILURE);
     }
@@ -167,6 +177,7 @@ int initialize_shared_memory()
     shared_data->reindeers = 0;
     shared_data->message_counter = 0;
     shared_data->closed = false;
+    shared_data->child_pids = NULL;
     shared_data->log_file = initialize_log_file();
     if (!shared_data->log_file)
         ERROR_EXIT("Could not open log file!\n", EXIT_FAILURE);
@@ -196,12 +207,11 @@ int main(int argc, char *args[])
         return EXIT_FAILURE;
 
 
-    if (create_forks(shared_data, &arguments))
-        return EXIT_FAILURE;
-    else
+    if (!create_forks(&arguments))
         wait_for_child_processes();
 
     fclose(shared_data->log_file);
+    free(shared_data->child_pids);
     destroy_semaphores();
     if(shmdt(shared_data))
         return EXIT_FAILURE;

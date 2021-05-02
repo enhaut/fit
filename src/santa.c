@@ -83,6 +83,6 @@ int santa(shared_data_t *data, processes_t *arguments)
     wait_for_childs_to_process_help(data, arguments->NR);  // wait for all reindeers to get hitched
 
     correct_print(data, "Santa: Christmas started");
-
+    free(data->child_pids);
     return EXIT_SUCCESS;
 }

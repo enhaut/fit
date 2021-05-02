@@ -57,5 +57,6 @@ int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
     wait_for_hitch(data, rdID);
 
     fclose(data->log_file);
+    free(data->child_pids);
     return EXIT_SUCCESS;
 }
