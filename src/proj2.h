@@ -28,6 +28,7 @@ typedef struct {
 
 
 typedef struct {
+    int shm_id;
     int reindeers;
     int waiting_elves;
     bool closed;

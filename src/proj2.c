@@ -196,6 +196,18 @@ int initialize_shared_memory()
     return EXIT_SUCCESS;
 }
 
+int free_initialized()
+{
+    kill_child_processes();
+    fclose(shared_data->log_file);
+    free(shared_data->child_pids);
+    destroy_semaphores();
+
+    shmctl(shared_data->shm_id, IPC_RMID, NULL);
+    shmdt(shared_data);
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *args[])
 {
     processes_t arguments = parse_arguments(argc, args);
@@ -209,6 +221,7 @@ int main(int argc, char *args[])
     shared_data = shmat(shared_mem_id, NULL, 0);
     if (shared_data == (shared_data_t *) -1)
         ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
+    shared_data->shm_id = shared_mem_id;
 
     if (initialize_shared_memory())
         return EXIT_FAILURE;
@@ -221,12 +234,7 @@ int main(int argc, char *args[])
     if (!create_forks(&arguments))
         wait_for_child_processes();
 
-    fclose(shared_data->log_file);
-    free(shared_data->child_pids);
-    destroy_semaphores();
-    if(shmdt(shared_data))
-        return EXIT_FAILURE;
-    shmctl(shared_mem_id, IPC_RMID, NULL);
+    free_initialized();
 
     return EXIT_SUCCESS;
 }
