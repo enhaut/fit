@@ -50,7 +50,7 @@ void elf_exit_handler(int signum)
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
 {
     elf_log_file = data->log_file;
-    signal(SIGUSR1, elf_exit_handler);
+    signal(SIGTERM, elf_exit_handler);
 
     elfID++;    // elf ids are indexed from 1
     correct_print(data, "Elf %d: started", elfID);

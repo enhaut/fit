@@ -41,7 +41,7 @@ void reindeer_exit_handler(int signum)
 int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
 {
     reindeer_log_file = data->log_file;
-    signal(SIGUSR1, reindeer_exit_handler);
+    signal(SIGTERM, reindeer_exit_handler);
 
     rdID++;     // reindeers are indexed from 1
     correct_print(data, "RD %d: rstarted", rdID);

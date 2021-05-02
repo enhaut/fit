@@ -59,7 +59,7 @@ void wait_for_childs_to_process_help(shared_data_t *data, int wait_for)
 int santa(shared_data_t *data, processes_t *arguments)
 {
     santa_log_file = data->log_file;
-    signal(SIGUSR1, santa_exit_handler);
+    signal(SIGTERM, santa_exit_handler);
 
     bool can_continue = true;
     while(can_continue)

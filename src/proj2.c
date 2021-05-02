@@ -128,7 +128,7 @@ int create_forks(shared_data_t *shared_data, processes_t *arguments)
     {
         for (int i = 0; i < processes; i++)
             if (pids[i])    // killing just successfully forked processes
-                kill(pids[i], SIGUSR1);
+                kill(pids[i], SIGTERM);
 
         ERROR_EXIT("Could not start processes!\n", EXIT_FAILURE);
     }
