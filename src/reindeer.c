@@ -25,7 +25,7 @@ void wait_for_hitch(shared_data_t *data, int rdID)
     sem_wait(&(data->sems.reindeers));
 
     sem_wait(&(data->sems.mutex));
-    data->reindeers -= 1;
+    data->reindeers--;
     correct_print(data, "RD %d: get hitched", rdID);
     sem_post(&(data->sems.mutex));
     sem_post(&(data->sems.waiting_santa));
@@ -49,7 +49,7 @@ int reindeer(shared_data_t *data, processes_t *arguments, int rdID)
     vacation(data, arguments, rdID);
 
     sem_wait(&(data->sems.mutex));
-    data->reindeers += 1;
+    data->reindeers++;
     if (data->reindeers == arguments->NR)
         sem_post(&(data->sems.santa));
     sem_post(&(data->sems.mutex));
