@@ -97,6 +97,15 @@ void destroy_semaphores(shared_data_t *data)
     sem_destroy(&(data->sems.print));
 }
 
+#define CREATE_FORK(failed, pid_index, pids, fork_function, ...) do{                                                  \
+                                                                    int fork_pid = fork();                            \
+                                                                    pids[pid_index] = fork_pid;                       \
+                                                                    if (fork_pid == 0)                                \
+                                                                        exit(fork_function(__VA_ARGS__));             \
+                                                                    else if(fork_pid < 0)                             \
+                                                                        *failed = true;                               \
+                                                                 }while(0)
+
 int create_forks(shared_data_t *shared_data, processes_t *arguments)
 {
     int processes = 1 + arguments->NE + arguments->NR;
@@ -106,38 +115,20 @@ int create_forks(shared_data_t *shared_data, processes_t *arguments)
 
     bool failed = false;
 
-    int pid_index = -1;
-    int santa_fork = fork();
-    pids[++pid_index] = santa_fork;
-    if (santa_fork == 0)
-        exit(santa(shared_data, arguments));
-    else if (santa_fork < 0)
-        failed = true;
+    CREATE_FORK(&failed, 0, pids, santa, shared_data, arguments);
 
-    for (int i = 0; i < arguments->NE; i++)
-    {
-        int pid = fork();
-        pids[++pid_index] = pid;
-        if (pid == 0)
-            exit(elf(shared_data, arguments, i));
-        else if (pid < 0)
-            failed = true;
-    }
+    for (int i = 0; i < arguments->NE && !failed; i++)
+        CREATE_FORK(&failed, 1+i, pids, elf, shared_data, arguments, i);
 
-    for (int i = 0; i < arguments->NR; i++)
-    {
-        int pid = fork();
-        pids[++pid_index] = pid;
-        if (pid == 0)
-            exit(reindeer(shared_data, arguments, i));
-        else if (pid < 0)
-            failed = true;
-    }
+
+    for (int i = 0; i < arguments->NR && !failed; i++)
+        CREATE_FORK(&failed, 1+arguments->NE + i, pids, reindeer, shared_data, arguments, i);
 
     if (failed)
     {
         for (int i = 0; i < processes; i++)
-            kill(pids[i], SIGUSR1);
+            if (pids[i])    // killing just successfully forked processes
+                kill(pids[i], SIGUSR1);
 
         ERROR_EXIT("Could not start processes!\n", EXIT_FAILURE);
     }
@@ -217,8 +208,8 @@ int main(int argc, char *args[])
 
     if (create_forks(shared_data, &arguments))
         return EXIT_FAILURE;
-
-    wait_for_child_processes();
+    else
+        wait_for_child_processes();
 
     fclose(shared_data->log_file);
     destroy_semaphores(shared_data);
