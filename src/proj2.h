@@ -47,4 +47,13 @@ typedef struct {
 
 void correct_print(shared_data_t *data, const char *fmt, ...);
 
+#define CREATE_FORK(failed, pid_index, pids, fork_function, ...) do{                                                  \
+                                                                    int fork_pid = fork();                            \
+                                                                    pids[pid_index] = fork_pid;                       \
+                                                                    if (fork_pid == 0)                                \
+                                                                        exit(fork_function(__VA_ARGS__));             \
+                                                                    else if(fork_pid < 0)                             \
+                                                                        *failed = true;                               \
+                                                                 }while(0)
+
 #endif //SANTA_CALAUS_PROBLEM_PROJ2_H

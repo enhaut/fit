@@ -97,15 +97,6 @@ void destroy_semaphores(shared_data_t *data)
     sem_destroy(&(data->sems.print));
 }
 
-#define CREATE_FORK(failed, pid_index, pids, fork_function, ...) do{                                                  \
-                                                                    int fork_pid = fork();                            \
-                                                                    pids[pid_index] = fork_pid;                       \
-                                                                    if (fork_pid == 0)                                \
-                                                                        exit(fork_function(__VA_ARGS__));             \
-                                                                    else if(fork_pid < 0)                             \
-                                                                        *failed = true;                               \
-                                                                 }while(0)
-
 int create_forks(shared_data_t *shared_data, processes_t *arguments)
 {
     int processes = 1 + arguments->NE + arguments->NR;
