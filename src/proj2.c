@@ -196,8 +196,9 @@ int initialize_shared_memory()
     return EXIT_SUCCESS;
 }
 
-int free_initialized()
+void free_initialized(int signum)
 {
+    (void)signum;
     kill_child_processes();
     fclose(shared_data->log_file);
     free(shared_data->child_pids);
@@ -234,7 +235,7 @@ int main(int argc, char *args[])
     if (!create_forks(&arguments))
         wait_for_child_processes();
 
-    free_initialized();
+    free_initialized(0);
 
     return EXIT_SUCCESS;
 }
