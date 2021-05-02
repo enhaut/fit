@@ -23,4 +23,4 @@ test: all
 	sh output_test.sh < proj2.out
 
 	cp proj2 p2test/proj2
-	python p2test/p2test.py
+	python3 p2test/p2test.py
