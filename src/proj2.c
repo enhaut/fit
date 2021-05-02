@@ -196,6 +196,12 @@ int initialize_shared_memory()
     return EXIT_SUCCESS;
 }
 
+void free_shared_memory(shared_data_t *data)
+{
+    shmctl(data->shm_id, IPC_RMID, NULL);
+    shmdt(data);
+}
+
 void free_initialized(int signum)
 {
     (void)signum;
@@ -204,8 +210,7 @@ void free_initialized(int signum)
     free(shared_data->child_pids);
     destroy_semaphores();
 
-    shmctl(shared_data->shm_id, IPC_RMID, NULL);
-    shmdt(shared_data);
+    free_shared_memory(shared_data);
 }
 
 int main(int argc, char *args[])
@@ -228,7 +233,10 @@ int main(int argc, char *args[])
 
     int initialized = initialize_semaphores();
     if (initialized)
+    {
+        free_shared_memory(shared_data);
         return EXIT_FAILURE;
+    }
 
 
     if (!create_forks(&arguments))
