@@ -9,15 +9,15 @@
 #include <signal.h>
 #include "proj2.h"
 #include "elf.h"
+#include "santa.h"
 
 FILE *elf_log_file = NULL;
 
-bool is_closed(shared_data_t *data, int elfID)
+bool is_closed(shared_data_t *data)
 {
     if (!data->closed)
         return false;
 
-    correct_print(data, "Elf %d: taking holidays", elfID);
     sem_post(&(data->sems.mutex));
     return true;
 }
@@ -30,19 +30,15 @@ bool work(shared_data_t *data, processes_t *arguments, int elfID)
     correct_print(data,"Elf %d: need help", elfID);
     return true;
 }
-/*
-bool get_help(shared_data_t *data, int elfID)
+
+void process_santas_help(shared_data_t *data, int elfID)
 {
-    sem_wait(&(data->sems.getting_help));
-    sem_wait(&(data->sems.mutex));
-    if (is_closed(data, elfID))
-        return false;
     correct_print(data, "Elf %d: get help", elfID);
-    sem_post(&(data->sems.waiting_santa));
-    sem_post(&(data->sems.mutex));
-    return true;
+    sem_post(&data->sems.waiting_santa);
+    data->waiting_elves--;
+    if (data->waiting_elves == 0)
+        sem_post(&(data->sems.elves_mutex));
 }
-*/
 
 void elf_exit_handler(int signum)
 {
@@ -65,40 +61,27 @@ int elf(shared_data_t *data, processes_t *arguments, int elfID)
 
         sem_wait(&data->sems.elves_mutex);
         sem_wait(&data->sems.mutex);
-        if (data->closed)
-        {
-            sem_post(&data->sems.mutex);
+        if (is_closed(data))
             break;
-        }
 
-        data->waiting_elves += 1;
-        if (data->waiting_elves == 3)
-        {
-            //correct_print(data, "pijng %d", data->waiting_elves);
+        data->waiting_elves++;
+        if (data->waiting_elves == WAKING_UP_ELVES_NUMBER)
             sem_post(&data->sems.santa);
-        }else
-            sem_post(&data->sems.elves_mutex);
+        else
+            sem_post(&data->sems.elves_mutex);  // let one more elf waits to get help
         sem_post(&data->sems.mutex);
 
 
-        sem_wait(&(data->sems.elves_in));
+        sem_wait(&(data->sems.elves_in));  // wait to get help from Santa
 
         sem_wait(&data->sems.mutex);
-        if (data->closed)
-        {
-            sem_post(&data->sems.mutex);
+        if (is_closed(data))
             break;
-        }
-        correct_print(data, "Elf %d: get help", elfID);
-        sem_post(&data->sems.waiting_santa);
-        data->waiting_elves -= 1;
-        if (data->waiting_elves == 0)
-            sem_post(&(data->sems.elves_mutex));
+        process_santas_help(data, elfID);
 
         sem_post(&data->sems.mutex);
     }
     correct_print(data, "Elf %d: taking holidays", elfID);
 
-    fclose(data->log_file);
     return EXIT_SUCCESS;
 }
