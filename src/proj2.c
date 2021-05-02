@@ -214,7 +214,7 @@ int main(int argc, char *args[])
     if (!arguments.valid)
         return EXIT_FAILURE;
 
-    int shared_mem_id = shmget(895664986, sizeof(shared_data_t), 0666 | IPC_CREAT);
+    int shared_mem_id = shmget(230818, sizeof(shared_data_t), 0666 | IPC_CREAT);
     if (shared_mem_id < 0)
         ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
 
