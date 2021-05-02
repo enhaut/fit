@@ -154,7 +154,6 @@ void correct_print(shared_data_t *data, const char *fmt, ...)
     sem_post(&(data->sems.print));
 }
 
-
 FILE *initialize_log_file()
 {
     FILE *file = fopen("proj2.out", "w");

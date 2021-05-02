@@ -33,8 +33,9 @@ void wait_for_hitch(shared_data_t *data, int rdID)
 
 void reindeer_exit_handler(int signum)
 {
+    (void)signum;  // disable unused warnings
     fclose(reindeer_log_file);
-    exit(1);
+    exit(0);
 }
 
 int reindeer(shared_data_t *data, processes_t *arguments, int rdID)

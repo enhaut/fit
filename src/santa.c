@@ -33,8 +33,9 @@ void close_workshop(shared_data_t *data, processes_t *arguments)
 
 void santa_exit_handler(int signum)
 {
+    (void)signum;  // disable unused warnings
     fclose(santa_log_file);
-    exit(1);
+    exit(0);
 }
 
 int santa(shared_data_t *data, processes_t *arguments)

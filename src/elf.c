@@ -46,8 +46,9 @@ bool get_help(shared_data_t *data, int elfID)
 
 void elf_exit_handler(int signum)
 {
+    (void)signum;  // disable unused warnings
     fclose(elf_log_file);
-    exit(1);
+    exit(0);
 }
 
 int elf(shared_data_t *data, processes_t *arguments, int elfID)
