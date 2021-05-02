@@ -206,7 +206,6 @@ void free_initialized(int signum)
 
     shmctl(shared_data->shm_id, IPC_RMID, NULL);
     shmdt(shared_data);
-    return EXIT_SUCCESS;
 }
 
 int main(int argc, char *args[])
