@@ -17,6 +17,8 @@
 #include "elf.h"
 #include "reindeer.h"
 
+shared_data_t *shared_data = NULL;  // using global variable because of correct exit after SIGQUIT is received
+
 int get_number(bool *valid, signed int min, int max, char *raw_number)
 {
     if (!valid)     // some of argument before is not valid also
@@ -51,53 +53,51 @@ processes_t parse_arguments(int argc, char *args[])
     return arguments;
 }
 
-
-
-int initialize_semaphores(shared_data_t *data)
+int initialize_semaphores()
 {
-    int failed = sem_init(&(data->sems.reindeers), 1, 0);
+    int failed = sem_init(&(shared_data->sems.reindeers), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.elves_in), 1, 0);
+    failed = sem_init(&(shared_data->sems.elves_in), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.elves_mutex), 1, 1);
+    failed = sem_init(&(shared_data->sems.elves_mutex), 1, 1);
     if (failed)
         ERROR_EXIT("Could not initialize elves semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.mutex), 1, 1);
+    failed = sem_init(&(shared_data->sems.mutex), 1, 1);
     if (failed)
         ERROR_EXIT("Could not initialize mutex semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.santa), 1, 0);
+    failed = sem_init(&(shared_data->sems.santa), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.waiting_santa), 1, 0);
+    failed = sem_init(&(shared_data->sems.waiting_santa), 1, 0);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
-    failed = sem_init(&(data->sems.print), 1, 1);
+    failed = sem_init(&(shared_data->sems.print), 1, 1);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
 
    return EXIT_SUCCESS;
 }
 
-void destroy_semaphores(shared_data_t *data)
+void destroy_semaphores()
 {
-    sem_destroy(&(data->sems.reindeers));
-    sem_destroy(&(data->sems.elves_in));
-    sem_destroy(&(data->sems.elves_mutex));
-    sem_destroy(&(data->sems.mutex));
-    sem_destroy(&(data->sems.santa));
-    sem_destroy(&(data->sems.waiting_santa));
-    sem_destroy(&(data->sems.print));
+    sem_destroy(&(shared_data->sems.reindeers));
+    sem_destroy(&(shared_data->sems.elves_in));
+    sem_destroy(&(shared_data->sems.elves_mutex));
+    sem_destroy(&(shared_data->sems.mutex));
+    sem_destroy(&(shared_data->sems.santa));
+    sem_destroy(&(shared_data->sems.waiting_santa));
+    sem_destroy(&(shared_data->sems.print));
 }
 
-int create_forks(shared_data_t *shared_data, processes_t *arguments)
+int create_forks(processes_t *arguments)
 {
     int processes = 1 + arguments->NE + arguments->NR;
     int pids[processes];
@@ -161,7 +161,7 @@ void wait_for_child_processes()
     while(wait(NULL) > 0);
 }
 
-int initialize_shared_memory(shared_data_t *shared_data)
+int initialize_shared_memory()
 {
     shared_data->waiting_elves = 0;
     shared_data->reindeers = 0;
@@ -182,16 +182,16 @@ int main(int argc, char *args[])
 
     int shared_mem_id = shmget(895664986, sizeof(shared_data_t), 0666 | IPC_CREAT);
     if (shared_mem_id < 0)
-        ERROR_EXIT("Could not allocate shared memory!!!!\n", EXIT_FAILURE);
+        ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
 
-    shared_data_t *shared_data = shmat(shared_mem_id, NULL, 0);
+    shared_data = shmat(shared_mem_id, NULL, 0);
     if (shared_data == (shared_data_t *) -1)
         ERROR_EXIT("Could not allocate shared memory!\n", EXIT_FAILURE);
 
-    if (initialize_shared_memory(shared_data))
+    if (initialize_shared_memory())
         return EXIT_FAILURE;
 
-    int initialized = initialize_semaphores(shared_data);
+    int initialized = initialize_semaphores();
     if (initialized)
         return EXIT_FAILURE;
 
@@ -202,7 +202,7 @@ int main(int argc, char *args[])
         wait_for_child_processes();
 
     fclose(shared_data->log_file);
-    destroy_semaphores(shared_data);
+    destroy_semaphores();
     if(shmdt(shared_data))
         return EXIT_FAILURE;
     shmctl(shared_mem_id, IPC_RMID, NULL);
