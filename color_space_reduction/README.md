@@ -1,3 +1,4 @@
+# Reduction of color space
 ## Tasks
 - Implement function for reading and writing to the frame buffer (0.5 pts)
 - Implement function for converting images to grayscale images (0.5 pts)
