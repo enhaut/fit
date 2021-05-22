@@ -1,0 +1,13 @@
+--- htab_find_old.c	2021-05-14 20:04:05.212970406 +0200
++++ htab_find.c	2021-05-14 20:02:26.920000000 +0200
+@@ -33,7 +33,9 @@
+                 break;  // wanted pair found
+             item = item->next;
+         }
+-    }
++    }else
++        if (strncmp(item->element.key, key, strlen(item->element.key)) != 0)
++            return NULL; // item is at the same position but that could be coincidence
+ 
+     if (!item)  // key at index of hash table not found
+         return NULL;
