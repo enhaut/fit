@@ -1,0 +1,8 @@
+bitset.o: bitset.c bitset.h error.h
+eratosthenes.o: eratosthenes.c eratosthenes.h bitset.h error.h
+error.o: error.c error.h
+ppm.o: ppm.c ppm.h error.h
+primes.o: primes.c bitset.h error.h eratosthenes.h
+steg-decode.o: steg-decode.c ppm.h bitset.h error.h eratosthenes.h
+eratosthenes-i.o: eratosthenes.c eratosthenes.h bitset.h error.h
+primes-i.o: primes.c bitset.h error.h eratosthenes.h
