@@ -1,0 +1,314 @@
+#!/bin/sh
+
+################################################
+#       This is my first program in bash       #
+#       so don't judge me. It's not even       #
+#    optimized for speed, but it's working     #
+#                 Samuel Dobroň                #
+#         xdobro23, FIT VUT, 2.4.2021          #
+################################################
+
+
+export POSIXLY_CORRECT=yes
+export LC_NUMERIC=en_US.UTF-8
+
+print_help()
+{
+  echo "Usage: tradelog [-h|--help] [FILTER] [COMMAND] [FILE [FILE [...]]]"
+  echo "Filters:"
+  echo "    -a DATETIME   records after the entered DATETIME (YYYY-MM-DD HH:MM:SS)"
+  echo "    -b DATETIME   records before the entered DATETIME (YYYY-MM-DD HH:MM:SS)"
+  echo "    -t TICKER     records matching tickers"
+  echo "    -w WIDTH      sets width of graph"
+  echo "Commands:"
+  echo "    list-tick     prints list of all the tickers"
+  echo "    profit        prints total profit"
+  echo "    pos           prints opened positions sorted descending"
+  echo "    last-price    prints last price for every ticker"
+  echo "    hist-ord      prints histogram of the count of tickers"
+  echo "    graph-pos     prints graph of positions of tickers"
+  echo "  -h|--help       prints help"
+}
+
+DELIMITER="';'"
+
+FILTERS=""
+TICKERS=""
+FILES=""
+GRAPH_WIDTH=-1
+COMMAND=""
+SORTER="sort -u"
+
+# Function for processing error messages. It prints message to stderr and then exit, with error code.
+error()
+{
+  echo "$1" >&2
+  exit 1
+}
+
+# Function for checking provided dates. It checks date validity and format.
+check_date()
+{
+  DATE_FORMAT=$(echo "$1" | grep -E '^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}[[:space:]][[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}$')
+  if [ -z "$DATE_FORMAT" ]; then
+    error "Invalid date format!"
+  fi
+}
+
+# Function adds filter command to chain of filters whose are processed together.
+add_to_filters()
+{
+  if [ -z "$FILTERS" ]; then  # adding first filter
+    FILTERS="$1"
+  else                        # adding Nth filter; N > 1
+    FILTERS="$FILTERS | $1"
+  fi
+}
+
+# Function adds ticker selector to chain of tickers whore are processed together.
+add_to_tickers()
+{
+  INVALID_TICKER=$(echo "$1" | grep "[[:space:]]\|;")   # grep is matching invalid characters
+  if [ -z "$1" ] || [ -n "$INVALID_TICKER" ]; then
+    error "Invalid ticker!"
+  fi
+
+  AWK_COMMAND="\$2 == \"$1\""
+  if [ -z "$TICKERS" ]; then
+    TICKERS="$AWK_COMMAND"
+  else
+    TICKERS="$TICKERS || $AWK_COMMAND"
+  fi
+}
+
+# Function adds ticker filter to filters
+add_tickers_to_filters()
+{
+  AWK_COMMAND="awk -F $DELIMITER '{if($TICKERS) {print}}'"  # build awk command
+  if [ -z "$FILTERS" ]; then
+    FILTERS="$AWK_COMMAND"
+  else
+    FILTERS="$AWK_COMMAND | $FILTERS"
+  fi
+}
+
+# Function adds provided argument to files. Program is processing input from these files or from stdin.
+add_to_files()
+{
+  FILE_COMMAND=""
+  case "$1" in
+    *".gz")
+      FILE_COMMAND="gunzip -c"
+      ;;
+    *)
+      FILE_COMMAND="cat"
+      ;;
+  esac
+
+  if [ ! -r "$1" ]; then
+    error "Could not read file!"
+  fi
+
+  if [ -z "$FILES" ]; then
+    FILES="$FILE_COMMAND $1"
+  else
+    FILES="$FILES ; $FILE_COMMAND $1"
+  fi
+}
+
+add_command()
+{
+  if [ -z "$COMMAND" ]; then
+    COMMAND="$1"
+  else
+    error "Only one command per call is supported!"
+  fi
+}
+
+# Function is processing command if provided, if not it just passes provided input to another command using cat.
+process()
+{
+  if [ -n "$1" ]; then
+    eval "$1"
+  else
+    cat
+  fi
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      print_help
+      exit 0
+      ;;
+    -a)
+      check_date "$2"
+      add_to_filters "awk -F $DELIMITER '{if(\$1 > \"$2\") {print}}'"
+      shift 2
+      ;;
+    -b)
+      check_date "$2"
+      add_to_filters "awk -F $DELIMITER '{if(\$1 < \"$2\") {print}}'"
+      shift 2
+      ;;
+    -t)
+      add_to_tickers "$2"
+      shift 2
+      ;;
+    -w)
+      if [ $GRAPH_WIDTH -ne "-1" ]; then
+        error "Width could be set only once!"
+      elif [ "0" -ge "$2" ]; then
+        error "Width has to be > 0!"
+      else
+        GRAPH_WIDTH=$2
+      fi
+      shift 2
+      ;;
+    list-tick)
+      add_command "awk -F $DELIMITER '{print \$2}'"
+      shift
+      ;;
+    profit)
+      add_command "awk -F $DELIMITER '{ if(\$3 == \"buy\")
+                                          profit -= (\$4 * \$6);
+                                        else
+                                          profit += \$4 * \$6;
+                                      }END{
+                                        printf \"%.2f\n\", profit
+                                      }'"
+      shift
+      ;;
+    pos)
+      add_command "awk -F $DELIMITER '{ tickers[\$2]=\$4;
+                                        if(\$3 == \"buy\")
+                                          units[\$2]+=\$6;
+                                        else
+                                          units[\$2] -= \$6;
+                                      }END{
+                                        len=0;
+                                        for (ticker in tickers)
+                                        {
+                                          if(len < (length(int(tickers[ticker] * units[ticker]))+2))  # +2 because of - and .
+                                            len=(length(int(tickers[ticker] * units[ticker]))+2);
+                                        }
+                                        for (ticker in tickers)
+                                          printf \"%-9s :%*.2f\n\", ticker, len+2, tickers[ticker] * units[ticker];
+                                      }'"
+      SORTER="sort -n -r -t ':' -k 2,2"
+      shift
+      ;;
+    last-price)
+      add_command "awk -F $DELIMITER '{ if(\$2 != \"\" && \$4 != \"\")
+                                          tickers[\$2]=\$4; # adding price to array
+                                      }END{
+                                        len=0;
+                                        for (ticker in tickers)
+                                        {
+                                          if(len < length(tickers[ticker]))
+                                            len=length(tickers[ticker])
+                                        }
+                                        for (ticker in tickers)
+                                          printf \"%-9s :%*.2f\n\", ticker, len+1, tickers[ticker];
+                                      }'"
+      shift
+      ;;
+    hist-ord)
+      if [ "$GRAPH_WIDTH" -eq -1 ]; then
+        GRAPH_WIDTH=1
+      fi
+      add_command "awk -v w=$GRAPH_WIDTH -F $DELIMITER 'function abs(x){
+                                                          return ((x < 0.0) ? -x : x)
+                                                        }
+                                                        {
+                                                          transactions[\$2]++
+                                                        }END{
+                                                          if(w > 1){
+                                                            len=0;
+                                                            for (ticker in transactions)
+                                                            {
+                                                              if (len < transactions[ticker])
+                                                                len=transactions[ticker]
+                                                            }
+                                                          }else
+                                                            len=1;  # setting 1 because N/1 = N
+                                                          for (ticker in transactions)
+                                                          {
+                                                            printf \"%-9s :\", ticker;
+                                                            {
+                                                              for(i=0;i<int(abs(transactions[ticker]/len)*w);i++)
+                                                              {
+                                                                if(i==0)
+                                                                  printf \" \";
+                                                                printf \"#\";
+                                                              }
+                                                              printf \"\n\";
+                                                            }
+                                                          }
+                                                        }'"
+      SORTER="sort -n -t ':' -k1,1"
+      shift
+      ;;
+    graph-pos)
+      add_command "awk -F $DELIMITER -v w=$GRAPH_WIDTH 'function abs(x){
+                                                          return ((x < 0.0) ? -x : x)
+                                                        }
+                                                        {
+                                                          if(\$3 == \"buy\")
+                                                            units[\$2]-=\$6;
+                                                          else
+                                                            units[\$2]+=\$6;
+                                                          last_price[\$2]=\$4;
+                                                        }END{
+                                                          max=0;
+                                                          for (ticker in last_price)
+                                                          {
+                                                            values[ticker] = last_price[ticker] * units[ticker];
+                                                            if(abs(values[ticker]) > max){
+                                                              max = abs(values[ticker])}
+                                                          }
+                                                          {
+                                                            if (w == -1) {
+                                                              max = 1000; w = 1;  # in case w is not defined, one # or ! should represent 1000
+                                                            }
+                                                          }
+                                                          {
+                                                            for(ticker in values)
+                                                            {
+                                                              printf \"%-9s :\", ticker;
+                                                              for(i=0;i<int(abs(values[ticker])*w/max);i++)
+                                                              {
+                                                                if(i==0)
+                                                                  printf \" \";
+                                                                character=\"#\";
+                                                                if(values[ticker] > 0)
+                                                                  character=\"!\"
+                                                                printf \"%s\", character;
+                                                              }
+                                                              printf \"\n\"
+                                                            }
+                                                          }
+                                                        }' "
+      SORTER="sort -n -t ':' -k1,1"
+      shift
+      ;;
+    *)
+      add_to_files "$1"
+      shift
+    ;;
+  esac
+done
+
+
+if [ -n "$TICKERS" ]; then  # tickers have to be filtered at first
+  add_tickers_to_filters
+fi
+
+if [ -z "$FILES" ]; then  # read from stdin if no files is define
+  FILES="cat"
+fi
+
+
+(eval "$FILES") | process "$FILTERS" | process "$COMMAND" | eval "$SORTER"
+
+exit 0
