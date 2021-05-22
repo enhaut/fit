@@ -1,0 +1,14 @@
+Cviceni:Bodu:Projekt
+i1Prvni programy:10.7:kky
+2Cyklusi, typy:5.8823:
+i3Retezce:-444.1:
+4Funkce 1i:0:
+5Strukturyi:2.4:
+Ukazatelei:2.7:
+iFunkcei:0.5:Obhajoba 1
+Malloci, dbg:2:
+:0:
+:0:
+Itierace, rekurze:2:
+:0:Obhajoba 2
+sDyinamicke strukturysicke stddddrturysDynamicke rysDynamicke strdukdrysDynamicke struktury:2:
