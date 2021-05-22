@@ -82,13 +82,39 @@ void initControlPointsUp(S_Vector **points, int offset_x, int offset_y) {
 }
 
 void initControlPointsDown(S_Vector **points, int offset_x, int offset_y) {
-  /* == TODO ==
-   * Uloha c.2
-   * Nasledujuci volanni funkce initControlPointsUp(.) zmazte a nahradte vlastnim kodem,
-   * ktery inicializuje ridici body tak, aby byla trajektorie spojita (C1). Muzete skopirovat
-   * kod funkce initControlPointsUp(.) a upravit primo souradnice bodu v kodu.
-   */
-  initControlPointsUp(points, offset_x, offset_y);
+    *points = vecCreateEmpty(sizeof(Point2d));
+    Point2d p;
+    p.x = 0;   p.y = 0;    point2d_vecPushBack(*points, p);
+
+    p.x = 40;  p.y = -250; point2d_vecPushBack(*points, p);
+    p.x = 160; p.y = -250; point2d_vecPushBack(*points, p);
+
+    p.x = 200; p.y = 0;    point2d_vecPushBack(*points, p);
+
+    p.x = 229; p.y = 180; point2d_vecPushBack(*points, p);
+    p.x = 315; p.y = 180; point2d_vecPushBack(*points, p);
+
+    p.x = 360; p.y = 0;    point2d_vecPushBack(*points, p);
+
+    p.x = 389; p.y = -120;  point2d_vecPushBack(*points, p);
+    p.x = 430; p.y = -120;  point2d_vecPushBack(*points, p);
+
+    p.x = 460; p.y = 0;    point2d_vecPushBack(*points, p);
+
+    p.x = 477; p.y = 70;  point2d_vecPushBack(*points, p);
+    p.x = 518; p.y = 70;  point2d_vecPushBack(*points, p);
+
+    p.x = 535; p.y = 0;    point2d_vecPushBack(*points, p);
+
+    p.x = 544; p.y = -40;  point2d_vecPushBack(*points, p);
+    p.x = 575; p.y = -40;  point2d_vecPushBack(*points, p);
+
+    p.x = 585; p.y = 0;    point2d_vecPushBack(*points, p);
+
+    Point2d offset = {offset_x, offset_y, 1.0};
+    for(int i = 0; i < (*points)->size; i++) {
+        addPoint2d(point2d_vecGetPtr(*points, i), &offset, point2d_vecGetPtr(*points, i));
+    }
 }
 
 /**
@@ -100,10 +126,21 @@ void initControlPointsDown(S_Vector **points, int offset_x, int offset_y) {
 void bezierCubic(const Point2d *P0, const Point2d *P1, const Point2d *P2, const Point2d *P3, 
   const int quality, S_Vector *trajectory_points) {
   
-  /* == TODO ==
-   * Soucast Ulohy c.1:
-   * Sem pridejte kod vypoctu Bezierove kubiky. Body krivky pridavejte do trajectory_points.
-   */
+  double step = 1.0/(double)quality;
+
+  for (double i = 0; i <= 1.0; i += step)
+  {
+#define parentheses (1 - i)
+      double B0 = pow(parentheses, 3);
+      double B1 = 3 * i * pow(parentheses, 2);
+      double B2 = 3 * pow(i, 2) * parentheses;
+      double B3 = pow(i, 3);
+
+      Point2d point;
+      point.x = P0->x * B0 + P1->x * B1 + P2->x * B2 + P3->x * B3;
+      point.y = P0->y * B0 + P1->y * B1 + P2->y * B2 + P3->y * B3;
+      point2d_vecPushBack(trajectory_points, point);
+  }
 }
 
 /* 
@@ -116,19 +153,13 @@ void	bezierCubicsTrajectory(int quality, const S_Vector *control_points, S_Vecto
   // Toto musi byt na zacatku funkce, nemazat.
   point2d_vecClean(trajectory_points);
 
-  /* == TODO ==
-   * Uloha c.1
-   * Ziskejte postupne 4 ridici body a pro kazdou ctverici vypocitejte body Bezierovy kubiky.
-   * 
-   * Kostra:
-   *  for(...; ...; ...) {
-   *    Point2d *P0 = ...
-   *    Point2d *P1 = ...
-   *    Point2d *P2 = ...
-   *    Point2d *P3 = ...
-   *    bezierCubic(P0, P1, P2, P3, quality, trajectory_points);
-   *  }
-   * Nasledujici volani funkce getLinePoints(.) zmazte - je to jen ilustrace hranate trajektorie.
-   */
-  getLinePoints(control_points, trajectory_points);
+
+  for (int i = 0; i < point2d_vecSize(control_points)-3; i += 3)
+  {
+      Point2d *P0 = point2d_vecGetPtr(control_points, i);
+      Point2d *P1 = point2d_vecGetPtr(control_points, i+1);
+      Point2d *P2 = point2d_vecGetPtr(control_points, i+2);
+      Point2d *P3 = point2d_vecGetPtr(control_points, i+3);
+      bezierCubic(P0, P1, P2, P3, quality, trajectory_points);
+  }
 }
