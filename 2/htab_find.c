@@ -33,7 +33,9 @@ htab_pair_t * htab_find(htab_t * t, htab_key_t key)
                 break;  // wanted pair found
             item = item->next;
         }
-    }
+    }else
+        if (strncmp(item->element.key, key, strlen(item->element.key)) != 0)
+            return NULL; // item is at the same position but that could be coincidence
 
     if (!item)  // key at index of hash table not found
         return NULL;
