@@ -44,11 +44,15 @@ typedef struct {
         sem_t elves_mutex;
         sem_t mutex;
         sem_t print;
+#ifdef BONUS
+        sem_t can_generate_elves;
+#endif
     } sems;
 }shared_data_t;
 
 void correct_print(shared_data_t *data, const char *fmt, ...);
 void delete_pid(int *pids, int pid);
+void free_initialized(int signum);
 
 #define CREATE_FORK(failed, pid_index, pids, fork_function, ...) do{                                                  \
                                                                     int fork_pid = fork();                            \

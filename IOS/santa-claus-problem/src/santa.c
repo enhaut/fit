@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "santa.h"
 #include "proj2.h"
+#include <string.h>
 
 shared_data_t *santa_shared_data = NULL;  // this global variable is used by santa_exit_handler() ONLY, it is difficult to pass arguments to handler by signal() call
 
@@ -86,6 +87,9 @@ int santa(shared_data_t *data, processes_t *arguments)
     wait_for_childs_to_process_help(data, arguments->NR);  // wait for all reindeers to get hitched
 
     correct_print(data, "Santa: Christmas started");
+#ifdef BONUS
+    kill(getppid(), SIGUSR2);  // stop generating new elves
+#endif
 
     santa_exit_handler(0);
     return EXIT_SUCCESS;

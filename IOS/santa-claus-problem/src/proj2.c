@@ -1,5 +1,5 @@
 // proj2.c
-// 
+//
 // Author: Samuel Dobroň (xdobro23), FIT VUTBR
 // Compiled: gcc 10.2.1
 // 18. 4. 2021
@@ -18,6 +18,9 @@
 #include "reindeer.h"
 
 shared_data_t *shared_data = NULL;  // using global variable because of correct exit after SIGQUIT is received
+#ifdef BONUS
+#include "bonus.h"
+#endif
 
 int get_number(bool *valid, signed int min, int max, char *raw_number)
 {
@@ -82,6 +85,11 @@ int initialize_semaphores()
     failed = sem_init(&(shared_data->sems.print), 1, 1);
     if (failed)
         ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+#ifdef BONUS
+    failed = sem_init(&(shared_data->sems.can_generate_elves), 1, 0);
+    if (failed)
+        ERROR_EXIT("Could not initialize reindeers semaphore!\n", EXIT_FAILURE);
+#endif
 
    return EXIT_SUCCESS;
 }
@@ -215,6 +223,12 @@ void free_initialized(int signum)
 
 int main(int argc, char *args[])
 {
+#ifdef BONUS
+    signal(SIGQUIT, free_initialized);
+    signal(SIGUSR1, generate_elves_handler);
+    signal(SIGUSR2, stop_generating_elves);
+#endif
+
     processes_t arguments = parse_arguments(argc, args);
     if (!arguments.valid)
         return EXIT_FAILURE;
@@ -240,7 +254,13 @@ int main(int argc, char *args[])
 
 
     if (!create_forks(&arguments))
+    {
+#ifdef BONUS
+        if (generate_more_elves(shared_data, &arguments))
+            return EXIT_FAILURE;
+#endif
         wait_for_child_processes();
+    }
 
     free_initialized(0);
 
