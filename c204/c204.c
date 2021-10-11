@@ -55,7 +55,17 @@ int solved;
  * @param postfixExpressionLength Ukazatel na aktuální délku výsledného postfixového výrazu
  */
 void untilLeftPar( Stack *stack, char *postfixExpression, unsigned *postfixExpressionLength ) {
+  char top;
+  for (int i = 0; i < MAX_LEN; i++)
+  {
+    Stack_Top(stack, &top);
+    Stack_Pop(stack);
 
+    if (top == '(')  // ( needs to be also popped
+      break;
+
+    postfixExpression[(*postfixExpressionLength)++] = top;
+  }
 }
 
 /**
@@ -75,7 +85,41 @@ void untilLeftPar( Stack *stack, char *postfixExpression, unsigned *postfixExpre
  * @param postfixExpressionLength Ukazatel na aktuální délku výsledného postfixového výrazu
  */
 void doOperation( Stack *stack, char c, char *postfixExpression, unsigned *postfixExpressionLength ) {
+  char top;
+  int empty = Stack_IsEmpty(stack);
+  if (!empty)
+    Stack_Top(stack, &top);
 
+  if (empty ||      // stack is empty
+      top == '(' || // at the top is (
+      ((top == '+' || top == '-') && (c == '*' || c == '/')))
+
+    Stack_Push(stack, c);
+  else{  // this func is called when c == operator, so else is safe here
+    Stack_Pop(stack);
+    postfixExpression[(*postfixExpressionLength)++] = top;
+    doOperation(stack, c, postfixExpression, postfixExpressionLength);
+  }
+}
+
+int is_operator(const char c)
+{
+  return (c == '+' || c == '-' || c == '*' || c == '/');
+}
+
+int is_alphanum(const char c)
+{
+  return ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+}
+
+void result(Stack *stack, char *postfix, unsigned int *postfix_i)
+{
+  while (!Stack_IsEmpty(stack))
+  {
+    Stack_Top(stack, &(postfix[(*postfix_i)++]));
+    Stack_Pop(stack);
+  }
+  postfix[(*postfix_i)++] = '=';
 }
 
 /**
@@ -127,9 +171,34 @@ void doOperation( Stack *stack, char c, char *postfixExpression, unsigned *postf
  * @returns Znakový řetězec obsahující výsledný postfixový výraz
  */
 char *infix2postfix( const char *infixExpression ) {
+  char *postfix = (char *)malloc(sizeof(char) * MAX_LEN);
+  if (!postfix)
+    return NULL;  // could not allocate memory
 
-    solved = FALSE; /* V případě řešení smažte tento řádek! */
-    return NULL; /* V případě řešení můžete smazat tento řádek. */
+  Stack stack;
+  error_flag = 0;
+  Stack_Init(&stack);
+  if (error_flag)
+    return NULL;  // could not initialize stack
+
+  unsigned int postfix_i = 0;
+  for (int i = 0; i < MAX_LEN && infixExpression[i] != '\0'; i++)
+  {
+    char c = infixExpression[i];
+    if (is_operator(c))
+      doOperation(&stack, infixExpression[i], postfix, &postfix_i);
+    else if (is_alphanum(c))
+      postfix[postfix_i++] = c;
+    else if (c == '(')
+      Stack_Push(&stack, infixExpression[i]);
+    else if (c == ')')
+      untilLeftPar(&stack, postfix, &postfix_i);
+    else if (c == '=')
+      result(&stack, postfix, &postfix_i);
+  }
+
+  postfix[postfix_i] = '\0';
+  return postfix;
 }
 
 /* Konec c204.c */
