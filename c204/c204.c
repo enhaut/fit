@@ -176,10 +176,7 @@ char *infix2postfix( const char *infixExpression ) {
     return NULL;  // could not allocate memory
 
   Stack stack;
-  error_flag = 0;
   Stack_Init(&stack);
-  if (error_flag)
-    return NULL;  // could not initialize stack
 
   unsigned int postfix_i = 0;
   for (int i = 0; i < MAX_LEN && infixExpression[i] != '\0'; i++)
