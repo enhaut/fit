@@ -32,6 +32,11 @@ int get_hash(char *key) {
  * Inicializácia tabuľky — zavolá sa pred prvým použitím tabuľky.
  */
 void ht_init(ht_table_t *table) {
+  if (!table)
+    return;
+
+  for (int i = 0; i < HT_SIZE; i++)
+    (*table)[i] = NULL;
 }
 
 /*
@@ -41,6 +46,17 @@ void ht_init(ht_table_t *table) {
  * hodnotu NULL.
  */
 ht_item_t *ht_search(ht_table_t *table, char *key) {
+  if (!table || !key)
+    return NULL;
+
+  ht_item_t *item = (*table)[get_hash(key)];
+
+  while (item)  // getting item with corresponding key in the row
+  {
+    if (!strcmp(key, item->key))
+      return item;
+    item = item->next;
+  }
   return NULL;
 }
 
@@ -53,6 +69,23 @@ ht_item_t *ht_search(ht_table_t *table, char *key) {
  * synonym zvoľte najefektívnejšiu možnosť a vložte prvok na začiatok zoznamu.
  */
 void ht_insert(ht_table_t *table, char *key, float value) {
+  int position = get_hash(key);
+  ht_item_t *item = ht_search(table, key);
+
+  if (item)  // kes is already in table, so update its value
+    item->value = value;
+  else
+  {
+    ht_item_t *new_item = (ht_item_t *)malloc(sizeof(ht_item_t));
+    if (!new_item)  // could not allocate memory for new item
+      return;
+
+    new_item->value = value;
+    new_item->key = key;
+    new_item->next = (*table)[position];  // if position is not occupied, it should be NULL
+
+    (*table)[position] = new_item;
+  }
 }
 
 /*
@@ -64,7 +97,11 @@ void ht_insert(ht_table_t *table, char *key, float value) {
  * Pri implementácii využite funkciu ht_search.
  */
 float *ht_get(ht_table_t *table, char *key) {
-  return NULL;
+  ht_item_t *item = ht_search(table, key);
+  if (!item)
+    return NULL;
+
+  return &(item->value);
 }
 
 /*
@@ -76,6 +113,28 @@ float *ht_get(ht_table_t *table, char *key) {
  * Pri implementácii NEVYUŽÍVAJTE funkciu ht_search.
  */
 void ht_delete(ht_table_t *table, char *key) {
+  int position = get_hash(key);
+  ht_item_t *found = (*table)[position];
+
+  if (!found) // key does not exists
+    return;
+
+  if (found->next)
+  {
+    ht_item_t *prev = NULL;
+    while (found)  // get item with corresponding key
+    {
+      if (!strcmp(key, found->key))
+        break;
+      prev = found;
+      found = found->next;
+    }
+
+    prev->next = found->next;  // bypass item to delete
+  } else if (!strcmp(key, found->key))  // found item is first and last at the same time
+    (*table)[position] = NULL;
+
+  free(found);
 }
 
 /*
@@ -85,4 +144,24 @@ void ht_delete(ht_table_t *table, char *key) {
  * inicializácii.
  */
 void ht_delete_all(ht_table_t *table) {
+  if (!table)
+    return;
+
+  int position = 0;
+  ht_item_t *item_to_remove = (*table)[position];
+  ht_item_t *next;
+
+  while (position < HT_SIZE)
+  {
+    if (!item_to_remove)
+    {
+      (*table)[position] = NULL;  // reinitialize row
+      item_to_remove = (*table)[++position];  // move to the next "row"
+      continue;
+    }
+
+    next = item_to_remove->next;
+    free(item_to_remove);
+    item_to_remove = next;
+  }
 }
