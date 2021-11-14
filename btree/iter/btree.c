@@ -116,18 +116,24 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree) {
   if (!target || !(*tree))
     return;
 
-  bst_node_t *prev;
-  bst_node_t *to_delete = *tree;
+ bst_node_t *prev = *tree;
+ bst_node_t *to_delete = (*tree)->left;
 
-  while (to_delete->right)
-  {
-    prev = to_delete;
-    to_delete = to_delete->right;
-  }
-  prev->right = to_delete->left;
+ while (to_delete->right)
+ {
+   prev = to_delete;
+   to_delete = to_delete->right;
+ }
+ if (prev == target && prev->right)  // parent is the target, but parent
+   bst_dispose(&(prev->right));
 
-  target->key = to_delete->key;
-  target->value = to_delete->value;
+ prev->right = to_delete->left;
+
+ target->key = to_delete->key;
+ target->value = to_delete->value;
+ if (target->left == to_delete)
+   target->left = NULL;
+
 
   free(to_delete);
 }
@@ -145,37 +151,49 @@ void bst_replace_by_rightmost(bst_node_t *target, bst_node_t **tree) {
  * použitia vlastných pomocných funkcií.
  */
 void bst_delete(bst_node_t **tree, char key) {
-  bst_node_t *prev;
-  bst_node_t *to_delete = *tree;
+ if (!(*tree) || !key)
+   return;
 
-  while (to_delete)
-  {
-    if (to_delete->key == key)
-      break;
+ bst_node_t *prev = *tree;
+ bst_node_t *to_delete = *tree;
 
-    prev = to_delete;
-    to_delete = (to_delete->key > key) ? (to_delete->left) : (to_delete->right);
-  }
-  if (!to_delete)
-    return;  // requested key does not exist
+ while (to_delete)
+ {
+   if (to_delete->key == key)
+     break;
 
-  bst_node_t *orphans = NULL;
+   prev = to_delete;
+   to_delete = (to_delete->key > key) ? (to_delete->left) : (to_delete->right);
+ }
+ if (!to_delete)
+   return;  // requested key does not exist
 
-  if (to_delete->left && to_delete->right)
-  {
-    bst_replace_by_rightmost(to_delete, &(to_delete->left));
-    return;
-  } else if (to_delete->left)
-    orphans = to_delete->left;
-  else if (to_delete->right)
-    orphans = to_delete->right;
+ bst_node_t *orphans = NULL;
 
-  if (prev->right == to_delete)
-      prev->right = orphans;
-  else
-    prev->left = orphans;
+ if (to_delete->left && to_delete->right)
+ {
+   bst_replace_by_rightmost(to_delete, &(to_delete));
+   return;
+ } else if (to_delete->left)
+   orphans = to_delete->left;
+ else if (to_delete->right)
+   orphans = to_delete->right;
 
-  free(to_delete);
+ if (prev && prev->right == to_delete)
+   prev->right = orphans;
+ else if (prev && prev->left == to_delete)
+   prev->left = orphans;
+
+ if (*tree == to_delete)  // removing root
+ {
+   if (to_delete->right)
+     bst_dispose(&(to_delete->right));
+   if (to_delete->left)
+     bst_dispose(&(to_delete->left));
+ }
+ if (*tree == to_delete)
+   *tree = NULL;  // deleted item is the only one remaining in the tree
+ free(to_delete);
 }
 
 
@@ -190,8 +208,10 @@ void bst_delete(bst_node_t **tree, char key) {
  * vlastných pomocných funkcií.
  */
 void bst_dispose(bst_node_t **tree) {
-  stack_bst_t stack;
-  stack_bst_init(&stack);
+ if (!(*tree))
+   return;
+ stack_bst_t stack;
+ stack_bst_init(&stack);
 
   do {
     if (!(*tree) && !stack_bst_empty(&stack))
