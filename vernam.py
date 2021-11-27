@@ -1,16 +1,16 @@
 def main():
-    input_string = "xbidlo01"
-    add = 2
+    input_string = "xdobro23"
+    add = 4
 
     for c in input_string:
         o = ord(c)
         o += add
-        add = -9 if (add == 2) else 2
+        add = -15 if (add == 4) else 4
 
         if o > ord('z'):
-            o = ord("a") + (o - ord("z"))
+            o -= 26
         elif o < ord('a'):
-            o = ord("z") - (ord("a") - o - 1)
+            o += 26
 
         if c.isdigit():
             break
