@@ -32,7 +32,8 @@ main:
 		j for			; }
 		nop
 
-end:    addi r14, r0, caddr ; <-- pro vypis sifry nahradte laddr adresou caddr
+end:    sb cipher(r4), r0		; cipher[r4] <- 0
+	addi r14, r0, caddr ; <-- pro vypis sifry nahradte laddr adresou caddr
         trap 5  ; vypis textoveho retezce (jeho adresa se ocekava v r14)
         trap 0  ; ukonceni simulace
 
