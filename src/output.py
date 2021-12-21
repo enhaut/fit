@@ -30,7 +30,7 @@ def plot_audio(audio: np.ndarray, filename: str):
     plt.savefig(f"report/{filename}.png")
 
 
-def transform(audio: np.ndarray) -> np.ndarray:
+def normalize(audio: np.ndarray) -> np.ndarray:
     audio = audio - np.mean(audio)
     return audio / (max(audio.min(), audio.max(), key=abs))
 
@@ -45,15 +45,42 @@ def task_4_1(audio: np.ndarray):
 - Maximal: {audio.max():.4f}  
 
   
-![](report/original.png)"""
+![](report/original.png)  
+"""
 
 
 def task_4_2(audio: np.ndarray):
-    transform(audio)
-    return """# Task 4.2
-    
-![](report/transformed.png)
-    """
+    normalized = normalize(audio)
+    plot_audio(normalized, "normalized")
+    columns = normalized.size // SAMPLES_OVERLAP
+    rows = SAMPLES_IN_COLUMN
+
+    frames = list()
+    for i in range(0, columns - 1):
+        frames.append(normalized[i * SAMPLES_OVERLAP : (i*SAMPLES_OVERLAP)+1024])
+
+    time = np.arange(0, 1024, 1)
+    # TODO: detect periodic signal in frame automatically plt.plot(np.abs(np.fft.fft(signal1)))
+
+    plt.title("uloha 4.2 - frame: 40")
+    plt.plot(time, frames[40])
+
+    plt.savefig(f"report/frame.png")
+    plt.clf()
+    plt.cla()
+    plt.close()
+
+    return """# Task 4.2  
+
+# Normalized signal:  
+
+![](report/normalized.png)  
+
+# Periodic frame  
+I have chosen frame 40 (actually 41 due to Python indexing)  
+![](report/frame.png)  
+
+"""
 
 
 def generate_files(audio: np.ndarray):
