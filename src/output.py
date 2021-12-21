@@ -28,6 +28,9 @@ def plot_audio(audio: np.ndarray, filename: str):
     time = np.arange(0, audio_length(audio), 1 / SAMPLING_RATE)
     plt.plot(time, audio)
     plt.savefig(f"report/{filename}.png")
+    plt.clf()
+    plt.cla()
+    plt.close()
 
 
 def normalize(audio: np.ndarray) -> np.ndarray:
