@@ -86,8 +86,42 @@ I have chosen frame 40 (actually 41 due to Python indexing)
 """
 
 
+def task_4_4(audio: np.ndarray) -> str:
+    normalized = normalize(audio)
+    plot_audio(normalized, "normalized")
+    columns = normalized.size // SAMPLES_OVERLAP
+
+    frames = list()
+    for i in range(0, columns - 1):
+        frames.append(normalized[i * SAMPLES_OVERLAP: (i * SAMPLES_OVERLAP) + 1024])
+
+    filtered_X = np.array([np.abs(np.fft.fft(x)) for x in frames])
+    plt.figure(figsize=(5, 5))
+    x = (10 * np.log(np.abs(filtered_X.T[:512] ** 2)))
+    plt.imshow(x, extent=(0, audio_length(audio), SAMPLING_RATE // 2, 0))
+
+    db = plt.colorbar()
+    db.set_label('Spektralní hustota výkonu [dB]', rotation=270, labelpad=15)
+
+    plt.gca().set_xlabel('Čas [s]')
+    plt.gca().set_ylabel('Frekvence [Hz]')
+    plt.gca().invert_yaxis()
+    plt.gca().set_aspect(0.001)
+    plt.tight_layout()
+
+    plt.savefig(f"report/spectogram.png")
+    plt.clf()
+    plt.cla()
+    plt.close()
+
+    return """# Task 4.4
+![](report/spectrogram.png)
+
+"""
+
+
 def generate_files(audio: np.ndarray):
-    page_generators = [create_head(), task_4_1(audio), task_4_2(audio)]
+    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio)]
 
     for i, generator in enumerate(page_generators):
         output = generator
