@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from constants import *
-from files import audio_length
+from files import audio_length, save_file
 
 
 def create_head():
@@ -109,7 +109,7 @@ def task_4_4(audio: np.ndarray) -> str:
     plt.gca().set_aspect(0.001)
     plt.tight_layout()
 
-    plt.savefig(f"report/spectogram.png")
+    plt.savefig(f"report/spectrogram.png")
     plt.clf()
     plt.cla()
     plt.close()
@@ -142,8 +142,42 @@ x[151] = -300
 """
 
 
+def generate_cos(freq: float, duration: float):
+    time = np.arange(0, duration, 1/SAMPLING_RATE)
+    frequencies = time * freq
+    cos = np.cos((2 * np.pi) * frequencies)
+
+    return time, cos
+
+
+def task_4_6() -> str:
+    time, f1_cos = generate_cos(FOUND_F1, 4.16)
+    _, f2_cos = generate_cos(FOUND_F2, 4.16)
+    _, f3_cos = generate_cos(FOUND_F3, 4.16)
+    _, f4_cos = generate_cos(FOUND_F4, 4.16)
+
+    mixed = f1_cos + f2_cos + f3_cos + f4_cos
+
+    plt.specgram(mixed, Fs=SAMPLING_RATE)
+    plt.gca().set_xlabel('Čas [s]')
+    plt.gca().set_ylabel('Frekvence [Hz]')
+    plt.show()
+
+    db = plt.colorbar()
+    db.set_label('Spektralní hustota výkonu [dB]', rotation=270, labelpad=15)
+
+    plt.savefig("report/4cos.png")
+    save_file("4cos", mixed)
+
+    return """# Task 4.6
+
+![](report/4cos.png)
+
+"""
+
+
 def generate_files(audio: np.ndarray):
-    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio), task_4_5(audio)]
+    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio), task_4_5(audio), task_4_6()]
 
     for i, generator in enumerate(page_generators):
         output = generator
