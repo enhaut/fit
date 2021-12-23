@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from scipy.signal import iirfilter, lfilter
+from scipy.signal import iirfilter, lfilter, tf2zpk
 import numpy as np
 
 from constants import *
@@ -226,6 +226,43 @@ To generate table without rounding just disable it in `constants.py` - `ROUND_CO
 ## Impulse responses
 _Coefficients used for calculating impulse responses are not rounded._
 ![](report/impulse_responses.png)
+
+"""
+
+
+def task_4_8():
+    _, ax = plt.subplots(2, 2, figsize=(8, 7))
+
+    for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
+        x = i % 2
+        y = int(i > 1)
+
+        b, a = bandstop(freq)
+
+        z, p, k = tf2zpk(b, a)
+        #ax[x, y].figure(figsize=(4, 3.5))
+
+        # jednotkova kruznice
+        ang = np.linspace(0, 2 * np.pi, 100)
+        ax[x, y].plot(np.cos(ang), np.sin(ang))
+
+        # nuly, poly
+        ax[x, y].scatter(np.real(z), np.imag(z), marker='o', facecolors='none', edgecolors='r', label='zeros')
+        ax[x, y].scatter(np.real(p), np.imag(p), marker='x', color='g', label='poles')
+
+        ax[x, y].set_xlabel('Real part $\mathbb{R}\{$z$\}$')
+        ax[x, y].set_ylabel('Imaginary part $\mathbb{I}\{$z$\}$')
+        ax[x, y].set_title(f"Bandstop of {freq} Hz")
+
+        ax[x, y].grid(alpha=0.5, linestyle='dotted')
+        ax[x, y].legend(loc='upper left')
+
+    plt.tight_layout()
+    plt.savefig("report/zeros_poles.png")
+    return """# Task 4.8
+...
+![](report/zeros_poles.png)
+
 
 """
 
