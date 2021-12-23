@@ -120,8 +120,30 @@ def task_4_4(audio: np.ndarray) -> str:
 """
 
 
+def task_4_5(audio):
+    """
+    x[38] = -300  # 612,9 Hz
+    x[76] = -300  # 1 225,8Hz
+    x[113] = -300 # 1 822,6Hz
+    x[151] = -300 # 2435,5Hz
+    x[62] = 1000Hz
+    """
+    return """# Task 4.5
+f_{1} = 612.9 Hz  
+  
+  
+```python
+x[38] = -300 
+x[76] = -300
+x[113] = -300
+x[151] = -300
+```
+
+"""
+
+
 def generate_files(audio: np.ndarray):
-    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio)]
+    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio), task_4_5(audio)]
 
     for i, generator in enumerate(page_generators):
         output = generator
