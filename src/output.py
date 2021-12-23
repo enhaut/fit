@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from scipy.signal import iirfilter, lfilter
 import numpy as np
 
 from constants import *
@@ -56,7 +57,6 @@ def task_4_2(audio: np.ndarray):
     normalized = normalize(audio)
     plot_audio(normalized, "normalized")
     columns = normalized.size // SAMPLES_OVERLAP
-    rows = SAMPLES_IN_COLUMN
 
     frames = list()
     for i in range(0, columns - 1):
@@ -174,6 +174,61 @@ def task_4_6() -> str:
 ![](report/4cos.png)
 
 """
+
+
+def bandstop(freq, N=3):
+    Fs = SAMPLING_RATE / 2  # iirfilter uses Nyquist's freqs
+    lowcut = (freq - TRANSITION_WIDTH) / Fs
+    highcut = (freq + TRANSITION_WIDTH) / Fs
+
+    return iirfilter(N, [lowcut, highcut], RIPPLE, ATTENUATION, "bandstop", output="ba")
+
+
+def task_4_7():
+    responses = ""
+    imp = [1, *np.zeros(IR_SIZE - 1)]  # jednotkovy impuls
+
+    _, ax = plt.subplots(2, 2, figsize=(9, 6))
+
+    for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
+        b, a = bandstop(freq)
+
+        rounded_b = [round(x, 5) if ROUND_COEFFICIENTS else x for x in b]
+        rounded_a = [round(x, 5) if ROUND_COEFFICIENTS else x for x in a]
+
+        responses += f"| {freq} Hz | {rounded_b} | {rounded_a} |\n"
+
+        h = lfilter(b, a, imp)
+
+        x = i % 2
+        y = int(i > 1)
+
+        ax[x, y].stem(np.arange(IR_SIZE), h, basefmt=' ')
+        ax[x, y].set_xlabel('$n$')
+        ax[x, y].set_title(f'Impulse response of {freq} Hz band-stop $h[n]$')
+
+        ax[x, y].grid(alpha=0.5, linestyle='dotted')
+
+    plt.tight_layout()
+    plt.savefig("report/impulse_responses.png")
+
+    return f"""# Task 4.7.3 - band-stop filter
+...
+
+## Coefficients
+Coefficients bellow are rounded by Python's built in function `round()` to 5 decimal numbers.
+To generate table without rounding just disable it in `constants.py` - `ROUND_COEFFICIENTS`.
+
+| Band-stop frequency | b coefficients | a coefficients |
+| ------------------- | -------------- | -------------- |
+{responses}
+
+## Impulse responses
+_Coefficients used for calculating impulse responses are not rounded._
+![](report/impulse_responses.png)
+
+"""
+
 
 
 def generate_files(audio: np.ndarray):
