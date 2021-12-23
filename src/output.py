@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from scipy.signal import iirfilter, lfilter, tf2zpk
+from scipy.signal import iirfilter, lfilter, tf2zpk, freqz
 import numpy as np
 
 from constants import *
@@ -262,6 +262,34 @@ def task_4_8():
     return """# Task 4.8
 ...
 ![](report/zeros_poles.png)
+
+
+"""
+
+
+def task_4_9():
+    _, ax = plt.subplots(4, 2, figsize=(9, 10))
+
+    for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
+        b, a = bandstop(freq)
+
+        w, h = freqz(b, a)
+        ax[i, 0].plot(w / 2 / np.pi * SAMPLING_RATE, np.abs(h))
+        ax[i, 0].set_xlabel('Frekvence [Hz]')
+        ax[i, 0].set_title('Modul frekvenční charakteristiky $|H(e^{j\omega})|$')
+
+        ax[i, 1].plot(w / 2 / np.pi * SAMPLING_RATE, np.angle(h))
+        ax[i, 1].set_xlabel('Frekvence [Hz]')
+        ax[i, 1].set_title('Argument frekvenční charakteristiky $\mathrm{arg}\ H(e^{j\omega})$')
+
+       # for ax1 in ax:
+       #     ax1.grid(alpha=0.5, linestyle='dotted')
+
+    plt.tight_layout()
+    plt.savefig("report/chars.png")
+    return """# Task 4.9
+...
+![](report/chars.png)
 
 
 """
