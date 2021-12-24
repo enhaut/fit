@@ -303,7 +303,13 @@ def task_4_7():
     plt.savefig("report/impulse_responses.png")
 
     return f"""# Task 4.7.3 - band-stop filter
-...
+My filter consists of set 4 band-stop filters. Every filter filters single frequency from [Task 4.5](#task-4.5).
+I am using function [`iirfilter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.iirfilter.html)
+with parameters `btype="bandstop"` and `output="ba"` from library `scipy.signal` to create each filter.  
+Filtered band is always in interval:
+$$ <F_i - 50, F_i + 50>; i Œ {1, 2, 3, 4} $$
+For example for band-stop of {round_freq(FOUND_F1)} Hz frequency:
+$$ <{round_freq(FOUND_F1 - 50)}, {round_freq(FOUND_F1 + 50)}> $$
 
 ## Coefficients
 Coefficients bellow are rounded by Python's built in function `round()` to 5 decimal numbers.
