@@ -8,7 +8,11 @@ from constants import *
 
 
 def load_file(name: str) -> Tuple[np.ndarray, int]:
-    return librosa.load(name, sr=SAMPLING_RATE)
+    audio, sr = librosa.load(name, sr=SAMPLING_RATE)
+    if sr != SAMPLING_RATE:
+        raise NotImplementedError("Invalid sampling rate of input file")
+
+    return audio, sr
 
 
 def save_file(name: str, audio: np.ndarray):
