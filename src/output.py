@@ -83,6 +83,7 @@ def task_4_2(audio: np.ndarray):
 
     plt.title("Audio signal - frame: 40")
     plt.plot(time, frames[40])
+    plt.xlabel("Samples $[n]$")
 
     plt.savefig(f"report/frame.png")
     plt.clf()
@@ -91,7 +92,7 @@ def task_4_2(audio: np.ndarray):
 
     return """# Task 4.2 - normalization  
 
-# Normalized signal:  
+## Normalized signal:  
 Normalization is implemented in function `output.normalize()`.  
 ![](report/normalized.png)  
 Signal above is normalized to interval <-1, 1> using following pseudo-code:
@@ -103,12 +104,15 @@ for sample in samples_array:
     sample = sample / maximum_value
 ```
 
-# Periodic frame 
+## Periodic frame 
 Signal is divided in to 130 chunks and each contains 1024 samples:
-$$ chunks_count = samples\_count // samples\_overlap  $$
+$$ chunks\_count = samples\_count // samples\_overlap  $$
 That results that last 512 and first 512 samples of next chunk are the same.
 To find periodic frame i chose pretty straight-forward method. I just plotted every frame
 and have chosen one pretty periodic frame. Using following code:
+
+![](images/spacer_100.png)
+
 ```python
 time = np.arange(0, 1024, 1)
 
@@ -139,10 +143,10 @@ def task_4_4(audio: np.ndarray) -> str:
     plt.imshow(x, extent=(0, audio_length(audio), SAMPLING_RATE // 2, 0))
 
     db = plt.colorbar()
-    db.set_label('Spektralní hustota výkonu [dB]', rotation=270, labelpad=15)
+    db.set_label('Spectral power density [dB]', rotation=270, labelpad=15)
 
-    plt.gca().set_xlabel('Čas [s]')
-    plt.gca().set_ylabel('Frekvence [Hz]')
+    plt.gca().set_xlabel('Time [s]')
+    plt.gca().set_ylabel('Frequency [Hz]')
     plt.gca().invert_yaxis()
     plt.gca().set_aspect(0.001)
     plt.tight_layout()
@@ -153,6 +157,13 @@ def task_4_4(audio: np.ndarray) -> str:
     plt.close()
 
     return """# Task 4.4 {#task44}
+Firstly, samples are "ordered" to 2D array `filtered_X`, it is just array of arrays, which contains 1024 samples each
+with 512 samples overlapping. That means that last 512 and first 512 samples of following frame are the same.
+For calculation is used faster version of DFT - FFT implemented in function [`fft()`](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+in `numpy.fft` library.  
+DFT coefficients are then modified by formula:
+$$ P[k] = 10log_{10}|X[k]|^{2} $$
+
 ![](report/spectrogram.png)
 
 """
