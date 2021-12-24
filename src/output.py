@@ -8,6 +8,10 @@ from constants import *
 from files import audio_length, save_file
 
 
+def round_freq(freq: int) -> str:
+    return '{:,}'.format(freq).replace(',', ' ')
+
+
 def create_head():
     return """![](images/logo.png)
 ![](images/spacer_100.png)
@@ -57,7 +61,7 @@ Audio length is determined by following formula:
 $$ length = samples / sampling\_rate $$
 
 ### Audio length: {audio_length(audio)} seconds  
-### Audio samples: {'{:,}'.format(audio.shape[0]).replace(',', ' ')}  
+### Audio samples: {round_freq(audio.shape[0])}  
 ### Audio values
 - Minimal: {audio.min():.4f}  
 - Maximal: {audio.max():.4f}  
@@ -200,10 +204,10 @@ Because of that I decided to use function [`find_peaks()`](https://docs.scipy.or
 from `scipy.signal` library, function is used in `get_peaks()` located in `output.py` and it returns list of frequencies with peak.
 At graph bellow we can see these frequencies, `X` marks peak that found `find_peaks()` function.
 
-$$ f_1 = {FOUND_F1} Hz $$
-$$ f_2 = {FOUND_F2} Hz $$
-$$ f_3 = {FOUND_F3} Hz $$
-$$ f_4 = {FOUND_F4} Hz $$
+$$ f_1 = {round_freq(FOUND_F1)} Hz $$
+$$ f_2 = {round_freq(FOUND_F2)} Hz $$
+$$ f_3 = {round_freq(FOUND_F3)} Hz $$
+$$ f_4 = {round_freq(FOUND_F4)} Hz $$
 
 ![](report/peaks.png)
 
@@ -257,6 +261,8 @@ Spectrogram shows 4 mixed cosines functions at frequencies from [Task 4.5](#task
 ![](report/4cos.png)
 As we can see, 4 cosines are at the frequencies from [Task 4.5](#task-4.5).  
 Generated signal is saved in `audio/4cos.wav` file.
+
+
 """
 
 
@@ -280,7 +286,7 @@ def task_4_7():
         rounded_b = [round(x, 5) if ROUND_COEFFICIENTS else x for x in b]
         rounded_a = [round(x, 5) if ROUND_COEFFICIENTS else x for x in a]
 
-        responses += f"| {freq} Hz | {rounded_b} | {rounded_a} |\n"
+        responses += f"| {round_freq(freq)} Hz ± 50 Hz | {rounded_b} | {rounded_a} |\n"
 
         h = lfilter(b, a, imp)
 
@@ -289,7 +295,7 @@ def task_4_7():
 
         ax[x, y].stem(np.arange(IR_SIZE), h, basefmt=' ')
         ax[x, y].set_xlabel('$n$')
-        ax[x, y].set_title(f'Impulse response of {freq} Hz band-stop $h[n]$')
+        ax[x, y].set_title(f'Impulse response of {round_freq(freq)} Hz band-stop $h[n]$')
 
         ax[x, y].grid(alpha=0.5, linestyle='dotted')
 
