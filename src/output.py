@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-from scipy.signal import iirfilter, lfilter, tf2zpk, freqz
+from scipy.signal import iirfilter, lfilter, tf2zpk, freqz, find_peaks
+from scipy.fft import fft, fftfreq
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 from constants import *
 from files import audio_length, save_file
@@ -103,7 +104,7 @@ for sample in samples_array:
 ```
 
 # Periodic frame 
-Signal is divided to 130 chunks and each contains 1024 samples:
+Signal is divided in to 130 chunks and each contains 1024 samples:
 $$ chunks_count = samples\_count // samples\_overlap  $$
 That results that last 512 and first 512 samples of next chunk are the same.
 To find periodic frame i chose pretty straight-forward method. I just plotted every frame
@@ -151,30 +152,46 @@ def task_4_4(audio: np.ndarray) -> str:
     plt.cla()
     plt.close()
 
-    return """# Task 4.4
+    return """# Task 4.4 {#task44}
 ![](report/spectrogram.png)
 
 """
 
 
+def get_peaks(audio: np.ndarray) -> List[float, ]:
+    yf = np.abs(fft(audio))
+    xf = np.abs(fftfreq(audio.size, 1 / SAMPLING_RATE))
+
+    peaks, _ = find_peaks(yf, height=40)    # 40 because at graph of spectral analysis only peaks were higher than 40
+    peaks = peaks[:int(peaks.size / 2)]     # peaks array are complex conjugated
+
+    peak_freqs = []
+
+    plt.plot(xf, yf)
+    for peak in peaks:
+        peak_freqs.append(xf[peak])
+        plt.plot(xf[peak], yf[peak], "X")
+
+    plt.savefig("report/peaks.png")
+
+    return peak_freqs
+
+
 def task_4_5(audio):
-    """
-    x[38] = -300  # 612,9 Hz
-    x[76] = -300  # 1 225,8Hz
-    x[113] = -300 # 1 822,6Hz
-    x[151] = -300 # 2435,5Hz
-    x[62] = 1000Hz
-    """
-    return """# Task 4.5
-f_{1} = 612.9 Hz  
-  
-  
-```python
-x[38] = -300 
-x[76] = -300
-x[113] = -300
-x[151] = -300
-```
+    get_peaks(audio)
+    return f"""# Task 4.5 
+
+Firstly I tried to read peaks from spectrogram from [Task 4.4](#task44) but this method is not effective also not very accurate.
+Because of that I decided to use function [`find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html)
+from `scipy.signal` library, function is used in `get_peaks()` located in `output.py` and it returns list of frequencies with peak.
+At graph bellow we can see these frequencies, `X` marks peak that found `find_peaks()` function.
+
+$$ f_1 = {FOUND_F1} Hz $$
+$$ f_2 = {FOUND_F2} Hz $$
+$$ f_3 = {FOUND_F3} Hz $$
+$$ f_4 = {FOUND_F4} Hz $$
+
+![](report/peaks.png)
 
 """
 
