@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from scipy.signal import iirfilter, lfilter, tf2zpk, freqz
 import numpy as np
+from typing import Tuple
 
 from constants import *
 from files import audio_length, save_file
@@ -150,6 +151,18 @@ def generate_cos(freq: float, duration: float):
     return time, cos
 
 
+def spectrogram(values: np.ndarray, labels: Tuple[str, str, str], name: str):
+    plt.specgram(values, Fs=SAMPLING_RATE)
+    plt.gca().set_xlabel(labels[0])
+    plt.gca().set_ylabel(labels[1])
+    plt.show()
+
+    db = plt.colorbar()
+    db.set_label(labels[2], rotation=270, labelpad=15)
+
+    plt.savefig(f"report/{name}.png")
+
+
 def task_4_6() -> str:
     time, f1_cos = generate_cos(FOUND_F1, 4.16)
     _, f2_cos = generate_cos(FOUND_F2, 4.16)
@@ -158,15 +171,8 @@ def task_4_6() -> str:
 
     mixed = f1_cos + f2_cos + f3_cos + f4_cos
 
-    plt.specgram(mixed, Fs=SAMPLING_RATE)
-    plt.gca().set_xlabel('Čas [s]')
-    plt.gca().set_ylabel('Frekvence [Hz]')
-    plt.show()
+    spectrogram(mixed, ("Cas [s]", "Frekvence [Hz]", "Spektralní hustota výkonu [dB]"), "4cos")
 
-    db = plt.colorbar()
-    db.set_label('Spektralní hustota výkonu [dB]', rotation=270, labelpad=15)
-
-    plt.savefig("report/4cos.png")
     save_file("4cos", mixed)
 
     return """# Task 4.6
