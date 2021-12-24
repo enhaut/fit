@@ -184,6 +184,9 @@ def get_peaks(audio: np.ndarray) -> List[float, ]:
         plt.plot(xf[peak], yf[peak], "X")
 
     plt.savefig("report/peaks.png")
+    plt.clf()
+    plt.cla()
+    plt.close()
 
     return peak_freqs
 
@@ -235,14 +238,25 @@ def task_4_6() -> str:
 
     mixed = f1_cos + f2_cos + f3_cos + f4_cos
 
-    spectrogram(mixed, ("Cas [s]", "Frekvence [Hz]", "Spektralní hustota výkonu [dB]"), "4cos")
-
+    spectrogram(mixed, ("Time [s]", "Frequency [Hz]", "Spectral power density [dB]"), "4cos")
     save_file("4cos", mixed)
 
-    return """# Task 4.6
-
+    return f"""# Task 4.6
+Generating signal of 4 mixed cosines is implemented as sum of cosine at frequency f1, cosine at frequency f2, ...  
+For example:
+```python
+DURATION = 4.16
+f1_cos = generate_cos({FOUND_F1}, DURATION)
+f2_cos = generate_cos({FOUND_F2}, DURATION)
+...
+mixed_cosines = f1_cos + f2_cos + ...
+``` 
+For generating cosines I use function [`cos()`](https://numpy.org/doc/stable/reference/generated/numpy.cos.html)
+from `numpy` library.
+Spectrogram shows 4 mixed cosines functions at frequencies from [Task 4.5](#task-4.5).
 ![](report/4cos.png)
-
+As we can see, 4 cosines are at the frequencies from [Task 4.5](#task-4.5).  
+Generated signal is saved in `audio/4cos.wav` file.
 """
 
 
