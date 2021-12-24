@@ -29,6 +29,8 @@ def create_head():
 def plot_audio(audio: np.ndarray, filename: str):
     time = np.arange(0, audio_length(audio), 1 / SAMPLING_RATE)
     plt.plot(time, audio)
+    plt.title("Audio signal")
+    plt.xlabel("Time [s]")
     plt.savefig(f"report/{filename}.png")
     plt.clf()
     plt.cla()
@@ -42,7 +44,17 @@ def normalize(audio: np.ndarray) -> np.ndarray:
 
 def task_4_1(audio: np.ndarray):
     plot_audio(audio, "original")
-    return f"""# Task 4.1
+    return f"""# Task 4.1 - load audio
+To load input signal I have created function `load_file()` located in `files.py` which returns
+array of 2 elements. The first one is audio signal stored in 1D array _(type `numpy.ndarray`)_,
+the second element is sampling rate of audio file detected by function `load()` from `librosa` library, this sampling rate
+is not used anymore because sampling rate of input audio is already known - `16 kHz`. If sampling rate of loaded
+file is not `16 kHz` program raises `NotImplementedError`.  
+  
+Audio length is determined by following formula:
+
+$$ length = samples / sampling\_rate $$
+
 ### Audio length: {audio_length(audio)} seconds  
 ### Audio samples: {'{:,}'.format(audio.shape[0]).replace(',', ' ')}  
 ### Audio values
