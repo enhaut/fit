@@ -326,6 +326,22 @@ _Coefficients used for calculating impulse responses are not rounded._
 """
 
 
+def zero_poles_plot(ax, freq, z, p, _, legend_location="upper left"):
+    # plotting zeros and poles taken from https://nbviewer.org/github/zmolikova/ISS_project_study_phase/blob/master/Zvuk_spektra_filtrace.ipynb
+    ang = np.linspace(0, 2 * np.pi, 100)
+    ax.plot(np.cos(ang), np.sin(ang))
+
+    ax.scatter(np.real(z), np.imag(z), marker='o', facecolors='none', edgecolors='r', label='zeros')
+    ax.scatter(np.real(p), np.imag(p), marker='x', color='g', label='poles')
+
+    ax.set_xlabel('Real part $\mathbb{R}\{$z$\}$')
+    ax.set_ylabel('Imaginary part $\mathbb{I}\{$z$\}$')
+    ax.set_title(f"Bandstop for {round_freq(freq)} Hz ± 50 Hz")
+
+    ax.grid(alpha=0.5, linestyle='dotted')
+    ax.legend(loc=legend_location)
+
+
 def task_4_8():
     _, ax = plt.subplots(2, 2, figsize=(8, 7))
 
@@ -334,30 +350,27 @@ def task_4_8():
         y = int(i > 1)
 
         b, a = bandstop(freq)
-
-        z, p, k = tf2zpk(b, a)
-        #ax[x, y].figure(figsize=(4, 3.5))
-
-        # jednotkova kruznice
-        ang = np.linspace(0, 2 * np.pi, 100)
-        ax[x, y].plot(np.cos(ang), np.sin(ang))
-
-        # nuly, poly
-        ax[x, y].scatter(np.real(z), np.imag(z), marker='o', facecolors='none', edgecolors='r', label='zeros')
-        ax[x, y].scatter(np.real(p), np.imag(p), marker='x', color='g', label='poles')
-
-        ax[x, y].set_xlabel('Real part $\mathbb{R}\{$z$\}$')
-        ax[x, y].set_ylabel('Imaginary part $\mathbb{I}\{$z$\}$')
-        ax[x, y].set_title(f"Bandstop of {freq} Hz")
-
-        ax[x, y].grid(alpha=0.5, linestyle='dotted')
-        ax[x, y].legend(loc='upper left')
+        zero_poles_plot(ax[x, y], freq, *tf2zpk(b, a))
 
     plt.tight_layout()
     plt.savefig("report/zeros_poles.png")
-    return """# Task 4.8
-...
+
+    # zoom of first
+    _, plot = plt.subplots(1, 1, figsize=(4, 3))
+    zero_poles_plot(plot, FOUND_F1, *tf2zpk(*bandstop(FOUND_F1)), "upper right")
+    plot.set_xlim(xmin=0.9)
+    plot.set_ylim(ymin=-0.6, ymax=0.6)
+    plt.tight_layout()
+    plt.savefig("report/zeros_poles_zoomed.png")
+
+    return f"""# Task 4.8
+Zeros and poles are calculated using function [`tf2zpk()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.tf2zpk.html)
+from `scipy.signal` library.
+
 ![](report/zeros_poles.png)
+
+As we can see, zeros and poles are not much visible, here is zoomed plot of band-stop {round_freq(FOUND_F1)} Hz:  
+![](report/zeros_poles_zoomed.png){"{ width=50% }"}
 
 
 """
