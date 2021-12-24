@@ -63,6 +63,8 @@ $$ length = samples / sampling\_rate $$
 
   
 ![](report/original.png)  
+
+
 """
 
 
@@ -78,7 +80,7 @@ def task_4_2(audio: np.ndarray):
     time = np.arange(0, 1024, 1)
     # TODO: detect periodic signal in frame automatically plt.plot(np.abs(np.fft.fft(signal1)))
 
-    plt.title("uloha 4.2 - frame: 40")
+    plt.title("Audio signal - frame: 40")
     plt.plot(time, frames[40])
 
     plt.savefig(f"report/frame.png")
@@ -86,13 +88,35 @@ def task_4_2(audio: np.ndarray):
     plt.cla()
     plt.close()
 
-    return """# Task 4.2  
+    return """# Task 4.2 - normalization  
 
 # Normalized signal:  
-
+Normalization is implemented in function `output.normalize()`.  
 ![](report/normalized.png)  
+Signal above is normalized to interval <-1, 1> using following pseudo-code:
+```python
+maximum_value = samples_array.maximum_value()
+maximum_value = abs(maximum_value)
 
-# Periodic frame  
+for sample in samples_array:
+    sample = sample / maximum_value
+```
+
+# Periodic frame 
+Signal is divided to 130 chunks and each contains 1024 samples:
+$$ chunks_count = samples\_count // samples\_overlap  $$
+That results that last 512 and first 512 samples of next chunk are the same.
+To find periodic frame i chose pretty straight-forward method. I just plotted every frame
+and have chosen one pretty periodic frame. Using following code:
+```python
+time = np.arange(0, 1024, 1)
+
+for i in range(0, columns - 1):
+    plt.title(f"Audio signal - frame: {i}")
+    plt.plot(time, normalized[i * SAMPLES_OVERLAP : (i * SAMPLES_OVERLAP) + 1024])
+    plt.show()
+```
+
 I have chosen frame 40 (actually 41 due to Python indexing)  
 ![](report/frame.png)  
 
