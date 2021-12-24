@@ -301,6 +301,24 @@ def task_4_9():
 """
 
 
+def task_4_10(audio):
+    for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
+        b, a = bandstop(freq)
+        audio = lfilter(b, a, audio)
+
+    save_file("clean_bandstop", audio)
+
+    spectrogram(audio, ("Cas [s]", "...", "..."), "clean")
+
+    return """# Task 4.10
+
+![](report/clean.png)
+
+At spectrogram bellow we can see, that frequencies f1, f2, f3 and f4 has been removed.
+Frequencies are basically "silent" but before filters application they contain only `cos` noise.
+
+"""
+
 
 def generate_files(audio: np.ndarray):
     page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio), task_4_5(audio), task_4_6()]
