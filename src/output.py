@@ -384,22 +384,37 @@ def task_4_9():
 
         w, h = freqz(b, a)
         ax[i, 0].plot(w / 2 / np.pi * SAMPLING_RATE, np.abs(h))
-        ax[i, 0].set_xlabel('Frekvence [Hz]')
-        ax[i, 0].set_title('Modul frekvenční charakteristiky $|H(e^{j\omega})|$')
+        ax[i, 0].set_xlabel('Frequency [Hz]')
+        ax[i, 0].set_title('Magnitude of frequency response $|H(e^{j\omega})|$')
+        ax[i, 0].set_ylabel(f"Band-stop filter for {round_freq(freq)} Hz")
 
         ax[i, 1].plot(w / 2 / np.pi * SAMPLING_RATE, np.angle(h))
-        ax[i, 1].set_xlabel('Frekvence [Hz]')
-        ax[i, 1].set_title('Argument frekvenční charakteristiky $\mathrm{arg}\ H(e^{j\omega})$')
-
-       # for ax1 in ax:
-       #     ax1.grid(alpha=0.5, linestyle='dotted')
+        ax[i, 1].set_xlabel('Frequency [Hz]')
+        ax[i, 1].set_title('Phase of frequency response$\mathrm{arg}\ H(e^{j\omega})$')
 
     plt.tight_layout()
     plt.savefig("report/chars.png")
-    return """# Task 4.9
-...
-![](report/chars.png)
 
+    plt.figure(figsize=(4, 4))
+    for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
+        b, a = bandstop(freq)
+
+        w, h = freqz(b, a)
+        plt.plot(w / 2 / np.pi * SAMPLING_RATE, np.abs(h))
+
+    plt.title("Frequency response of all the filters")
+    plt.gca().set_xlabel("Frequency [Hz]")
+    plt.savefig("report/chars_mixed.png")
+
+    return """# Task 4.9
+To calculate frequency response is used [`freqz()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.freqz.html)
+function from `scipy.signal` library.  
+![](report/chars.png)  
+
+![](report/chars_mixed.png)  
+
+As we can see at the chart, filter drops to 0.0 at the frequencies
+$$ f_i ; i Œ {1, 2, 3, 4} $$
 
 """
 
