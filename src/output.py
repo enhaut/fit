@@ -33,13 +33,11 @@ def create_head():
 
 def plot_audio(audio: np.ndarray, filename: str):
     time = np.arange(0, audio_length(audio), 1 / SAMPLING_RATE)
+    plt.figure()
     plt.plot(time, audio)
     plt.title("Audio signal")
     plt.xlabel("Time [s]")
     plt.savefig(f"report/{filename}.png")
-    plt.clf()
-    plt.cla()
-    plt.close()
 
 
 def normalize(audio: np.ndarray) -> np.ndarray:
@@ -85,14 +83,12 @@ def task_4_2(audio: np.ndarray):
     time = np.arange(0, 1024, 1)
     # TODO: detect periodic signal in frame automatically plt.plot(np.abs(np.fft.fft(signal1)))
 
+    plt.figure()
     plt.title("Audio signal - frame: 40")
     plt.plot(time, frames[40])
     plt.xlabel("Samples $[n]$")
 
     plt.savefig(f"report/frame.png")
-    plt.clf()
-    plt.cla()
-    plt.close()
 
     return """# Task 4.2 - normalization  
 
@@ -156,9 +152,6 @@ def task_4_4(audio: np.ndarray) -> str:
     plt.tight_layout()
 
     plt.savefig(f"report/spectrogram.png")
-    plt.clf()
-    plt.cla()
-    plt.close()
 
     return """# Task 4.4 {#task44}
 Firstly, samples are "ordered" to 2D array `filtered_X`, it is just array of arrays, which contains 1024 samples each
@@ -182,15 +175,13 @@ def get_peaks(audio: np.ndarray) -> List[float, ]:
 
     peak_freqs = []
 
+    plt.figure()
     plt.plot(xf, yf)
     for peak in peaks:
         peak_freqs.append(xf[peak])
         plt.plot(xf[peak], yf[peak], "X")
 
     plt.savefig("report/peaks.png")
-    plt.clf()
-    plt.cla()
-    plt.close()
 
     return peak_freqs
 
@@ -223,6 +214,7 @@ def generate_cos(freq: float, duration: float):
 
 
 def spectrogram(values: np.ndarray, labels: Tuple[str, str, str], name: str):
+    plt.figure()
     plt.specgram(values, Fs=SAMPLING_RATE)
     plt.gca().set_xlabel(labels[0])
     plt.gca().set_ylabel(labels[1])
@@ -232,6 +224,7 @@ def spectrogram(values: np.ndarray, labels: Tuple[str, str, str], name: str):
     db.set_label(labels[2], rotation=270, labelpad=15)
 
     plt.savefig(f"report/{name}.png")
+    db.remove()
 
 
 def task_4_6() -> str:
@@ -278,6 +271,7 @@ def task_4_7():
     responses = ""
     imp = [1, *np.zeros(IR_SIZE - 1)]  # jednotkovy impuls
 
+    plt.figure()
     _, ax = plt.subplots(2, 2, figsize=(9, 6))
 
     for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
@@ -343,6 +337,7 @@ def zero_poles_plot(ax, freq, z, p, _, legend_location="upper left"):
 
 
 def task_4_8():
+    plt.figure()
     _, ax = plt.subplots(2, 2, figsize=(8, 7))
 
     for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
@@ -362,6 +357,7 @@ def task_4_8():
     plot.set_ylim(ymin=-0.6, ymax=0.6)
     plt.tight_layout()
     plt.savefig("report/zeros_poles_zoomed.png")
+    plot.clear()
 
     return f"""# Task 4.8
 Zeros and poles are calculated using function [`tf2zpk()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.tf2zpk.html)
@@ -377,6 +373,7 @@ As we can see, zeros and poles are not much visible, here is zoomed plot of band
 
 
 def task_4_9():
+    plt.figure()
     _, ax = plt.subplots(4, 2, figsize=(9, 10))
 
     for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
@@ -395,6 +392,7 @@ def task_4_9():
     plt.tight_layout()
     plt.savefig("report/chars.png")
 
+    plt.figure()
     plt.figure(figsize=(4, 4))
     for i, freq in enumerate([FOUND_F1, FOUND_F2, FOUND_F3, FOUND_F4]):
         b, a = bandstop(freq)
@@ -449,7 +447,8 @@ Audio without noise is saved in `audio/clean_bandstop.wav` file.
 
 
 def generate_files(audio: np.ndarray):
-    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_4(audio), task_4_5(audio), task_4_6()]
+    page_generators = [create_head(), task_4_1(audio), task_4_2(audio), task_4_3(audio), task_4_4(audio),
+                       task_4_5(audio), task_4_6(), task_4_7(), task_4_8(), task_4_9(), task_4_10(audio)]
 
     for i, generator in enumerate(page_generators):
         output = generator
