@@ -426,14 +426,24 @@ def task_4_10(audio):
 
     save_file("clean_bandstop", audio)
 
-    spectrogram(audio, ("Cas [s]", "...", "..."), "clean")
+    spectrogram(audio, ("Time [s]", "Frequency [Hz]", "Spectral power density [dB]"), "clean")
 
-    return """# Task 4.10
+    return f"""# Task 4.10
+Filters are applied using, [`lfilter()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html)
+function from `scipy.signal` library,  one by one in increasing frequency order using following pseudo-code:
+
+```python
+output = input
+for freq in freqs:
+    output = filter(output, freq)
+```
 
 ![](report/clean.png)
 
-At spectrogram bellow we can see, that frequencies f1, f2, f3 and f4 has been removed.
-Frequencies are basically "silent" but before filters application they contain only `cos` noise.
+At spectrogram bellow we can see, that noisy frequencies has been removed.
+Frequencies are basically "silent" but before filters application they contain only `cos` noise.  
+Audio without noise is saved in `audio/clean_bandstop.wav` file.
+
 
 """
 
