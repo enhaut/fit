@@ -128,6 +128,13 @@ I have chosen frame 40 (actually 41 due to Python indexing)
 """
 
 
+def task_4_3(audio: np.ndarray) -> str:
+
+    return """# Task 4.3  - DFT implementation
+
+"""
+
+
 def task_4_4(audio: np.ndarray) -> str:
     normalized = normalize(audio)
     plot_audio(normalized, "normalized")
@@ -153,7 +160,7 @@ def task_4_4(audio: np.ndarray) -> str:
 
     plt.savefig(f"report/spectrogram.png")
 
-    return """# Task 4.4 {#task44}
+    return """# Task 4.4 - audio spectrogram {#task44}
 Firstly, samples are "ordered" to 2D array `filtered_X`, it is just array of arrays, which contains 1024 samples each
 with 512 samples overlapping. That means that last 512 and first 512 samples of following frame are the same.
 For calculation is used faster version of DFT - FFT implemented in function [`fft()`](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
@@ -188,7 +195,8 @@ def get_peaks(audio: np.ndarray) -> List[float, ]:
 
 def task_4_5(audio):
     get_peaks(audio)
-    return f"""# Task 4.5 
+    task_link = "{#task45}"
+    return f"""# Task 4.5 - disturbing frequencies {task_link}
 
 Firstly I tried to read peaks from spectrogram from [Task 4.4](#task44) but this method is not effective also not very accurate.
 Because of that I decided to use function [`find_peaks()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html)
@@ -250,9 +258,9 @@ mixed_cosines = f1_cos + f2_cos + ...
 ``` 
 For generating cosines I use function [`cos()`](https://numpy.org/doc/stable/reference/generated/numpy.cos.html)
 from `numpy` library.
-Spectrogram shows 4 mixed cosines functions at frequencies from [Task 4.5](#task-4.5).
+Spectrogram shows 4 mixed cosines functions at frequencies from [Task 4.5](#task45).
 ![](report/4cos.png)
-As we can see, 4 cosines are at the frequencies from [Task 4.5](#task-4.5).  
+As we can see, 4 cosines are at the frequencies from [Task 4.5](#task45).  
 Generated signal is saved in `audio/4cos.wav` file.
 
 
@@ -297,13 +305,15 @@ def task_4_7():
     plt.savefig("report/impulse_responses.png")
 
     return f"""# Task 4.7.3 - band-stop filter
-My filter consists of set 4 band-stop filters. Every filter filters single frequency from [Task 4.5](#task-4.5).
+My filter consists of set 4 band-stop filters. Every filter filters single frequency from [Task 4.5](#task45).
 I am using function [`iirfilter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.iirfilter.html)
 with parameters `btype="bandstop"` and `output="ba"` from library `scipy.signal` to create each filter.  
 Filtered band is always in interval:
 $$ <F_i - 50, F_i + 50>; i Œ {1, 2, 3, 4} $$
 For example for band-stop of {round_freq(FOUND_F1)} Hz frequency:
 $$ <{round_freq(FOUND_F1 - 50)}, {round_freq(FOUND_F1 + 50)}> $$
+I do not think, it is necessary to filter additional `30 Hz` around frequencies, `50 Hz` is enough,
+disturbing tone is gone so expanding the range could result to filter "valid" frequencies.
 
 ## Coefficients
 Coefficients bellow are rounded by Python's built in function `round()` to 5 decimal numbers.
@@ -359,7 +369,7 @@ def task_4_8():
     plt.savefig("report/zeros_poles_zoomed.png")
     plot.clear()
 
-    return f"""# Task 4.8
+    return f"""# Task 4.8 - zeros & poles
 Zeros and poles are calculated using function [`tf2zpk()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.tf2zpk.html)
 from `scipy.signal` library.
 
@@ -404,7 +414,7 @@ def task_4_9():
     plt.gca().set_xlabel("Frequency [Hz]")
     plt.savefig("report/chars_mixed.png")
 
-    return """# Task 4.9
+    return """# Task 4.9 - frequency responses
 To calculate frequency response is used [`freqz()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.freqz.html)
 function from `scipy.signal` library.  
 ![](report/chars.png)  
@@ -426,7 +436,7 @@ def task_4_10(audio):
 
     spectrogram(audio, ("Time [s]", "Frequency [Hz]", "Spectral power density [dB]"), "clean")
 
-    return f"""# Task 4.10
+    return f"""# Task 4.10 - filtration
 Filters are applied using, [`lfilter()`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter.html)
 function from `scipy.signal` library,  one by one in increasing frequency order using following pseudo-code:
 
