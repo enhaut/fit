@@ -3,9 +3,9 @@
 *
 * @file main.c
 *
-* @brief Implementation lightweight HTTP server.
+* @brief Implementation of lightweight HTTP server.
 *
-* @author Samuel Dobroň (xdobro23)
+* @author Samuel Dobroň (xdobro23), FIT BUT
 *
 */
 

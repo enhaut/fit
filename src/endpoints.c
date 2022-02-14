@@ -1,14 +1,20 @@
 //
 // Created by Samuel Dobron on 10.02.2022.
 //
+#define  _GNU_SOURCE
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "endpoints.h"
-#include "string.h"
 #include "response.h"
 
 response_t * get_hostname()
 {
-    char hostname[] = "merlin.fit.vutbr.cz";
+    char hostname[1024] = {0};
+    gethostname(hostname, 1023);
+
     return get_response(statuses[0], hostname);
 }
 
