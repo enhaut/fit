@@ -5,12 +5,9 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
-#include<signal.h>
+#include <signal.h>
+#include "errno.h"
 
-char *get_hostname()
-{
-    return "asd";
-}
 
 #define ERROR_EXIT(message) \
     do{                     \
@@ -19,16 +16,6 @@ char *get_hostname()
     }while(0)
 #define PORT 10000
 #define MAX_CONN 5
-
-#define MAX_ENDPOINT_LEN 9
-typedef struct {
-    char name[MAX_ENDPOINT_LEN];
-    char *(*endpoint)();
-}endpoint_t;
-
-endpoint_t ENDPOINTS[3] = {
-        {"/hostname", get_hostname},
-};
 
 int server_socket;
 
@@ -39,11 +26,25 @@ void sig_handler(int signum)
     exit(0);
 }
 
+int get_port(int args, char **argv)
+{
+    if (args != 2)
+        ERROR_EXIT("Invalid arguments");
+
+    char *end;
+    errno = 0;
+
+    long int port = strtol(argv[1], &end, 10);
+    if (port < 0 || port > 65535 || errno == ERANGE || end < (argv[1] + strlen(argv[1])))
+        ERROR_EXIT("Invalid port");
+
+    return (uint16_t)port;
+}
 
 int main(int args, char **argv)
 {
     signal(SIGINT, sig_handler);
-#define PORT 10000
+    int port = get_port(args, argv);
 
     int new_socket;
     size_t valread;
@@ -59,13 +60,14 @@ int main(int args, char **argv)
     int addrlen = sizeof(address);
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_ANY);
-    address.sin_port = htons(PORT);
+    address.sin_port = htons(port);
 
     if (bind(server_socket, (struct sockaddr *)&address, sizeof(address))<0)
         ERROR_EXIT("bind()");
 
     if (listen(server_socket, MAX_CONN) < 0)
         ERROR_EXIT("listen()");
+    printf("Listening on %d\n", port);
 
     char buffer[1024] = {0};
     char *hello = "Hello from server";
