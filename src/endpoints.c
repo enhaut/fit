@@ -9,6 +9,7 @@
 
 #include "endpoints.h"
 #include "response.h"
+#include "measure_load.h"
 
 response_t * get_hostname()
 {
@@ -47,7 +48,14 @@ response_t * cpu_name()
 
 response_t * load()
 {
-    return get_response(statuses[0], "420%");
+    int load = calculate_load();
+    if (load == -1)
+        return get_response(statuses[2], NULL);
+
+    char actual_load[5];
+    sprintf(actual_load, "%d%%", load);
+
+    return get_response(statuses[0], actual_load);
 }
 
 response_t * bad_request()
