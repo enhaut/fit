@@ -1,28 +1,31 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <signal.h>
-#include "errno.h"
+#include <errno.h>
 
+#include "endpoints.h"
+#include "response.h"
 
 #define ERROR_EXIT(message) \
     do{                     \
         perror(message);    \
         exit(EXIT_FAILURE); \
     }while(0)
-#define PORT 10000
 #define MAX_CONN 5
+#define BUFFER_SIZE 128
 
 int server_socket;
+response_t *response;
 
 void sig_handler(int signum)
 {
     fprintf(stderr, "Shutting down...\n");
     shutdown(server_socket, 2);
+    free(response);
     exit(0);
 }
 
@@ -41,14 +44,35 @@ int get_port(int args, char **argv)
     return (uint16_t)port;
 }
 
+void process_connection(int new_socket)
+{
+    char buffer[BUFFER_SIZE + 1] = {0};
+    int readnum = read(new_socket , buffer, BUFFER_SIZE);
+
+    int endpoint = get_endpoint_index(buffer);
+    response = (*(ENDPOINTS[endpoint].endpoint))();
+    printf("New request to: %s\n", ENDPOINTS[endpoint].name);
+
+    while (readnum == BUFFER_SIZE)  // read the rest of request
+        readnum = read(new_socket, buffer, BUFFER_SIZE);
+
+    char response_buffer[128] = {0};
+    sprintf(response_buffer, RESPONSE_HEADER, response->status.code, response->status.name);
+
+    printf("Sending response\n");
+    send(new_socket, response_buffer, strlen(response_buffer), 0);
+    send(new_socket, response->content, strlen(response->content), 0);
+
+    free(response);
+    response = NULL;
+    printf("Closing connection\n");
+    close(new_socket);
+}
+
 int main(int args, char **argv)
 {
     signal(SIGINT, sig_handler);
-    int port = get_port(args, argv);
-
-    int new_socket;
-    size_t valread;
-    int optval = 1;
+    int port = get_port(args, argv), new_socket, optval = 1;
 
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
         ERROR_EXIT("socket()");
@@ -62,28 +86,21 @@ int main(int args, char **argv)
     address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(port);
 
-    if (bind(server_socket, (struct sockaddr *)&address, sizeof(address))<0)
+    if (bind(server_socket, (struct sockaddr *)&address, sizeof(address)) < 0)
         ERROR_EXIT("bind()");
 
     if (listen(server_socket, MAX_CONN) < 0)
         ERROR_EXIT("listen()");
     printf("Listening on %d\n", port);
 
-    char buffer[1024] = {0};
-    char *hello = "Hello from server";
     while (1)
     {
-        if ((new_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
+        if ((new_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
         {
-            fprintf(stderr, "Could not accept connection");
+            fprintf(stderr, "Could not accept connection\n");
             continue;
         }
-
-        valread = read( new_socket , buffer, 1024);
-        printf("%s\n",buffer );
-        send(new_socket , hello , strlen(hello) , 0 );
-        printf("Hello message sent\n");
-        close(new_socket);
+        process_connection(new_socket);
     }
 
     return 0;
