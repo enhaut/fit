@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include<signal.h>
 
 #define ERROR_EXIT(message) \
     do{                     \
@@ -14,11 +15,21 @@
 #define PORT 10000
 #define MAX_CONN 5
 
+int server_socket;
+
+void sig_handler(int signum)
+{
+    fprintf(stderr, "Shutting down...\n");
+    shutdown(server_socket, 2);
+    exit(0);
+}
+
 int main(int args, char **argv)
 {
+    signal(SIGINT, sig_handler);
 #define PORT 10000
 
-    int server_socket, new_socket;
+    int new_socket;
     size_t valread;
     int optval = 1;
 
