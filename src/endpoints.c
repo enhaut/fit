@@ -20,7 +20,29 @@ response_t * get_hostname()
 
 response_t * cpu_name()
 {
-    return get_response(statuses[0], "xeon");
+    FILE *fp;
+    char *line = NULL;
+    char *response = NULL;
+    size_t len = 0;
+
+    if ((fp = fopen("/proc/cpuinfo", "r")))
+    {
+        while (getline(&line, &len, fp) != -1)
+        {
+            if (!strstr(line, "model name"))
+                continue;
+            response = strstr(line, ":") + 2;  // move ptr behind ": "
+            break;
+        }
+        response[strlen(response) - 1] = 0;  // remove trailing \n
+        fclose(fp);
+    }else
+        response = "UNKNOWN";
+
+    response_t *res = get_response(statuses[0], response);
+    if (line)
+        free(line);
+    return res;
 }
 
 response_t * load()
@@ -42,6 +64,7 @@ endpoint_t ENDPOINTS[ENDPOINTS_COUNT] = {
 
 int get_endpoint_index(char *buffer)
 {
+    printf("Looking up for endpoint\n");
     char *endpoint_end = strstr(buffer, "HTTP/");
     *endpoint_end = 0; // looking up for endpoint in corresponding part of request body only
 
@@ -49,5 +72,6 @@ int get_endpoint_index(char *buffer)
         if (strstr(buffer, ENDPOINTS[i].name))
             return i;
 
+    printf("Endpoint not found, bad request\n");
     return ENDPOINTS_COUNT - 1;
 }
