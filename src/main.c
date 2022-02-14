@@ -18,7 +18,8 @@ int main(int args, char **argv)
 {
 #define PORT 10000
 
-    int server_socket, new_socket, valread;
+    int server_socket, new_socket;
+    size_t valread;
     int optval = 1;
 
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
@@ -39,20 +40,21 @@ int main(int args, char **argv)
     if (listen(server_socket, MAX_CONN) < 0)
         ERROR_EXIT("listen()");
 
-    char buffer[256] = {0};
+    char buffer[1024] = {0};
     char *hello = "Hello from server";
     while (1)
     {
-        if ((new_socket = accept(server_socket, (struct sockaddr *)&address,
-                                 (socklen_t*)&addrlen))<0)
+        if ((new_socket = accept(server_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0)
         {
-            perror("accept");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "Could not accept connection");
+            continue;
         }
-        valread = read( new_socket , buffer, 256);
+
+        valread = read( new_socket , buffer, 1024);
         printf("%s\n",buffer );
         send(new_socket , hello , strlen(hello) , 0 );
         printf("Hello message sent\n");
+        close(new_socket);
     }
 
     return 0;
