@@ -7,12 +7,6 @@
 
 #include "response.h"
 
-status_t statuses[3] = {
-        {200, "OK"},
-        {400, "BAD REQUEST"},
-        {500, "INTERNAL SERVER ERROR"}
-};
-
 response_t * get_response(status_t status, char *content)
 {
     size_t content_size = 0;
