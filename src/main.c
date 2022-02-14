@@ -7,6 +7,11 @@
 #include <string.h>
 #include<signal.h>
 
+char *get_hostname()
+{
+    return "asd";
+}
+
 #define ERROR_EXIT(message) \
     do{                     \
         perror(message);    \
@@ -14,6 +19,16 @@
     }while(0)
 #define PORT 10000
 #define MAX_CONN 5
+
+#define MAX_ENDPOINT_LEN 9
+typedef struct {
+    char name[MAX_ENDPOINT_LEN];
+    char *(*endpoint)();
+}endpoint_t;
+
+endpoint_t ENDPOINTS[3] = {
+        {"/hostname", get_hostname},
+};
 
 int server_socket;
 
@@ -23,6 +38,7 @@ void sig_handler(int signum)
     shutdown(server_socket, 2);
     exit(0);
 }
+
 
 int main(int args, char **argv)
 {
