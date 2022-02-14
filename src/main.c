@@ -1,3 +1,14 @@
+/**
+* IPK project 1
+*
+* @file main.c
+*
+* @brief Implementation lightweight HTTP server.
+*
+* @author Samuel Dobroň (xdobro23)
+*
+*/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -21,11 +32,17 @@
 int server_socket;
 response_t *response;
 
+/**
+ * @brief Signal handler
+ *
+ */
 void sig_handler(int signum)
 {
-    fprintf(stderr, "Shutting down...\n");
-    shutdown(server_socket, 2);
-    free(response);
+    printf("Received: %d; Shutting down...\n", signum);
+    shutdown(server_socket, SHUT_RDWR);
+
+    if (response)
+        free(response);
     exit(0);
 }
 
@@ -44,18 +61,8 @@ int get_port(int args, char **argv)
     return (uint16_t)port;
 }
 
-void process_connection(int new_socket)
+void send_response(int new_socket)
 {
-    char buffer[BUFFER_SIZE + 1] = {0};
-    int readnum = read(new_socket , buffer, BUFFER_SIZE);
-
-    int endpoint = get_endpoint_index(buffer);
-    response = (*(ENDPOINTS[endpoint].endpoint))();
-    printf("New request to: %s\n", ENDPOINTS[endpoint].name);
-
-    while (readnum == BUFFER_SIZE)  // read the rest of request
-        readnum = read(new_socket, buffer, BUFFER_SIZE);
-
     char response_buffer[128] = {0};
     sprintf(response_buffer, RESPONSE_HEADER, response->status.code, response->status.name);
 
@@ -65,6 +72,22 @@ void process_connection(int new_socket)
 
     free(response);
     response = NULL;
+}
+
+void process_connection(int new_socket)
+{
+    char buffer[BUFFER_SIZE + 1] = {0};
+    int readnum = read(new_socket , buffer, BUFFER_SIZE);
+
+    int endpoint = get_endpoint_index(buffer);
+    response = (*(ENDPOINTS[endpoint].endpoint))();  // get response
+    printf("New request to: %s\n", ENDPOINTS[endpoint].name);
+
+    while (readnum == BUFFER_SIZE)  // read the rest of request
+        readnum = read(new_socket, buffer, BUFFER_SIZE);
+
+    send_response(new_socket);
+
     printf("Closing connection\n");
     close(new_socket);
 }
