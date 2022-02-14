@@ -1,6 +1,14 @@
-//
-// Created by Samuel Dobron on 10.02.2022.
-//
+/**
+* IPK project 1
+*
+* @file endpoints.c
+*
+* @brief Implementation of endpoints.
+*
+* @author Samuel Dobroň (xdobro23), FIT BUT
+*
+*/
+
 #define  _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +19,10 @@
 #include "response.h"
 #include "measure_load.h"
 
+/**
+ * @brief Get hostname endpoint
+ * @return ptr to response_t struct that contains hostname of machine
+ */
 response_t * get_hostname()
 {
     char hostname[1024] = {0};
@@ -19,6 +31,10 @@ response_t * get_hostname()
     return get_response(statuses[0], hostname);
 }
 
+/**
+ * @brief CPU name endpoint
+ * @return ptr to response_t struct that contains CPU name
+ */
 response_t * cpu_name()
 {
     FILE *fp;
@@ -30,9 +46,9 @@ response_t * cpu_name()
     {
         while (getline(&line, &len, fp) != -1)
         {
-            if (!strstr(line, "model name"))
+            if (!strstr(line, "model name"))  // reading lines until "model name" found
                 continue;
-            response = strstr(line, ":") + 2;  // move ptr behind ": "
+            response = strstr(line, ":") + 2;  // move ptr behind "model name : "
             break;
         }
         response[strlen(response) - 1] = 0;  // remove trailing \n
@@ -42,15 +58,19 @@ response_t * cpu_name()
 
     response_t *res = get_response(statuses[0], response);
     if (line)
-        free(line);
+        free(line);  // `getline()` allocates buffer, it needs to be freed
     return res;
 }
 
+/**
+ * @brief CPU usage endpoing
+ * @return ptr to response_t struct that contains CPU usage
+ */
 response_t * load()
 {
     int load = calculate_load();
     if (load == -1)
-        return get_response(statuses[2], NULL);
+        return get_response(statuses[2], NULL);  // measurement went wrong, return 500 internal err
 
     char actual_load[5];
     sprintf(actual_load, "%d%%", load);
@@ -58,6 +78,10 @@ response_t * load()
     return get_response(statuses[0], actual_load);
 }
 
+/**
+ * @brief Endpoint for all the requests to non-supported endpoints
+ * @return returns struct 400 BAD REQUEST
+ */
 response_t * bad_request()
 {
     return get_response(statuses[1], NULL);
@@ -70,6 +94,12 @@ endpoint_t ENDPOINTS[ENDPOINTS_COUNT] = {
         {"BAD_REQ", bad_request}  // keep at the last place
 };
 
+/**
+ * @brief Function returns index of requested endpoint in `ENDPOINTS` array.
+ * @param buffer received connection headers/body
+ * @return index of requested endpoint in `ENDPOINTS` array, in case no
+ * corresponding endpoint found, it returns index of last member of that array
+ */
 int get_endpoint_index(char *buffer)
 {
     printf("Looking up for endpoint\n");

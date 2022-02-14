@@ -1,6 +1,13 @@
-//
-// Created by Samuel Dobron on 14.02.2022.
-//
+/**
+* IPK project 1
+*
+* @file measure_load.c
+*
+* @brief Functions for measuring the CPU usage.
+*
+* @author Samuel Dobroň (xdobro23), FIT BUT
+*
+*/
 
 #include <stdio.h>
 #include <string.h>
@@ -8,9 +15,14 @@
 
 #include "measure_load.h"
 
+/**
+ * @brief Function measures ACTUAL load using /proc/stat file.
+ * @param load struct of values to be measured
+ * @return 0 on success; 1 otherwise
+ */
 int measure_load(load_t *load)
 {
-    char buffer[512];
+    char buffer[512];  // first line should never be longer than 511 characters
     FILE *fp;
     if ((fp = fopen("/proc/stat", "r")))
     {
@@ -34,6 +46,11 @@ int measure_load(load_t *load)
     return 1;
 }
 
+/**
+ * @brief Function calculates load in passed `SLEEP_FOR` second(s)
+ * using algo taken from https://stackoverflow.com/questions/23367857/accurate-calculation-of-cpu-usage-given-in-percentage-in-linux
+ * @return usage of CPU in percents <0, 100>; -1 on fail
+ */
 int calculate_load()
 {
     load_t prev, actual;
@@ -46,7 +63,7 @@ int calculate_load()
 
     ULLI previdle, prevnonidle, prevtotal;
     ULLI idle, nonidle, total;
-    signed long long totald, idled, perc;
+    signed long long totald, idled, perc;  // unsigned could theoretically overflow
 
     previdle = prev.idle + prev.iowait;
     idle = actual.idle + actual.iowait;

@@ -1,12 +1,19 @@
-//
-// Created by Samuel Dobron on 10.02.2022.
-//
+/**
+* IPK project 1
+*
+* @file response.h
+*
+* @brief Response related stuff.
+*
+* @author Samuel Dobroň (xdobro23), FIT BUT
+*
+*/
 
 #ifndef IPK_PROJ1_RESPONSE_H
 #define IPK_PROJ1_RESPONSE_H
 typedef struct status{
-    int code;
-    char name[21];
+    int code;       // HTTP status code
+    char name[21];  // name of status code
 }status_t;
 
 extern status_t statuses[3];
@@ -18,7 +25,7 @@ status_t statuses[3] = {
 
 typedef struct {
     status_t status;
-    char content[];
+    char content[]; // ptr to response body
 }response_t;
 
 response_t * get_response(status_t status, char *content);

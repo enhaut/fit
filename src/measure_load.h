@@ -1,6 +1,13 @@
-//
-// Created by Samuel Dobron on 14.02.2022.
-//
+/**
+* IPK project 1
+*
+* @file measure_load.h
+*
+* @brief Functions for measuring the CPU usage.
+*
+* @author Samuel Dobroň (xdobro23), FIT BUT
+*
+*/
 
 #ifndef IPK_PROJ1_MEASURE_LOAD_H
 #define IPK_PROJ1_MEASURE_LOAD_H

@@ -1,6 +1,13 @@
-//
-// Created by Samuel Dobron on 10.02.2022.
-//
+/**
+* IPK project 1
+*
+* @file response.c
+*
+* @brief Response related stuff.
+*
+* @author Samuel Dobroň (xdobro23), FIT BUT
+*
+*/
 
 #include <stdlib.h>
 #include <string.h>
