@@ -104,6 +104,12 @@ int get_endpoint_index(char *buffer)
 {
     printf("Looking up for endpoint\n");
     char *endpoint_end = strstr(buffer, "HTTP/");
+
+    if (strstr(buffer, "GET /")  != buffer ||  // HTTP request needs to start with "GET /"
+        strlen(buffer) < strlen("GET / HTTP/1.1") || // invalid length of HTTP request
+        !endpoint_end)  // HTTP version missing
+        return ENDPOINTS_COUNT - 1; // invalid header of HTTP request
+
     *endpoint_end = 0; // looking up for endpoint in corresponding part of request body only
 
     for (int i = 0; i < ENDPOINTS_COUNT; i++)
