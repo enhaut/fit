@@ -17,11 +17,6 @@ typedef struct status{
 }status_t;
 
 extern status_t statuses[3];
-status_t statuses[3] = {
-        {200, "OK"},
-        {400, "BAD REQUEST"},
-        {500, "INTERNAL SERVER ERROR"}
-};
 
 typedef struct {
     status_t status;
