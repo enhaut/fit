@@ -6,7 +6,7 @@ LDFLAGS=
 all: src/dependencies.txt hinfosvc
 
 clean:
-	rm src/*.o hinfosvc src/dependencies.txt 2> /dev/null || true
+	rm src/*.o hinfosvc src/dependencies.txt xdobro23.zip 2> /dev/null || true
 
 -include src/dependencies.txt
 src/dependencies.txt:
