@@ -103,7 +103,7 @@ endpoint_t ENDPOINTS[ENDPOINTS_COUNT] = {
 int get_endpoint_index(char *buffer)
 {
     printf("Looking up for endpoint\n");
-    char *endpoint_end = strstr(buffer, "HTTP/");
+    char *endpoint_end = strstr(buffer, "HTTP/1.1");
 
     if (strstr(buffer, "GET /")  != buffer ||  // HTTP request needs to start with "GET /"
         strlen(buffer) < strlen("GET / HTTP/1.1") || // invalid length of HTTP request
