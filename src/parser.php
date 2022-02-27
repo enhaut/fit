@@ -1,10 +1,22 @@
 <?PHP
     ini_set('display_errors', 'stderr');
 
-    function error_exit($message, $exit_code)
-    {
-        echo $message . "\n";
-        exit($exit_code);
+    class Errors{
+        const INVALID_HEAD = 21;
+        const INVALID_CODE = 22;
+        const OTHER_ERR = 23;
+
+        private $codes = array(
+            self::INVALID_HEAD => "Invalid program head!",
+            self::INVALID_CODE => "Invalid operation code!",
+            self::OTHER_ERR => "Other error!"
+        );
+
+        function error_exit($exit_code)
+        {
+            fwrite(STDERR, $this->codes[$exit_code] . "\n");
+            exit($exit_code);
+        }
     }
 
     class ArgumentParser{
@@ -36,6 +48,12 @@
 
     class Parser{
         private int $line_number = 0;
+        private $errors;
+
+        public function __construct()
+        {
+            $this->errors = new Errors();
+        }
 
         function remove_comments($line)
         {
@@ -70,7 +88,9 @@
 
                 if (!strlen($line))
                     continue;
-                echo $this->line_number . ": " . $line . "\n";
+
+                if ($this->line_number == 1 and $line != ".IPPcode22")
+                    $this->errors->error_exit($this->errors::INVALID_HEAD);
             }
         }
     }
