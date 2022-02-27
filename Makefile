@@ -12,5 +12,5 @@ clean:
 src/dependencies.txt:
 	$(CC) $(CFLAGS) -MM src/*.c > $@
 
-hinfosvc: src/endpoints.o src/main.o src/response.o
+hinfosvc: src/endpoints.o src/main.o src/response.o src/measure_load.o
 	$(CC) $(CFLAGS) $^ -o $@
