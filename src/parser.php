@@ -28,8 +28,52 @@
         }
     }
 
+    class Parser{
+        private int $line_number = 0;
+
+        function remove_comments($line)
+        {
+            $pos = strrpos($line, "#");
+
+            if($pos !== false)
+                return substr($line, 0, strpos($line, "#"));
+            return $line;
+        }
+
+        function remove_newline($line)
+        {
+            $pos = strrpos($line, "\n");
+
+            if($pos !== false)
+                $line = substr_replace($line, "", $pos, 1);
+            return $line;
+        }
+
+        function prepare_line($line)
+        {
+            $line = $this->remove_newline($line);
+            return $this->remove_comments($line);
+        }
+
+        function parse_lines()
+        {
+            while($line = fgets(STDIN))
+            {
+                $line = $this->prepare_line($line);
+                $this->line_number++;
+
+                if (!strlen($line))
+                    continue;
+                echo $this->line_number . ": " . $line . "\n";
+            }
+        }
+    }
+
     $arguments = new ArgumentParser($argc, $argv);
     $arguments->parse();
+
+    $parser = new Parser();
+    $parser->parse_lines();
 
 
 
