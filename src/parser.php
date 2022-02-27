@@ -1,6 +1,12 @@
 <?PHP
     ini_set('display_errors', 'stderr');
 
+    function error_exit($message, $exit_code)
+    {
+        echo $message . "\n";
+        exit($exit_code);
+    }
+
     class ArgumentParser{
         private int $argc;
         private array $argv;
