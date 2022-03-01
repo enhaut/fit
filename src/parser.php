@@ -176,7 +176,7 @@
     }
 
     class Parser{
-        private int $line_number = 0;
+        private int $line_number = -1;
         private $errors;
 
         public function __construct()
@@ -217,7 +217,7 @@
                 $line = $this->prepare_line($line);
                 $this->line_number++;
 
-                if (!strlen($line))
+                if (strlen($line) == 0)
                     continue;
 
                 if (($this->line_number == 0 and $line != ".IPPcode22") or
