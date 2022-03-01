@@ -211,6 +211,7 @@
         function parse_lines()
         {
             $instruction_parser = new InstructionParser();
+            $instructions = new SplDoublyLinkedList();
 
             while($line = fgets(STDIN))
             {
@@ -227,8 +228,11 @@
                     continue;
 
                 $parsed_instruction = $instruction_parser->get_instruction($line);
+                $instructions->add($this->line_number, $parsed_instruction);
+
                 echo $parsed_instruction . "\n";
             }
+            return $instructions;
         }
     }
 
@@ -236,7 +240,7 @@
     $arguments->parse();
 
     $parser = new Parser();
-    $parser->parse_lines();
+    $instructions = $parser->parse_lines();
 
 
 
