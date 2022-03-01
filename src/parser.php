@@ -89,8 +89,13 @@
                 if (!strlen($line))
                     continue;
 
-                if ($this->line_number == 1 and $line != ".IPPcode22")
+                if (($this->line_number == 0 and $line != ".IPPcode22") or
+                    ($this->line_number != 0 and $line == ".IPPcode22"))
                     $this->errors->error_exit($this->errors::INVALID_HEAD);
+                elseif ($this->line_number == 0 && $line == ".IPPcode22")
+                    continue;
+
+
             }
         }
     }
