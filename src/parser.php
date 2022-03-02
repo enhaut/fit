@@ -196,7 +196,7 @@
 
         private function get_value_from_symb($symb)
         {
-            return htmlspecialchars(substr($symb, strpos($symb, "@") + 1), ENT_XML1, 'UTF-8');
+            return substr($symb, strpos($symb, "@") + 1);
         }
 
         public function generate_argument($xml_dom, $node, $attr_index)
