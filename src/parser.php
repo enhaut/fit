@@ -281,10 +281,16 @@
             return $line;
         }
 
+        function remove_whitespaces($line)
+        {
+            return trim($line);
+        }
+
         function prepare_line($line)
         {
             $line = $this->remove_newline($line);
-            return $this->remove_comments($line);
+            $line = $this->remove_comments($line);
+            return $this->remove_whitespaces($line);
         }
 
         function parse_lines()
@@ -331,15 +337,5 @@
     }
 
     echo $xml->saveXML();
-
-
-
-
-
-
-
-
-
-
 
 
