@@ -48,7 +48,7 @@
 
     class InstructionParser{
         private const __var = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*";
-        private const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\d{3})*";
+        private const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*";
         const insParamsRegexp = array(
             "var" => "\s+([LTG]F@" . self::__var . ")",
             "label" => "\s+(" . self::__var . ")",
@@ -161,10 +161,8 @@
 
         private function get_symb_attr_type($attr_index): string
         {
-            echo $this->splitted[$attr_index]."\n";
             preg_match("/^(([LTG]F)|int|bool|nil|string)@.*/u", $this->splitted[$attr_index], $matches);
-            var_dump($matches);
-            if ($matches[2])
+            if (count($matches) > 2 and $matches[2])
                 return "var";
 
             return $matches[1];
@@ -206,8 +204,6 @@
             $type = $this->get_attribute_type($attr_index);
             $arguments = $xml_dom->createElement("arg" . $attr_index);
             $arguments->setAttribute("type", $type);
-
-            var_dump($this->splitted);
 
             $value = $this->splitted[$attr_index + 1];
             if (in_array($type, array("int", "bool", "nil", "string")))
@@ -312,8 +308,6 @@
 
                 $parsed_instruction = $instruction_parser->get_instruction($line);
                 $instructions->add($this->line_number - 1, $parsed_instruction);
-
-                echo $parsed_instruction . "\n";
             }
             return $instructions;
         }
