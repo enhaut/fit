@@ -104,19 +104,19 @@
                     $regexps = explode("\s+", $instruction, 3);
                     if (preg_match("/". $regexps[0] . "/u", $raw))
                     {
-                        if (!preg_match("/" . $instruction . "/u", $raw))
+                        if (!preg_match("/" . $instruction . "/u", $raw, $regexps))
                             exit(23);
 
                         switch ($instructionArrayIndex)
                         {
                             case 0:
-                                return new NoArgsInstruction($raw);
+                                return new NoArgsInstruction($raw, $regexps);
                             case 1:
-                                return new SingleArgsInstruction($raw);
+                                return new SingleArgsInstruction($raw, $regexps);
                             case 2:
-                                return new DoubleArgsInstruction($raw);
+                                return new DoubleArgsInstruction($raw, $regexps);
                             case 3:
-                                return new TripleArgsInstruction($raw);
+                                return new TripleArgsInstruction($raw, $regexps);
                         }
                     }
                 }
@@ -127,10 +127,14 @@
 
     class Instruction {
         private string $raw;
+        public string $instruction;
+        public $splitted = null;
 
-        public function __construct($raw)
+        public function __construct($raw, $splitted)
         {
             $this->raw = $raw;
+            $this->instruction = strtoupper($splitted[1]);
+            $this->splitted = $splitted;
         }
 
         public function get_instruction(): string
@@ -230,7 +234,7 @@
                     continue;
 
                 $parsed_instruction = $instruction_parser->get_instruction($line);
-                $instructions->add($this->line_number, $parsed_instruction);
+                $instructions->add($this->line_number - 1, $parsed_instruction);
 
                 echo $parsed_instruction . "\n";
             }
