@@ -142,7 +142,7 @@
             return "";
         }
 
-        public function get_arguments(): string
+        public function get_arguments($xml_dom, $node)
         {
             throw new Exception("Not implemented");
         }
@@ -154,28 +154,27 @@
     }
 
     class NoArgsInstruction extends Instruction {
-        public function get_arguments(): string
+        public function get_arguments($xml_dom, $node)
         {
-            return "";
         }
     }
 
     class SingleArgsInstruction extends Instruction {
-        public function get_arguments(): string
+        public function get_arguments($xml_dom, $node)
         {
             return '<arg1 type="var">GF@a</arg1>\n';
         }
     }
 
     class DoubleArgsInstruction extends Instruction {
-        public function get_arguments(): string
+        public function get_arguments($xml_dom, $node)
         {
             return '<arg1 type="var">GF@a</arg1>\n<arg2 type="var">GF@a</arg2>';
         }
     }
 
     class TripleArgsInstruction extends Instruction {
-        public function get_arguments(): string
+        public function get_arguments($xml_dom, $node)
         {
             return '<arg1 type="var">GF@a</arg1>\n<arg2 type="var">GF@a</arg2>\n<arg3 type="var">GF@a</arg3>';
         }
