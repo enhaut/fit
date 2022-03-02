@@ -57,40 +57,40 @@
         );
 
         const instructions = array(
-            0 => array("(CREATEFRAME)", "(PUSHFRAME)", "(POPFRAME)", "(RETURN)", "(BREAK)"),
+            0 => array(array("(CREATEFRAME)"), array("(PUSHFRAME)"), array("(POPFRAME)"), array("(RETURN)"), array("(BREAK)")),
             1 => array(
-                "(DEFVAR)" . self::insParamsRegexp["var"],
-                "(CALL)" . self::insParamsRegexp["label"],
-                "(PUSHS)" . self::insParamsRegexp["symb"],
-                "(POPS)" . self::insParamsRegexp["var"],
-                "(WRITE)" . self::insParamsRegexp["symb"],
-                "(LABEL)" . self::insParamsRegexp["label"],
-                "(JUMP)" . self::insParamsRegexp["label"],
-                "(EXIT)" . self::insParamsRegexp["symb"],
-                "(DPRINT)" . self::insParamsRegexp["symb"]),
+                array("(DEFVAR)", self::insParamsRegexp["var"]),
+                array("(CALL)", self::insParamsRegexp["label"]),
+                array("(PUSHS)", self::insParamsRegexp["symb"]),
+                array("(POPS)", self::insParamsRegexp["var"]),
+                array("(WRITE)", self::insParamsRegexp["symb"]),
+                array("(LABEL)", self::insParamsRegexp["label"]),
+                array("(JUMP)", self::insParamsRegexp["label"]),
+                array("(EXIT)", self::insParamsRegexp["symb"]),
+                array("(DPRINT)", self::insParamsRegexp["symb"])),
             2 => array(
-                "(MOVE)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"],
-                "(INT2CHAR)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"],
-                "(READ)" . self::insParamsRegexp["var"] . self::insParamsRegexp["type"],
-                "(STRLEN)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"],
-                "(TYPE)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"]),
+                array("(MOVE)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
+                array("(INT2CHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
+                array("(READ)", self::insParamsRegexp["var"], self::insParamsRegexp["type"]),
+                array("(STRLEN)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
+                array("(TYPE)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"])),
             3 => array(
-                "(ADD)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(SUB)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(MUL)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(IDIV)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(LT)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(GT)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(EQ)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(AND)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(OR)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(NOT)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(STRI2INT)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(CONCAT)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(GETCHAR)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(SETCHAR)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(JUMPIFEQ)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"],
-                "(JUMPIFNEQ)" . self::insParamsRegexp["var"] . self::insParamsRegexp["symb"] . self::insParamsRegexp["symb"])
+                array("(ADD)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(SUB)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(MUL)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(IDIV)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(LT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(GT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(EQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(AND)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(OR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(NOT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(STRI2INT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(CONCAT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(GETCHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(SETCHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(JUMPIFEQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(JUMPIFNEQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]))
             );
 
         public function get_instruction($raw)
@@ -99,6 +99,8 @@
             {
                 foreach ($instructionArray as $instruction)
                 {
+                    $instruction = implode($instruction);
+
                     $regexps = explode("\s+", $instruction, 3);
                     if (preg_match("/". $regexps[0] . "/u", $raw))
                     {
