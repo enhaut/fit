@@ -137,9 +137,14 @@
             $this->splitted = $splitted;
         }
 
-        public function get_instruction(): string
+        public function get_instruction($key, $xml_dom)
         {
-            return "";
+            $instruction = $xml_dom->createElement("instruction");
+            $instruction->setAttribute("order", $key + 1);
+            $instruction->setAttribute("opcode", strtoupper($this->instruction));
+
+            $instruction = $xml_dom->appendChild($instruction);
+            $this->get_arguments($xml_dom, $instruction);
         }
 
         public function get_arguments($xml_dom, $node)
@@ -246,6 +251,19 @@
 
     $parser = new Parser();
     $instructions = $parser->parse_lines();
+
+    $xml = new DOMDocument('1.0', 'UTF-8');
+    $xml->formatOutput = true;
+
+
+    $instructions->setIteratorMode(SplDoublyLinkedList::IT_MODE_FIFO);
+
+    for ($instructions->rewind(); $instructions->valid(); $instructions->next())
+    {
+        echo $instructions->current()->get_instruction($instructions->key(), $xml)."\n";
+    }
+
+    echo $xml->saveXML();
 
 
 
