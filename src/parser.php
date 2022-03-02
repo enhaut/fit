@@ -48,11 +48,11 @@
 
     class InstructionParser{
         private const __var = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*";
-        private const __const = "(int@((0[xX][0-9a-fA-F]+)|([+-]?[0-9]+)))|string@([^#\\\s]|\\\d{3})*|bool@(true|false)|(nil@nil)";
-        private const insParamsRegexp = array(
+        private const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\d{3})*";
+        const insParamsRegexp = array(
             "var" => "\s+([LTG]F@" . self::__var . ")",
             "label" => "\s+(" . self::__var . ")",
-            "symb" => "\s+(([LTG]F@" . self::__var . ")|(" . self::__const . "))",
+            "symb" => "\s+((?:[LTG]F@" . self::__var . ")|(?:" . self::__const . "))",
             "type" => "\s+(int|string|bool)"
         );
 
