@@ -141,10 +141,80 @@
         {
             $instruction = $xml_dom->createElement("instruction");
             $instruction->setAttribute("order", $key + 1);
-            $instruction->setAttribute("opcode", strtoupper($this->instruction));
+            $instruction->setAttribute("opcode", $this->instruction);
 
             $instruction = $xml_dom->appendChild($instruction);
             $this->get_arguments($xml_dom, $instruction);
+        }
+
+        private function get_instruction_array_index(): int
+        {
+            if ($this instanceof NoArgsInstruction)
+                throw new Exception("Instructions without arguments could not have any");
+            elseif ($this instanceof SingleArgsInstruction)
+                return 1;
+            elseif ($this instanceof DoubleArgsInstruction)
+                return 2;
+            else
+                return 3;
+        }
+
+        private function get_symb_attr_type($attr_index): string
+        {
+            echo $this->splitted[$attr_index]."\n";
+            preg_match("/^(([LTG]F)|int|bool|nil|string)@.*/u", $this->splitted[$attr_index], $matches);
+            var_dump($matches);
+            if ($matches[2])
+                return "var";
+
+            return $matches[1];
+        }
+
+        private function get_attribute_type($param_index): string
+        {
+            $instructions = InstructionParser::instructions[$this->get_instruction_array_index()];
+            $instruction_array = null;
+
+            foreach ($instructions as $instruction_array)
+                if (substr($instruction_array[0], 1, -1) == $this->instruction)
+                    break;
+
+            $paramRegexp = $instruction_array[$param_index];
+
+            switch ($paramRegexp)
+            {
+                case InstructionParser::insParamsRegexp["var"]:
+                    return "var";
+                case InstructionParser::insParamsRegexp["label"]:
+                    return "label";
+                case InstructionParser::insParamsRegexp["type"]:
+                    return "type";
+                case InstructionParser::insParamsRegexp["symb"]:
+                    return $this->get_symb_attr_type($param_index + 1);
+                default:
+                    throw new Exception("Another operand type is not implemented");
+            }
+        }
+
+        private function get_value_from_symb($symb)
+        {
+            return substr($symb, strpos($symb, "@") + 1);
+        }
+
+        public function generate_argument($xml_dom, $node, $attr_index)
+        {
+            $type = $this->get_attribute_type($attr_index);
+            $arguments = $xml_dom->createElement("arg" . $attr_index);
+            $arguments->setAttribute("type", $type);
+
+            var_dump($this->splitted);
+
+            $value = $this->splitted[$attr_index + 1];
+            if (in_array($type, array("int", "bool", "nil", "string")))
+                $value = $this->get_value_from_symb($value);
+
+            $arguments->textContent = $value;  // arguments start at 2nd position
+            $node->appendChild($arguments);
         }
 
         public function get_arguments($xml_dom, $node)
@@ -167,21 +237,24 @@
     class SingleArgsInstruction extends Instruction {
         public function get_arguments($xml_dom, $node)
         {
-            return '<arg1 type="var">GF@a</arg1>\n';
+            $this->generate_argument($xml_dom, $node, 1);
         }
     }
 
     class DoubleArgsInstruction extends Instruction {
         public function get_arguments($xml_dom, $node)
         {
-            return '<arg1 type="var">GF@a</arg1>\n<arg2 type="var">GF@a</arg2>';
+            $this->generate_argument($xml_dom, $node, 1);
+            $this->generate_argument($xml_dom, $node, 2);
         }
     }
 
     class TripleArgsInstruction extends Instruction {
         public function get_arguments($xml_dom, $node)
         {
-            return '<arg1 type="var">GF@a</arg1>\n<arg2 type="var">GF@a</arg2>\n<arg3 type="var">GF@a</arg3>';
+            $this->generate_argument($xml_dom, $node, 1);
+            $this->generate_argument($xml_dom, $node, 2);
+            $this->generate_argument($xml_dom, $node, 3);
         }
     }
 
