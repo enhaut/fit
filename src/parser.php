@@ -102,7 +102,7 @@
                     $instruction = implode($instruction);
 
                     $regexps = explode("\s+", $instruction, 3);
-                    if (preg_match("/^". $regexps[0] . "\s+/u", $raw))
+                    if (substr($regexps[0], 1, -1) == strtoupper(explode(" ", $raw)[0]))
                     {
                         if (!preg_match("/^" . $instruction . "$/u", $raw, $regexps))
                             exit(23);
@@ -295,6 +295,7 @@
 
         function parse_lines()
         {
+            $got_header = false;
             $instruction_parser = new InstructionParser();
             $instructions = new SplDoublyLinkedList();
 
@@ -306,11 +307,13 @@
                 if (strlen($line) == 0)
                     continue;
 
-                if (($this->line_number == 0 and $line != ".IPPcode22") or
-                    ($this->line_number != 0 and $line == ".IPPcode22"))
+                if (!$got_header and $line != ".IPPcode22")
                     $this->errors->error_exit(21);
-                elseif ($this->line_number == 0 && $line == ".IPPcode22")
+                elseif(!$got_header and $line == ".IPPcode22")
+                {
+                    $got_header = true;
                     continue;
+                }
 
                 $parsed_instruction = $instruction_parser->get_instruction($line);
                 $instructions->add($this->line_number - 1, $parsed_instruction);
