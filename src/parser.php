@@ -20,8 +20,8 @@
     }
 
     class ArgumentParser{
-        private int $argc;
-        private array $argv;
+        private $argc;
+        private $argv;
 
         public function __construct($argc, $argv)
         {
@@ -47,8 +47,8 @@
     }
 
     class InstructionParser{
-        private const __var = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*";
-        private const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*";
+        const __var = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*";
+        const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*";
         const insParamsRegexp = array(
             "var" => "\s+([LTG]F@" . self::__var . ")",
             "label" => "\s+(" . self::__var . ")",
@@ -89,8 +89,8 @@
                 array("(CONCAT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(GETCHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(SETCHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
-                array("(JUMPIFEQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
-                array("(JUMPIFNEQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]))
+                array("(JUMPIFEQ)", self::insParamsRegexp["label"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
+                array("(JUMPIFNEQ)", self::insParamsRegexp["label"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]))
             );
 
         public function get_instruction($raw)
@@ -102,9 +102,9 @@
                     $instruction = implode($instruction);
 
                     $regexps = explode("\s+", $instruction, 3);
-                    if (preg_match("/". $regexps[0] . "/u", $raw))
+                    if (preg_match("/^". $regexps[0] . "\s+/u", $raw))
                     {
-                        if (!preg_match("/" . $instruction . "/u", $raw, $regexps))
+                        if (!preg_match("/^" . $instruction . "$/u", $raw, $regexps))
                             exit(23);
 
                         switch ($instructionArrayIndex)
@@ -126,8 +126,8 @@
     }
 
     class Instruction {
-        private string $raw;
-        public string $instruction;
+        private $raw;
+        public $instruction;
         public $splitted = null;
 
         public function __construct($raw, $splitted)
@@ -137,17 +137,17 @@
             $this->splitted = $splitted;
         }
 
-        public function get_instruction($key, $xml_dom)
+        public function get_instruction($key, $xml_dom, $header)
         {
             $instruction = $xml_dom->createElement("instruction");
             $instruction->setAttribute("order", $key + 1);
             $instruction->setAttribute("opcode", $this->instruction);
 
-            $instruction = $xml_dom->appendChild($instruction);
+            $instruction = $header->appendChild($instruction);
             $this->get_arguments($xml_dom, $instruction);
         }
 
-        private function get_instruction_array_index(): int
+        private function get_instruction_array_index()
         {
             if ($this instanceof NoArgsInstruction)
                 throw new Exception("Instructions without arguments could not have any");
@@ -159,7 +159,7 @@
                 return 3;
         }
 
-        private function get_symb_attr_type($attr_index): string
+        private function get_symb_attr_type($attr_index)
         {
             preg_match("/^(([LTG]F)|int|bool|nil|string)@.*/u", $this->splitted[$attr_index], $matches);
             if (count($matches) > 2 and $matches[2])
@@ -168,7 +168,7 @@
             return $matches[1];
         }
 
-        private function get_attribute_type($param_index): string
+        private function get_attribute_type($param_index)
         {
             $instructions = InstructionParser::instructions[$this->get_instruction_array_index()];
             $instruction_array = null;
@@ -218,7 +218,7 @@
             throw new Exception("Not implemented");
         }
 
-        public function __toString(): string
+        public function __toString()
         {
             return $this->raw;
         }
@@ -255,7 +255,7 @@
     }
 
     class Parser{
-        private int $line_number = -1;
+        private $line_number = -1;
         private $errors;
 
         public function __construct()
@@ -308,7 +308,7 @@
 
                 if (($this->line_number == 0 and $line != ".IPPcode22") or
                     ($this->line_number != 0 and $line == ".IPPcode22"))
-                    $this->errors->error_exit($this->errors::INVALID_HEAD);
+                    $this->errors->error_exit(21);
                 elseif ($this->line_number == 0 && $line == ".IPPcode22")
                     continue;
 
@@ -327,14 +327,15 @@
 
     $xml = new DOMDocument('1.0', 'UTF-8');
     $xml->formatOutput = true;
+    $header = $xml->createElement("program");
+    $header->setAttribute("language", "IPPcode22");
+    $xml->appendChild($header);
 
 
     $instructions->setIteratorMode(SplDoublyLinkedList::IT_MODE_FIFO);
 
     for ($instructions->rewind(); $instructions->valid(); $instructions->next())
-    {
-        echo $instructions->current()->get_instruction($instructions->key(), $xml)."\n";
-    }
+        $instructions->current()->get_instruction($instructions->key(), $xml, $header);
 
     echo $xml->saveXML();
 
