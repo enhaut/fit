@@ -31,7 +31,7 @@
 
         function print_help($exit_code)
         {
-            echo "USIDZ\n";
+            echo "Usage: php parser.php < program.src";
             exit($exit_code);
         }
 
@@ -102,8 +102,12 @@
                     $instruction = implode($instruction);
 
                     $regexps = explode("\s+", $instruction, 3);
-                    if (substr($regexps[0], 1, -1) == strtoupper(explode(" ", $raw)[0]))
+                    $exploded = explode(" ", $raw);
+                    $upper = strtoupper($exploded[0]);
+
+                    if (substr($regexps[0], 1, -1) == $upper)
                     {
+                        $raw = substr_replace($raw, $upper, strpos($raw, $exploded[0]), strlen($exploded[0]));
                         if (!preg_match("/^" . $instruction . "$/u", $raw, $regexps))
                             exit(23);
 
@@ -256,6 +260,7 @@
 
     class Parser{
         private $line_number = -1;
+        private $list_index = 0;
         private $errors;
 
         public function __construct()
@@ -316,7 +321,8 @@
                 }
 
                 $parsed_instruction = $instruction_parser->get_instruction($line);
-                $instructions->add($this->line_number - 1, $parsed_instruction);
+                $instructions->add($this->list_index, $parsed_instruction);
+                $this->list_index++;
             }
             return $instructions;
         }
