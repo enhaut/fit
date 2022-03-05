@@ -11,11 +11,14 @@ UINT  Count = 0;
 int posX = 0;
 int posY = 0;
 
+COLORREF color = RGB(0, 0, 0);
+
 // Function prototypes.
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int);
 LRESULT CALLBACK MainWndProc(HWND, UINT, WPARAM, LPARAM);
-void paintObject(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition);
-void paintPosition(HWND hWnd, HDC hDC, PAINTSTRUCT ps);
+void paintFace(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition);
+void paintObjects(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition);
+void paintPosition(HWND hWnd, HDC hDC, PAINTSTRUCT ps, POINT cursorPosition);
 
 // Application entry point. This is the same as main() in standart C.
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -122,22 +125,35 @@ LRESULT CALLBACK MainWndProc(
 		switch (wParam) {
 	        // update posX and posY in order to move object
 		case VK_LEFT: // left arrow
+			posX -= 5;
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		case VK_RIGHT: // right arrow
+			posX += 5;
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		case VK_UP: // up arrow
+			posY -= 5;
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 		case VK_DOWN: // down arrow
+			posY += 5;
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
 
 		// react on the other pressed keys 
-		case VK_SPACE: // space
+		case 0x52:	// R
+			color = RGB(255, 0, 0);
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
-		case VK_BACK: // backspace
+		case 0x47:
+			color = RGB(0, 255, 0);
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
-		case VK_TAB: // tab
+		case 0x42:
+			color = RGB(0, 0, 255);
+			InvalidateRect(hWnd, NULL, TRUE);
 			break;
-	        // more virtual codes can be found here: https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 		}
 		break;
 
@@ -148,17 +164,18 @@ LRESULT CALLBACK MainWndProc(
 	// react on mouse clicks
 	case WM_LBUTTONDOWN:
 		break;
+
+
+
 	case WM_LBUTTONUP:
 		break;
 
 	// paint objects
 	case WM_PAINT:
 		hDC = BeginPaint(hWnd, &ps);
-		paintObject(hWnd, hDC, ps, posX, posY, cursorPosition);
-		paintPosition(hWnd, hDC, ps);
-		// paint other objects
-		// paintObject2(hWnd, hDC, ps, posX, posY, cursorPosition);
-		// paintObject3(hWnd, hDC, ps, posX, posY, cursorPosition);
+		paintFace(hWnd, hDC, ps, posX, posY, cursorPosition);
+		paintPosition(hWnd, hDC, ps, cursorPosition);
+		paintObjects(hWnd, hDC, ps, posX, posY, cursorPosition);
 		EndPaint(hWnd, &ps);
 		DeleteDC(hDC);
 		break;
@@ -172,23 +189,79 @@ LRESULT CALLBACK MainWndProc(
 	}
 }
 
-
-void paintObject(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition)
+void paintObjects(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition)
 {
-	// Paint rectangles, ellipses, polygons, lines etc.
+
+	RECT to_update = { 50+posX, 50+posY, posX+540, posY+100 };
+
+	HPEN pen = CreatePen(PS_SOLID, 3, color);
+	SelectObject(hDC, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(hDC, color);
+
+	Rectangle(hDC, 50 + posX, 50 + posY, posX + 100, posY + 100);
+
+
+	MoveToEx(hDC, posX + 200, posY + 50, NULL);
+	LineTo(hDC, posX + 250, posY + 150);
+
+	Ellipse(hDC, posX + 300, posY + 50, posX + 400, posY + 100);
+
+	POINT vertices[] = { {posX + 500, posY + 50}, {posX + 540, posY + 55}, {posX + 500, posY + 100} };
+	Polygon(hDC, vertices, 3);
+	
+	//InvalidateRect(hWnd, &to_update, FALSE);
+	DeleteObject(pen);
 	return;
 }
 
-void paintPosition(HWND hWnd, HDC hDC, PAINTSTRUCT ps)
+
+void paintFace(HWND hWnd, HDC hDC, PAINTSTRUCT ps, int posX, int posY, POINT cursorPosition)
 {
-	char        text[40];          // buffer to store an output text
+	
+	RECT to_update = { 200, 300, 320, 450 };
+	
+	HPEN pen = CreatePen(PS_SOLID, 3, RGB(255, 192, 203));
+	SelectObject(hDC, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(hDC, RGB(255, 192, 203));
+	Ellipse(hDC, 200, 300, 320, 450);  // tvar
+	DeleteObject(pen);
+
+	pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
+	SelectObject(hDC, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(hDC, color);
+	Ellipse(hDC, 230, 350, 240, 360);  // L oko
+	Ellipse(hDC, 280, 350, 290, 360);  // R oko
+	DeleteObject(pen);
+
+	pen = CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
+	SelectObject(hDC, GetStockObject(DC_BRUSH));
+	SetDCBrushColor(hDC, RGB(0, 0, 0));
+	Rectangle(hDC, 255, 370, 265, 400);  // nos
+
+
+	Rectangle(hDC, 230, 415, 290, 425); // usta
+
+	DeleteObject(pen);
+
+
+	//InvalidateRect(hWnd, &to_update, FALSE);
+	
+	return;
+}
+
+void paintPosition(HWND hWnd, HDC hDC, PAINTSTRUCT ps, POINT cursorPosition)
+{
+	char        text[256];          // buffer to store an output text
 	HFONT       font;              // new large font
 	HFONT       oldFont;           // saves the previous font
 
 	font = CreateFont(25, 0, 0, 0, 0, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, 0);
 	oldFont = (HFONT)SelectObject(hDC, font);
-	sprintf(text, "Position -- x:%d, y:%d", posX, posY);
+	sprintf(text, "Position -- x:%d, y:%d, Color: %d", cursorPosition.x, cursorPosition.y, color);
 	TextOut(hDC, 50, 600, text, (int)strlen(text));
 	SelectObject(hDC, oldFont);
 	DeleteObject(font);
+
+	RECT to_update = { 50, 670, 400, 500 };
+	//InvalidateRect(hWnd, &to_update, FALSE);
 }
