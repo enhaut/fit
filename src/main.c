@@ -80,7 +80,7 @@ int get_port(int args, char **argv)
 void send_response(int new_socket)
 {
     char response_buffer[256] = {0};  // response could be only 255 characters long, including headers
-    sprintf(response_buffer, RESPONSE_HEADER, response->status.code, response->status.name);
+    sprintf(response_buffer, RESPONSE_HEADER, response->status.code, response->status.name, strlen(response->content));
 
     printf("Sending response\n");
     send(new_socket, response_buffer, strlen(response_buffer), 0);      // send headers

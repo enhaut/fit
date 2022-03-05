@@ -24,5 +24,5 @@ typedef struct {
 }response_t;
 
 response_t * get_response(status_t status, char *content);
-#define RESPONSE_HEADER "HTTP/1.1 %d %s\r\nContent-Type: text/plain;\r\n\r\n"
+#define RESPONSE_HEADER "HTTP/1.1 %d %s\r\nContent-Type: text/plain;\r\nContent-Length: %lu\r\n\r\n"
 #endif //IPK_PROJ1_RESPONSE_H
