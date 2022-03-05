@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+                                                      <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
 <html>
 <head>
@@ -12,7 +12,7 @@
 
 <div id="chatArea" style="height: 300px; border: solid #aaa 1px; overflow:auto;"></div> 
 
-<form onsubmit="return uploadData()">
+<form id="newMessageForm" onsubmit="return uploadData()">
   <input type="text" id="newMessageString">
   <input type="submit" value="send">
 </form>
@@ -21,10 +21,17 @@
 
 
 <script type="text/javascript">
+var url = "http://pckiss.fit.vutbr.cz/itu/api.php";
+var READY_STATE_FINISHED = 4;
+var STATUS_OK = 200;
+var login = "xdobro23";
+
+var loaded_messages = [];
 
 /***
   * XMLHttpRequest object constructor (for compatibility with various browsers)
   */
+
 function createXmlHttpRequestObject() 
 {
     var request;
@@ -57,12 +64,27 @@ function createXmlHttpRequestObject()
 
 function uploadData()
 {
-    document.getElementById("status").innerHTML = "uploadData()";
+    //document.getElementById("status").innerHTML = "uploadData()";
 
     try 
     {
-        var request = createXmlHttpRequestObject(); // stores XMLHttpRequestObject
-        //// put your code here
+        var req = createXmlHttpRequestObject(); // stores XMLHttpRequestObject
+	message = document.getElementById("newMessageString").value;
+	
+	req.open("POST", url, true);
+	req.onreadystatechange = function()
+	{
+		if (req.readyState == READY_STATE_FINISHED && req.status == STATUS_OK)
+		{
+			document.getElementById("newMessageForm").reset();
+			downloadData();
+		}
+	}
+
+	data = "user=" + login + "&data=" + message;
+	req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	req.send(data);
+        
     } 
     catch (e) 
     {
@@ -72,15 +94,49 @@ function uploadData()
     return false; // to avoid default form submit behavior 
 }
 
-function downloadData() 
+function parseMessages(messages_json)
 {
-    document.getElementById("status").innerHTML = "downloadData()";
+	var messages = document.getElementById("chatArea");
 
-    //// put your code here
+	for (var i = 0; i < messages_json.length; i++)
+	{
+		if (loaded_messages.includes(messages_json[i]["id"]))
+			continue;
+		
+		messages.innerHTML += "<p>" + messages_json[i]["login"] + " (" + messages_json[i]["dts"] + ")" + ": " + messages_json[i]["cnt"] + "</p>";
+		loaded_messages.push(messages_json[i]["id"]);
+	}
+	messages.scrollTop = messages.scrollHeight;
 }
 
-//// put your code here
+function downloadData() 
+{
+	var req = createXmlHttpRequestObject();
+	req.open("GET", url, true);
+	
+	req.onreadystatechange = function()
+	{
+		if (req.readyState == READY_STATE_FINISHED && req.status == STATUS_OK)
+		{
+			document.getElementById("status").innerHTML = req.responseText;
+			parseMessages(JSON.parse(req.responseText));
+		}
+	}
+	
+	req.send(null);
+}
+
+function getMessages()
+{
+	console.log("Getting new messages");
+	downloadData();
+	setTimeout(getMessages, 3000);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+	getMessages();
+});
 
 </script>
-</body>
+
 </html>
