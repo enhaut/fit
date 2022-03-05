@@ -7,6 +7,7 @@ Rectangle {
     height: 100
 
     property alias text: txt.text;
+    property bool toggled;
 
     // Proměnné, které mají parametr property jsou přístupné zvenčí
     property color btnColor: "#777777";
@@ -18,10 +19,7 @@ Rectangle {
     border.color: "#bbbbbb";
     border.width: 3;
 
-    // TODO
-    // Upravte nastavení hodnoty color tak,
-    // aby při stisknutí myši se změnila barva tlačítka
-    color: btnColor
+    color: mouse.pressed ? "#00FF00" : btnColor
 
 
     // Samotná třída Rectangle nijak nezachytává signály
@@ -44,10 +42,11 @@ Rectangle {
     Text {
         id: txt;
         
-        // TODO
-        // Nastavte parametry tohoto prvku tak,
-        // aby výsledný text byl zarovnán na střed tlačítka
-        // a měl vhodné formátování
+        anchors.fill: parent;
+        font.pointSize: 22;
+
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
     }
 
 }

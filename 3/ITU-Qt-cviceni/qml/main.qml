@@ -15,10 +15,10 @@ Window {
     // 'tog' - zkratka pro toggled, označení, která operace je vybrána
     ListModel {
         id: operations;
-        ListElement { op: "+"; tog: false; }
-        ListElement { op: "-"; tog: true; }
-        // TODO
-        // Rozšiřte model o další dvě základní matematické operace 
+        ListElement { op: "+"; tog: true; }
+        ListElement { op: "-"; tog: false; }
+        ListElement { op: "*"; tog: false; }
+        ListElement { op: "/"; tog: false; }
     }
 
     // Prvek pro rozvržení prvků do sloupce
@@ -28,6 +28,7 @@ Window {
 
         // Vstupní hodnota - první operand výpočtu
         Rectangle {
+            id: input_row
             height: 35;
             width: 400;
             border.color: "#bbb";
@@ -80,13 +81,27 @@ Window {
             id: slider
             color: Qt.darker(Theme.slider_color)
             rectColor: Theme.slider_color
-
         }
 
         // TODO
         // vložte nový textový prvek, který bude bude vizuálně 'zapadat'
         // do výsledné aplikace a bude zobrazoval vertikálně vycentrovaný
         // text 'LUT value: ' a hodnotu aktuálně vybrané položky z LUT
+        Rectangle {
+            height: 35;
+            width: 400;
+            border.color: "#bbb";
+            color: "#777"
+            id: lut_area
+
+            Text {
+                id:  lut_value;
+                height: 35;
+                font.pointSize: 17
+                color: "#000"
+                text: "LUT value: " + lut.getValue(slider.value)
+            }
+        }
 
 
         // Vlastní klikací tlačítko. Definice v MyClickButton.qml
@@ -109,29 +124,49 @@ Window {
             // Obsluha události při zachycení signálu clicked
             onClicked: {
                 var a = parseFloat(textA.text, 10);
-                // TODO
-                // Zkontrolujte jestli funkce parseFloat vrátila 
-                // korektní výsledek (tj. ne NaN, ale číslo). Pokud 
-                // je hodnota a NaN, změňte barvu vstupního pole
-                // na červenou a vypište chybu do pole pro výsledek
-
-                
-                // TODO
-                // Upravte načtení hodnoty b tak, aby získal hodnotu b
-                // z LUT (Look Up Table) podle vybrané hodnoty na 'slider'
-                var b = 0; 
-
-                // TODO
-                // pokud se uživatel pokouší dělit nulou, změňte barvu
-                // posuvníku na slideru na červenou a vypište chybu
-                // do pole pro výsledek
-
+                var b = lut.getValue(slider.value);
                 var op = getOperation();
+                var ok = 1;
+
+                var red = "#FF0000"
+                if (isNaN(a))
+                {
+                    input_row.color = red;
+                    result.text = qsTr("Invalid input");
+                    result.color = red;
+                    lut_area.color = "#777";
+                    slider.rectColor = "#4682b4";
+                    ok = 0;
+                }else if(b === 0 && op === "/") {
+                    input_row.color = "#777";
+                    result.text = qsTr("Zero division error");
+                    result.color = red;
+                    slider.rectColor = red;
+                    lut_area.color = red;
+                    ok = 0;
+                }else{
+                    input_row.color = "#777";
+                    result.color = "#0066FF";
+                    slider.rectColor = "#4682b4";
+                    lut_area.color = "#777";
+                    ok = 1;
+                }
+
                 console.log( a + " "+ op + " " + b + " = ?")
                 
-                // TODO
-                // Vypočítejte výslednou hodnotu danou operandy a, b
-                // a operátorem op, výsledek uložte do prvku result
+                if (ok === 1)
+                {
+                    var res = 0.0;
+                    if (op === "+")
+                        res = a + b;
+                    else if (op === "-")
+                        res = a - b;
+                    else if (op === "/")
+                        res = a / b;
+                    else if (op === "*")
+                        res = a * b;
+                    result.text = res;
+                }
             }
         }
 
