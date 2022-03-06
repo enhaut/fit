@@ -6,7 +6,7 @@ Login: xdobro23
 Script parses instructions from `stdin`.  
 It can be started using following command:
 ```bash
-$ php parser.php < program.src
+$ php parse.php < program.src
 ```
 Use `--help` argument for more information
 regards to usage.

@@ -58,7 +58,7 @@
          */
         function print_help($exit_code)
         {
-            echo "Usage: php parser.php < program.src";
+            echo "Usage: php parse.php < program.src";
             exit($exit_code);
         }
 
