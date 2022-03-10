@@ -32,7 +32,7 @@
 				Typografie a publikování\,--\,2. projekt\\
 				\hspace{0.1em} Sazba dokumentů a matematických výrazů}
 			\vspace{
-				\stretch{0.618}
+				\stretch{0.63}
 			}			
 		\end{center}
     	{\Large 2022 \hfill Samuel Dobroň (xdobro23)}
@@ -51,19 +51,19 @@
 		$M = (\mathnormal{Q}, \Sigma, \Gamma, \delta, q_{0}, q_{F})$, kde:
 		\begin{itemize}
 			\item{
-				$Q$ je konečná množina vnitřních (řídicích) stavů,
+				$Q$ je konečná množina \textnormal{vnitřních (řídicích) stavů},
 			}
 			\item{
-				$\Sigma$ je konečná množina symbolů nazývaná \textnormal{vstupní abeceda}, $\Delta \notin \Sigma$,
+				$\Sigma$ je konečná množina symbolů nazývaná \textnormal{vstupní abeceda}, $\Delta \not\in \Sigma$,
 			}
 			\item{
 				$\Gamma$ je konečná množina symbolů, $\Sigma \subset \Gamma$, $\Delta \in \Gamma$, nazývaná \textnormal{pásková abeceda},
 			}
 			\item{
-				$\delta: (Q \setminus \{q_F\} ) \times \Gamma \rightarrow 2^{Q \times (\Gamma \cup \{L, R\})}$, kde $L, R \notin \Gamma$, je parciální \textnormal{přechodová funkce,} a
+				$\delta: (Q \setminus \{q_F\} ) \times \Gamma \rightarrow 2^{Q \times (\Gamma \cup \{L, R\})}$, kde $L, R \notin \Gamma$, je parciální \textnormal{přechodová funkce}, a
 			}
 			\item{
-				$q_0 \in Q$ je \textnormal{počáteční stav} a $q_f \in Q$ je koncový stav.
+				$q_0 \in Q$ je \textnormal{počáteční stav} a $q_f \in Q$ je \textnormal{koncový stav}.
 			}
 		\end{itemize}
 	\end{definition} 
@@ -72,7 +72,7 @@
 
 	\textit{Konfigurace pásky} se skládá z~nekonečného řetězce, který reprezentuje obsah pásky, a pozice hlavy na tomto řetězci. Jedná se o~prvek množiny
 		$\{\gamma \Delta^{\omega}\;|\;\gamma \in \Gamma^*\} \times \mathbb{N}$\footnote{
-		Pro libovolnou abecedu $\Sigma$ je $\Sigma^{\omega}$ množina všech nekonečných řetězců nad $\Sigma$, tj. nekonečných posloupností symbolů ze $\Sigma$
+		Pro libovolnou abecedu $\Sigma$ je $\Sigma^{\omega}$ množina všech \textit{nekonečných} řetězců nad $\Sigma$, tj. nekonečných posloupností symbolů ze $\Sigma$.
 		}.
 	\textit{Konfiguraci pásky} obvykle zapisujeme jako
 		$\Delta xyz\underline{z}x\Delta $... (podtržení značí pozici hlavy).
@@ -85,7 +85,7 @@
 			\textnormal{Řetězec $w$ nad abecedou $\Sigma$ je přijat NTS}~$M$,
 			\textit{
 				jestliže $M$ při aktivaci z~počáteční konfigurace pásky
-				$\underline{\Delta}w\Delta$... a počátečního stavu $q_0$ může zastavit přechodem do koncového stavu $q_F$, tj.
+				$\underline{\Delta}w\Delta ...$ a počátečního stavu $q_0$ může zastavit přechodem do koncového stavu $q_F$, tj.
 				$(q_0, \Delta w\Delta^{\omega}, 0) \overset{*}{\underset{M}{\vdash}} (q_F, \gamma, n)$
 				pro nějaké
 				$\gamma \in \Gamma^*$ a $n \in \mathbb{N}$.
@@ -112,7 +112,7 @@ $$
 	\end{eqnarray}
 	
 	V~této větě vidíme, jak vypadá implicitní vysázení limity
-	$\lim_{n\to\infty} f(x)$
+	$\lim_{n\to\infty} f(n)$
 	v~normálním odstavci textu. Podobně je to i s~dalšími symboly jako
 	$\bigcup_{N \in \mathcal{M}} N$ či $\sum_{j=0}^n x^2_j$.
 	S~vynucením méně úsporné sazby příkazem \verb|\limits| budou vzorce vysázeny v~podobě
@@ -122,7 +122,7 @@ $$
 Pro sázení matic se velmi často používá prostředí \texttt{array} a závorky (\verb|\left|, \verb|\right|). 
 
 $$
-	\textbf{A} =
+	\textbf{\large A} =
 	\left|
 		\begin{array}{cccc}
 			a_{11} & a_{12} & \dots & a_{1n} \\
