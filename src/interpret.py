@@ -5,6 +5,11 @@ from typing import Union, List
 import xml.etree.ElementTree as ET
 
 
+def error_exit(message: str, code: int):
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
 class MemoryFrame:
     @dataclass
     class Variable:
@@ -109,16 +114,16 @@ class Interpret:
         self._instructions = [None for _ in range(instruction_count)]
         for instruction in raw_instructions:
             if "order" not in instruction.keys() or "opcode" not in instruction.keys():
-                print("ERROR1")  # TODO
+                error_exit("Invalid instruction attributes", 32)
 
             try:
                 order = int(instruction.get("order"))
             except:
-                print("ERROR2")
+                error_exit("Invalid instruction order", 32)
                 return
 
             if self._instructions[order - 1]:
-                print("ERROR3")
+                error_exit("Duplicity of instruction order", 32)
 
             self._instructions[order - 1] = instruction
         # no need to check for `None` in list, all elements are occupied
