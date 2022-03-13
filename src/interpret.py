@@ -19,6 +19,53 @@ class MemoryFrame:
 
 
 class Instruction:
+    __VAR_NAME_REGEXP = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*"
+    __CONSTANTS_REGEXP= "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*"
+    VAR_REGEXPS = {
+        "var": "\s+([LTG]F@" + __VAR_NAME_REGEXP + ")",
+        "label": "\s+("  + __VAR_NAME_REGEXP + ")",
+        "symb": "\s+((?:[LTG]F@"  + __VAR_NAME_REGEXP + ")|(?:"  + __CONSTANTS_REGEXP + "))",
+        "type": "\s+(int|string|bool)"
+    }
+    INSTRUCTIONS = [
+        [("(CREATEFRAME)",), ("(PUSHFRAME)",), ("(POPFRAME)",), ("(RETURN)",), ("(BREAK)",)],
+        [
+            ("DEFVAR", VAR_REGEXPS["var"]),
+            ("CALL", VAR_REGEXPS["label"]),
+            ("PUSHS", VAR_REGEXPS["symb"]),
+            ("POPS", VAR_REGEXPS["var"]),
+            ("WRITE", VAR_REGEXPS["symb"]),
+            ("LABEL", VAR_REGEXPS["label"]),
+            ("JUMP", VAR_REGEXPS["label"]),
+            ("EXIT", VAR_REGEXPS["symb"]),
+            ("DPRINT", VAR_REGEXPS["symb"])
+        ],
+        [
+            ("MOVE", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
+            ("INT2CHAR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
+            ("READ", VAR_REGEXPS["var"], VAR_REGEXPS["type"]),
+            ("STRLEN", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
+            ("TYPE", VAR_REGEXPS["var"], VAR_REGEXPS["symb"])
+        ],
+        [
+            ("ADD", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("SUB", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("MUL", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("IDIV", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("LT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("GT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("EQ", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("AND", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("OR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("NOT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("STRI2INT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("CONCAT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("GETCHAR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("SETCHAR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("JUMPIFEQ", VAR_REGEXPS["label"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
+            ("JUMPIFNEQ", VAR_REGEXPS["label"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"])
+        ]
+    ]
     def __init__(self, name: str, xml_raw: ET.ElementTree):
         pass
 
