@@ -71,8 +71,29 @@ class Instruction:
             ("JUMPIFNEQ", VAR_REGEXPS["label"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"])
         ]
     ]
+
     def __init__(self, name: str, xml_raw: ET.ElementTree):
         pass
+
+
+class NoArgsInstruction(Instruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+
+class SingleArgsInstruction(Instruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+
+class DoubleArgsInstruction(Instruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+
+class TripleArgsInstruction(Instruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
 
 
 class Interpret:
@@ -82,7 +103,8 @@ class Interpret:
         self.source_code = None
         self.inputs = None
 
-        self._instructions: List = []
+        self._instructions: List[ET.ElementTree] = []
+        self._parsed: List[Instruction] = []
 
     def __register_arguments(self):
         group = self.arg_parser.add_mutually_exclusive_group(required=True)
@@ -106,7 +128,7 @@ class Interpret:
         self.source_code = args.source
         self.inputs = args.input
 
-    def process_instructions(self):
+    def load_instructions(self):
         tree = ET.parse(self.source_code)
         raw_instructions = tree.findall("instruction")
         instruction_count = len(raw_instructions)
@@ -128,10 +150,39 @@ class Interpret:
             self._instructions[order - 1] = instruction
         # no need to check for `None` in list, all elements are occupied
 
-        print(self._instructions)
+    @staticmethod
+    def __get_instruction_class(instruction: ET.ElementTree):
+        allowed_tags = ["arg1", "arg2", "arg3"]
+        children = [child for child in instruction.iter()]
+        instruction = children[0]
+        children = children[1:]
+
+        for parameter in children:
+            if parameter.tag not in allowed_tags:
+                error_exit("Invalid instruction argument", 31)
+
+        params_count = len(children)
+
+        if params_count == 0:
+            return instruction.tag, NoArgsInstruction
+        elif params_count == 1:
+            return instruction.tag, SingleArgsInstruction
+        elif params_count == 2:
+            return instruction.tag, DoubleArgsInstruction
+        elif params_count == 3:
+            return instruction.tag, TripleArgsInstruction
+        else:
+            error_exit("Invalid arguments count", 31)
+
+    def parse_instructions(self):
+        for instruction in self._instructions:
+            name, ins_class = self.__get_instruction_class(instruction)
+
+            self._parsed.append(ins_class(name, instruction))
 
     def run(self):
-        self.process_instructions()
+        self.load_instructions()
+        self.parse_instructions()
 
 
 if __name__ == "__main__":
