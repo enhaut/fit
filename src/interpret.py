@@ -15,13 +15,31 @@ class MemoryFrame:
     @dataclass
     class Variable:
         name: str
-        value: Union[str, int, float, bool, None]
+        value: Union[str, int, float, bool, None] = None
         initialized: bool = False
 
     def __init__(self, initialized=False, parent="MemoryFrame"):
         self._initialized = initialized
         self._variables: List["MemoryFrame.Variable"] = []
         self._parent = parent
+
+    def __repr__(self):
+        ret = ""
+        for variable in self._variables:
+            ret += f"{variable.name}({variable.initialized})={variable.value};"
+
+        return ret
+
+    def get_variable(self, name: str):
+        for variable in self._variables:
+            if variable.name == name:
+                return variable
+
+        return None  # undefined variable
+
+    def set_variable(self, name: str):
+        self._variables.append(MemoryFrame.Variable(name))
+
 
 
 class ArgumentType:
