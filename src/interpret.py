@@ -215,6 +215,37 @@ class NoArgsInstruction(Instruction):
         pass
 
 
+class InstructionCREATEFRAME(NoArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        memory["TF"] = [MemoryFrame(True, None)]
+
+
+class InstructionPUSHFRAME(NoArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        if not memory["TF"]:
+            error_exit("No frame to push!", 55)
+
+        memory["LF"].append(memory["TF"][0])
+        memory["TF"] = []
+
+
+class InstructionPOPFRAME(NoArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        if not memory["LF"]:
+            error_exit("No frame to pop!", 55)
+
+        memory["TF"] = [memory["LF"].pop()]
+
+
 class SingleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
