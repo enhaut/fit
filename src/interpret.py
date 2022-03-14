@@ -350,6 +350,21 @@ class SingleArgsInstruction(Instruction):
         self.arg1 = self.get_argument(arg)
 
 
+class InstructionDEFVAR(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        frame = self._get_frame_from_var_name()
+        if not memory[frame]:
+            error_exit(f"Frame {frame} is not initialized", 55)
+
+        if memory[frame][0].get_variable(self.arg1.value[3:]) is not None:
+            error_exit(f"Redefining variable {self.arg1.value}", 52)
+
+        memory[frame][0].set_variable(self.arg1.value[3:])
+
+
 class DoubleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
@@ -364,6 +379,21 @@ class DoubleArgsInstruction(Instruction):
         self.check_argument(1, arg2)
         self.arg1 = self.get_argument(arg)
         self.arg2 = self.get_argument(arg2)
+
+
+class InstructionMOVE(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        variable = self._get_variable(self.arg1.value, memory)
+        symb_value = self._get_value_from_symb(self.arg2, memory)
+
+        if variable.initialized and variable.var_type != type(symb_value):
+            error_exit(f"Incompatible types of variables: {variable.name} <- {self.arg2.value}", 53)
+
+        variable.value = symb_value
+        variable.initialized = True
 
 
 class TripleArgsInstruction(Instruction):
