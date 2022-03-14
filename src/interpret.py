@@ -1,7 +1,7 @@
 import argparse
 import sys
 from dataclasses import dataclass
-from typing import Union, List
+from typing import Union, List, Dict
 import xml.etree.ElementTree as ET
 import re
 
@@ -273,6 +273,12 @@ class Interpret:
         self._instructions: List[ET.ElementTree] = []
         self._parsed: List[Instruction] = []
 
+        self.frames: Dict[str, List[MemoryFrame]] = {
+            "GF": [MemoryFrame(True, None)],
+            "TF": [],
+            "LF": []
+        }
+
     def __register_arguments(self):
         group = self.arg_parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
@@ -332,13 +338,13 @@ class Interpret:
         name = instruction.attrib["opcode"]  # TODO: check for opcode attr
 
         if params_count == 0:
-            return name, NoArgsInstruction
+            return name, globals()[f"Instruction{name.upper()}"]
         elif params_count == 1:
-            return name, SingleArgsInstruction
+            return name, globals()[f"Instruction{name.upper()}"]
         elif params_count == 2:
-            return name, DoubleArgsInstruction
+            return name, globals()[f"Instruction{name.upper()}"]
         elif params_count == 3:
-            return name, TripleArgsInstruction
+            return name, globals()[f"Instruction{name.upper()}"]
         else:
             error_exit("Invalid arguments count", 31)
 
