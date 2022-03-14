@@ -72,7 +72,8 @@ class VariableArgument(ArgumentType):
         self.type = self.get_type()
 
     def set_value(self):
-        self.value = self.raw_element.text
+        self.name = self.raw_element.text
+        self.value = self.raw_element.text  # TODO: just hotfix, probably setting name is enough, DEFVAR needs to refactor
 
     def get_frame(self):
         pass
@@ -241,6 +242,58 @@ class Instruction:
             raise NotImplementedError("Other attribute types are not (yet) implemented!")
 
         return arg_class(element.attrib["type"], element)  # TODO: check if "type" attribute is present
+
+    def _get_frame_from_var_name(self, name: str = None):
+        if not name:
+            name = self.arg1.value
+
+        if name.startswith("TF@"):
+            return "TF"
+        elif name.startswith("LF@"):
+            return "LF"
+        elif name.startswith("GF"):
+            return "GF"
+
+        error_exit(f"Invalid frame name: {name}", 55)
+
+    def _get_variable(self, name: str, memory: Dict[str, List[MemoryFrame]]):
+        frame = self._get_frame_from_var_name(name)
+        if not memory[frame]:
+            error_exit(f"Frame {frame} is not initialized", 55)
+
+        variable = memory[frame][0].get_variable(name[3:])
+        if variable is None:
+            error_exit(f"Undefined variable {name}", 54)
+
+        return variable
+
+    def __get_value_from_constant(self, const: ConstantArgument):
+        if const.type == int:
+            try:
+                return int(const.value)  # TODO: implement another basis
+            except ValueError:
+                error_exit("Invalid number", 52)
+        elif const.type == bool:
+            if const.value == "false":
+                return False
+            else:
+                return True  # TODO: check if everything != false is evaluated as a true
+        elif const.type == str:
+            return const.value
+        elif const.type == type(None):
+            return None
+
+        error_exit("Unsupported constant value", 52)
+
+    def __get_value_from_var(self, var: VariableArgument, memory):
+        variable = self._get_variable(var.name, memory)
+        return variable.value
+
+    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
+        if isinstance(symb, ConstantArgument):
+            return self.__get_value_from_constant(symb)
+        else:
+            return self.__get_value_from_var(symb, memory)
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         raise NotImplementedError()
