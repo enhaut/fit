@@ -78,13 +78,27 @@ class ConstantArgument(ArgumentType):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.name = None
         self.type = self.get_type()
 
     def set_value(self):
         self.value = self.raw_element.text
 
     def get_type(self):
-        pass
+        raw_type = self.raw_element.attrib["type"]
+        var_type = type(None)
+        if raw_type == "int":
+            var_type = type(1)
+        elif raw_type == "string":
+            var_type = type("")
+        elif raw_type == "bool":
+            var_type = type(True)
+        elif raw_type == "nil":
+            var_type = type(None)
+        else:
+            error_exit("Unsupported variable type", 52)
+
+        return var_type
 
 
 class LabelArgument(ArgumentType):
