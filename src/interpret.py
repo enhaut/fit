@@ -30,6 +30,8 @@ class ArgumentType:
         self.value = None
         self.raw_element = element
 
+        self.set_value()
+
     def __repr__(self):
         return f"{self.__class__.__name__} - {self.name}: {self.value}"
 
@@ -45,7 +47,7 @@ class VariableArgument(ArgumentType):
         self.type = self.get_type()
 
     def set_value(self):
-        pass
+        self.value = self.raw_element.text
 
     def get_frame(self):
         pass
@@ -61,7 +63,7 @@ class ConstantArgument(ArgumentType):
         self.type = self.get_type()
 
     def set_value(self):
-        pass
+        self.value = self.raw_element.text
 
     def get_type(self):
         pass
@@ -72,7 +74,7 @@ class LabelArgument(ArgumentType):
         super().__init__(*args, **kwargs)
 
     def set_value(self):
-        pass
+        self.value = self.raw_element.text
 
 
 class TypeArgument(ArgumentType):
@@ -80,12 +82,12 @@ class TypeArgument(ArgumentType):
         super().__init__(*args, **kwargs)
 
     def set_value(self):
-        pass
+        self.value = self.raw_element.text
 
 
 class Instruction:
     __VAR_NAME_REGEXP = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*"
-    __CONSTANTS_REGEXP= "(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\\\d{3})*"
+    __CONSTANTS_REGEXP = "(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\\\d{3})*"
     VAR_REGEXPS = {
         "var": "([LTG]F@" + __VAR_NAME_REGEXP + ")",
         "label": "(" + __VAR_NAME_REGEXP + ")",
@@ -151,7 +153,7 @@ class Instruction:
 
     @staticmethod
     def check_parameter_attributes(parameter: ET.Element):
-        if "type" in parameter.keys() and len(parameter.items()) == 1:
+        if parameter is not None and "type" in parameter.keys() and len(parameter.items()) == 1:
             return True
         error_exit("Invalid param attributes", 31)
 
@@ -192,14 +194,17 @@ class Instruction:
         elif element.attrib["type"] == "var":
             arg_class = VariableArgument
         elif element.attrib["type"] == "int" or element.attrib["type"] == "bool" or \
-            element.attrib["type"] == "string" or element.attrib["type"] == "nil":
+                element.attrib["type"] == "string" or element.attrib["type"] == "nil":
             arg_class = ConstantArgument
         elif element.attrib["type"] == "type":
             arg_class = TypeArgument
         else:
             raise NotImplementedError("Other attribute types are not (yet) implemented!")
 
-        return arg_class(element.text, element)
+        return arg_class(element.attrib["type"], element)  # TODO: check if "type" attribute is present
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        raise NotImplementedError()
 
 
 class NoArgsInstruction(Instruction):
