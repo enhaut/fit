@@ -17,6 +17,13 @@ class MemoryFrame:
         name: str
         value: Union[str, int, float, bool, None] = None
         initialized: bool = False
+        var_type: classmethod = None
+
+        def __setattr__(self, key, value):
+            if key == "value":
+                self.var_type = type(value)  # set variable type based on its value
+
+            super().__setattr__(key, value)
 
     def __init__(self, initialized=False, parent="MemoryFrame"):
         self._initialized = initialized
@@ -26,7 +33,7 @@ class MemoryFrame:
     def __repr__(self):
         ret = ""
         for variable in self._variables:
-            ret += f"{variable.name}({variable.initialized})={variable.value};"
+            ret += f"{variable.name}/{variable.var_type}({variable.initialized})={variable.value};"
 
         return ret
 
