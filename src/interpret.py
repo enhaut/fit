@@ -295,6 +295,14 @@ class Instruction:
         else:
             return self.__get_value_from_var(symb, memory)
 
+    @staticmethod
+    def set_value(variable: "MemoryFrame.Variable", symb_value: Union[bool, int, str, None]):
+        if variable.initialized and variable.var_type != type(symb_value):
+            error_exit(f"Incompatible types of variables: {variable.name} <- {symb_value}", 53)
+
+        variable.value = symb_value
+        variable.initialized = True
+
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         raise NotImplementedError()
 
@@ -389,11 +397,7 @@ class InstructionMOVE(DoubleArgsInstruction):
         variable = self._get_variable(self.arg1.value, memory)
         symb_value = self._get_value_from_symb(self.arg2, memory)
 
-        if variable.initialized and variable.var_type != type(symb_value):
-            error_exit(f"Incompatible types of variables: {variable.name} <- {self.arg2.value}", 53)
-
-        variable.value = symb_value
-        variable.initialized = True
+        self.set_value(variable, symb_value)
 
 
 class TripleArgsInstruction(Instruction):
