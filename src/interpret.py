@@ -139,8 +139,8 @@ class TypeArgument(ArgumentType):
 
 
 class Instruction:
-    __VAR_NAME_REGEXP = "[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*"
-    __CONSTANTS_REGEXP = "(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\\\d{3})*"
+    __VAR_NAME_REGEXP = r"[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*"
+    __CONSTANTS_REGEXP = r"(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\\\d{3})*"
     VAR_REGEXPS = {
         "var": "([LTG]F@" + __VAR_NAME_REGEXP + ")",
         "label": "(" + __VAR_NAME_REGEXP + ")",
@@ -280,7 +280,8 @@ class Instruction:
 
         return variable
 
-    def __get_value_from_constant(self, const: ConstantArgument):
+    @staticmethod
+    def __get_value_from_constant(const: ConstantArgument):
         if const.type == int:
             try:
                 return int(const.value)  # TODO: implement another basis
@@ -327,6 +328,9 @@ class NoArgsInstruction(Instruction):
     def set_arguments(self):
         pass
 
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        super().interpret(memory)
+
 
 class InstructionCREATEFRAME(NoArgsInstruction):
     def __init__(self, *args, **kwargs):
@@ -369,6 +373,9 @@ class SingleArgsInstruction(Instruction):
 
         self.check_argument(0, arg)
         self.arg1 = self.get_argument(arg)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        super().interpret(memory)
 
 
 class InstructionDEFVAR(SingleArgsInstruction):
@@ -422,6 +429,9 @@ class DoubleArgsInstruction(Instruction):
         self.arg1 = self.get_argument(arg)
         self.arg2 = self.get_argument(arg2)
 
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        super().interpret(memory)
+
 
 class InstructionMOVE(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
@@ -452,6 +462,73 @@ class TripleArgsInstruction(Instruction):
         self.arg1 = self.get_argument(arg)
         self.arg2 = self.get_argument(arg2)
         self.arg3 = self.get_argument(arg3)
+
+
+class MathInstruction(TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
+        if isinstance(symb, VariableArgument):
+            variable = self._get_variable(symb.name, memory)
+            if variable.initialized and variable.var_type != int:
+                error_exit(f"Incompatible operand {symb.name} type!", 53)
+
+            return variable.value
+        else:
+            constant = super()._get_value_from_symb(symb, memory)
+            if not isinstance(constant, int):
+                error_exit(f"Incompatible operand {symb.name} type!", 53)
+
+            return constant
+
+    def calculate(self, first: int, second: int) -> int:
+        raise NotImplementedError("Needs to be implemented in inherited classes")
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != int:
+            error_exit(f"Incompatible result variable {result.name} type!", 53)
+
+        first = self._get_value_from_symb(self.arg2, memory)
+        second = self._get_value_from_symb(self.arg3, memory)
+
+        self.set_value(result, self.calculate(first, second))
+
+
+class InstructionADD(MathInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def calculate(self, first: int, second: int) -> int:
+        return first + second
+
+
+class InstructionSUB(MathInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def calculate(self, first: int, second: int) -> int:
+        return first - second
+
+
+class InstructionMUL(MathInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def calculate(self, first: int, second: int) -> int:
+        return first * second
+
+
+class InstructionIDIV(MathInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def calculate(self, first: int, second: int) -> int:
+        if second == 0:
+            error_exit("Division by zero!", 57)
+
+        return first // second
 
 
 class Interpret:
@@ -502,11 +579,11 @@ class Interpret:
             if "order" not in instruction.keys() or "opcode" not in instruction.keys():
                 error_exit("Invalid instruction attributes", 32)
 
+            order = 1
             try:
                 order = int(instruction.get("order"))
-            except:
+            except ValueError:
                 error_exit("Invalid instruction order", 32)
-                return
 
             if self._instructions[order - 1]:
                 error_exit("Duplicity of instruction order", 32)
