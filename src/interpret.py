@@ -28,12 +28,17 @@ class MemoryFrame:
     def __init__(self, initialized=False, parent="MemoryFrame"):
         self._initialized = initialized
         self._variables: List["MemoryFrame.Variable"] = []
+        self._stack: List[Union[str, int, float, bool, None]] = []
         self._parent = parent
 
     def __repr__(self):
         ret = ""
         for variable in self._variables:
             ret += f"{variable.name}/{variable.var_type}({variable.initialized})={variable.value};"
+
+        ret += "__STACK__:"
+        for value in self._stack:
+            ret += f"{value};"
 
         return ret
 
@@ -47,6 +52,14 @@ class MemoryFrame:
     def set_variable(self, name: str):
         self._variables.append(MemoryFrame.Variable(name))
 
+    def get_stack_var(self):
+        if not self._stack:
+            error_exit("Stack is empty", 56)
+
+        return self._stack.pop()
+
+    def set_stack_var(self, value: Union[str, int, float, bool, None]):
+        self._stack.append(value)
 
 
 class ArgumentType:
@@ -371,6 +384,27 @@ class InstructionDEFVAR(SingleArgsInstruction):
             error_exit(f"Redefining variable {self.arg1.value}", 52)
 
         memory[frame][0].set_variable(self.arg1.value[3:])
+
+
+class InstructionPUSHS(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        symb_value = self._get_value_from_symb(self.arg1, memory)
+
+        memory["GF"][0].set_stack_var(symb_value)
+
+
+class InstructionPOPS(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        value = memory["GF"][0].get_stack_var()
+        variable = self._get_variable(self.arg1.value, memory)
+
+        self.set_value(variable, value)
 
 
 class DoubleArgsInstruction(Instruction):
