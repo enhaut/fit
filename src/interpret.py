@@ -463,6 +463,28 @@ class InstructionNOT(DoubleArgsInstruction):
         self.set_value(result, not to_not)
 
 
+class InstructionINT2CHAR(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != str:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        convert = self._get_value_from_symb(self.arg2, memory)
+        if not isinstance(convert, int):
+            error_exit(f"Invalid operand {self.arg2.name} type!", 53)
+
+        try:
+            converted = chr(convert)
+        except ValueError:
+            error_exit("Invalid ordinal number", 58)
+            return
+
+        self.set_value(result, converted)
+
+
 class TripleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
