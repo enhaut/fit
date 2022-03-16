@@ -164,6 +164,7 @@ class Instruction:
             ("MOVE", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
             ("INT2CHAR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
             ("READ", VAR_REGEXPS["var"], VAR_REGEXPS["type"]),
+            ("NOT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
             ("STRLEN", VAR_REGEXPS["var"], VAR_REGEXPS["symb"]),
             ("TYPE", VAR_REGEXPS["var"], VAR_REGEXPS["symb"])
         ],
@@ -177,7 +178,6 @@ class Instruction:
             ("EQ", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
             ("AND", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
             ("OR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
-            ("NOT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
             ("STRI2INT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
             ("CONCAT", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
             ("GETCHAR", VAR_REGEXPS["var"], VAR_REGEXPS["symb"], VAR_REGEXPS["symb"]),
@@ -444,6 +444,22 @@ class InstructionMOVE(DoubleArgsInstruction):
         self.set_value(variable, symb_value)
 
 
+class InstructionNOT(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != bool:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        to_not = self._get_value_from_symb(self.arg2, memory)
+        if not isinstance(to_not, bool):
+            error_exit(f"Invalid operand {self.arg2.name} type!", 53)
+
+        self.set_value(result, not to_not)
+
+
 class TripleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
@@ -593,6 +609,28 @@ class InstructionEQ(LogicalInstruction):
 
     def compare(self, first, second, memory):
         return first == second
+
+
+class InstructionAND(LogicalInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def compare(self, first, second, memory):
+        if not isinstance(first, bool) or not isinstance(second, bool):
+            error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
+
+        return first and second
+
+
+class InstructionOR(LogicalInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def compare(self, first, second, memory):
+        if not isinstance(first, bool) or not isinstance(second, bool):
+            error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
+
+        return first or second
 
 
 class Interpret:
