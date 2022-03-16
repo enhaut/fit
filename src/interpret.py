@@ -301,6 +301,9 @@ class Instruction:
 
     def __get_value_from_var(self, var: VariableArgument, memory):
         variable = self._get_variable(var.name, memory)
+        if not variable.initialized:
+            error_exit(f"Variable {var} is not initialized!", 52)
+
         return variable.value
 
     def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
