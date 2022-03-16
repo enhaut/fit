@@ -531,6 +531,70 @@ class InstructionIDIV(MathInstruction):
         return first // second
 
 
+class LogicalInstruction(TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __get_result_variable(self, memory):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != bool:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        return result
+
+    def get_values(self, memory):
+        first = self._get_value_from_symb(self.arg2, memory)
+        second = self._get_value_from_symb(self.arg3, memory)
+
+        if not isinstance(first, type(second)) or isinstance(first, type(None)):
+            error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
+
+        return first, second
+
+    def compare(self, first, second, memory):
+        raise NotImplementedError("Should be evaluated in inherited classes")
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        first, second = self.get_values(memory)
+        result = self.__get_result_variable(memory)
+
+        self.set_value(result, self.compare(first, second, memory))
+
+
+class InstructionLT(LogicalInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def compare(self, first, second, memory):
+        return first < second
+
+
+class InstructionGT(LogicalInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def compare(self, first, second, memory):
+        return first > second
+
+
+class InstructionEQ(LogicalInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_values(self, memory):
+        first = self._get_value_from_symb(self.arg2, memory)
+        second = self._get_value_from_symb(self.arg3, memory)
+
+        if not isinstance(first, type(second)) and \
+                not (isinstance(first, type(None)) or isinstance(second, type(None))):
+            error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
+
+        return first, second
+
+    def compare(self, first, second, memory):
+        return first == second
+
+
 class Interpret:
     def __init__(self):
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
