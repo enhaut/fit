@@ -86,7 +86,7 @@
         /* ^variable could start with alphanumeric characters + special characters,
         *  the rest of name could also contain numbers
         */
-        const __const = "(?:int@(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*";
+        const __const = "(?:int@(?:0(?:[xX][0-9a-fA-F]+|[oO][0-7]+)|[+-]?[0-9]+))|bool@(?:true|false)|nil@nil|string@(?:[^#\\\\\s]|\\\\\d{3})*";
         const insParamsRegexp = array(
             "var" => "\s+([LTG]F@" . self::__var . ")",
             "label" => "\s+(" . self::__var . ")",
@@ -111,6 +111,7 @@
                 array("(DPRINT)", self::insParamsRegexp["symb"])),
             2 => array(
                 array("(MOVE)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
+                array("(NOT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
                 array("(INT2CHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
                 array("(READ)", self::insParamsRegexp["var"], self::insParamsRegexp["type"]),
                 array("(STRLEN)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"]),
@@ -125,7 +126,6 @@
                 array("(EQ)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(AND)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(OR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
-                array("(NOT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(STRI2INT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(CONCAT)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
                 array("(GETCHAR)", self::insParamsRegexp["var"], self::insParamsRegexp["symb"], self::insParamsRegexp["symb"]),
