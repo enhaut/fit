@@ -133,6 +133,17 @@ class LabelArgument(ArgumentType):
 class TypeArgument(ArgumentType):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.type = self.set_type()
+
+    def set_type(self):
+        if self.value == "int":
+            return int
+        elif self.value == "string":
+            return str
+        elif self.value == "bool":
+            return bool
+
+        error_exit("Invalid type!", 53)
 
     def set_value(self):
         self.value = self.raw_element.text
