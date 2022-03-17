@@ -741,6 +741,44 @@ class InstructionCONCAT(TripleArgsInstruction):
         self.set_value(result, first + second)
 
 
+class InstructionGETCHAR(TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != str:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        first = self._get_value_from_symb(self.arg2, memory)
+        second = self._get_value_from_symb(self.arg3, memory)
+
+        if not isinstance(first, str) or not isinstance(second, int):
+            error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
+
+        if second >= len(first):
+            error_exit(f"Character out of bonds: {self.arg3.name}", 58)
+
+        self.set_value(result, first[second])
+
+
+class InstructionSETCHAR(TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != str:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+        to_replace = list(self._get_value_from_symb(self.arg1, memory))
+
+        replace_with = self._get_value_from_symb(self.arg3, memory)[0]
+        replace_at = self._get_value_from_symb(self.arg2, memory)
+
+        to_replace[replace_at] = replace_with[0]
+        self.set_value(result, "".join(to_replace))
+
+
 class Interpret:
     def __init__(self):
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
