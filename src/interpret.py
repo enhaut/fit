@@ -377,6 +377,14 @@ class InstructionPOPFRAME(NoArgsInstruction):
         memory["TF"] = [memory["LF"].pop()]
 
 
+class InstructionBREAK(NoArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        print(memory, file=sys.stderr)
+
+
 class SingleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
