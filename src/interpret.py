@@ -445,6 +445,16 @@ class InstructionWRITE(SingleArgsInstruction):
         print(to_print, end="")
 
 
+class InstructionDPRINT(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        to_print = self._get_value_from_symb(self.arg1, memory)
+
+        print(to_print, file=sys.stderr, end="")
+
+
 class DoubleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
