@@ -513,6 +513,40 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
         self.set_value(result, converted)
 
 
+class InstructionTYPE(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def __get_type(value):
+        if isinstance(value, int) or value == int:
+            return "int"
+        elif isinstance(value, str) or value == str:
+            return "string"
+        elif isinstance(value, bool) or value == bool:
+            return "bool"
+        elif isinstance(value, type(None)) or value is None:
+            return "nil"
+
+        error_exit("Invalid constant type", 53)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != str:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        if isinstance(self.arg2, ConstantArgument):
+            var_type = self.__get_type(self.arg2.type)
+        else:
+            variable = self._get_variable(self.arg2.name, memory)
+            if variable.initialized:
+                var_type = self.__get_type(variable.value)
+            else:
+                var_type = ""
+
+        self.set_value(result, var_type)
+
+
 class InstructionSTRLEN(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
