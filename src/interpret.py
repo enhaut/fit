@@ -513,6 +513,22 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
         self.set_value(result, converted)
 
 
+class InstructionSTRLEN(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != int:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        operand = self._get_value_from_symb(self.arg2, memory)
+        if not isinstance(operand, str):
+            error_exit(f"Invalid operand {self.arg2.name} type!", 53)
+
+        self.set_value(result, len(operand))
+
+
 class TripleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
