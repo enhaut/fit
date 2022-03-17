@@ -707,6 +707,24 @@ class InstructionSTRI2INT(TripleArgsInstruction):
         self.set_value(result, ord(first[second]))
 
 
+class InstructionCONCAT(TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+        if result.initialized and result.var_type != str:
+            error_exit(f"Invalid target variable type: {result.name}", 53)
+
+        first = self._get_value_from_symb(self.arg2, memory)
+        second = self._get_value_from_symb(self.arg3, memory)
+
+        if not isinstance(first, str) or not isinstance(second, str):
+            error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
+
+        self.set_value(result, first + second)
+
+
 class Interpret:
     def __init__(self):
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
