@@ -428,6 +428,23 @@ class InstructionPOPS(SingleArgsInstruction):
         self.set_value(variable, value)
 
 
+class InstructionWRITE(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        to_print = self._get_value_from_symb(self.arg1, memory)
+
+        if to_print is None:
+            to_print = ""
+        elif to_print == True:
+            to_print = "true"
+        elif to_print == False:
+            to_print = "false"
+
+        print(to_print, end="")
+
+
 class DoubleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
