@@ -463,6 +463,19 @@ class InstructionDPRINT(SingleArgsInstruction):
         print(to_print, file=sys.stderr, end="")
 
 
+class InstructionEXIT(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        code = self._get_value_from_symb(self.arg1, memory)
+
+        if not isinstance(code, int) or code < 0 or code > 49:
+            error_exit("Invalid exit code", 57)
+
+        raise SystemExit(code)
+
+
 class DoubleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
