@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <gelf.h>
 
 #include "main.h"
 
@@ -67,8 +68,31 @@ int file_type(Elf *file)
       ret = EXIT_FAILURE;
   }
 
-  printf("File type: %s32\n", type);
+  printf("File type: %s64\n", type);
   return ret;
+}
+
+
+void print_segment(int i, GElf_Phdr *seg)
+{
+  printf("%03d\n", i);
+}
+
+int segments(Elf *file)
+{
+  size_t segments_no;
+  if (elf_getphdrnum(file, &segments_no))
+    return EXIT_FAILURE;
+  printf("Segments: %lu\n", segments_no);
+
+  GElf_Phdr seg;
+  for (int i = 0; i < (int)segments_no; ++i)
+  {
+    gelf_getphdr(file, i, &seg);  // TODO: check
+    print_segment(i, &seg);
+  }
+
+  return EXIT_SUCCESS;
 }
 
 int main(int argc, char *args[])
@@ -82,6 +106,7 @@ int main(int argc, char *args[])
   if (file)
   {
     file_type(file); // TODO: check it
+    segments(file);
 
     elf_end(file);
   }else
