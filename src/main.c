@@ -24,12 +24,6 @@ void check_args(int argc)
     ERROR_EXIT("Invalid arguments!");
 }
 
-/**
- * e_shoff member gives the byte offset from
-the beginning of the file to the section header table; e_shnum tells how many entries the
-section header table contains; e_shentsize gives the size in bytes of each entry.
- */
-
 int open_file(char *filename)
 {
   int fd = open(filename, O_RDONLY);
@@ -73,12 +67,46 @@ int file_type(Elf *file)
 }
 
 
-void print_segment(int i, GElf_Phdr *seg)
+void print_sections(Elf *e, GElf_Phdr *program_header)
+{
+  GElf_Shdr shdr;
+  size_t shstrndx;
+  Elf_Scn *scn = NULL;
+  char *name;
+
+  elf_getshdrstrndx(e, &shstrndx);
+
+  while (( scn = elf_nextscn (e, scn)) != NULL )
+  {
+    if (gelf_getshdr( scn, &shdr) != &shdr)
+      printf("ERR");
+
+    if ((name = elf_strptr(e, shstrndx, shdr.sh_name)) == NULL)
+      printf("ERROR2");
+
+    if (shdr.sh_addr &&
+        shdr.sh_size &&
+        (program_header->p_offset <= shdr.sh_offset &&
+         shdr.sh_offset < (program_header->p_offset + program_header->p_memsz)))
+       printf ( "%s ", name);
+  }
+
+}
+
+void print_segment(Elf *file, GElf_Phdr *seg, int i)
 {
   char permissions[] = "---";
   SET_PERMISSIONS(permissions, seg->p_flags);
 
-  printf("%03d %-15s %-10s\n", i, get_seg_type(seg->p_type), permissions);
+  printf(
+      "%03d %-15s %-10s ",
+      i,
+      get_seg_type(seg->p_type),
+      permissions
+  );
+  print_sections(file, seg);
+
+  putc('\n', stdout);
 }
 
 int segments(Elf *file)
@@ -92,7 +120,7 @@ int segments(Elf *file)
   for (int i = 0; i < (int)segments_no; ++i)
   {
     gelf_getphdr(file, i, &prog_header);  // TODO: check
-    print_segment(i, &prog_header);
+    print_segment(file, &prog_header, i);
   }
 
   return EXIT_SUCCESS;
