@@ -54,4 +54,13 @@ char *get_seg_type(Elf64_Word type)
     }
 }
 
+#define SET_PERMISSIONS(to_print, flags) do{\
+  if ((flags) & PF_R)                       \
+      (to_print)[0] = 'R';                  \
+  if ((flags) & PF_W)                       \
+      (to_print)[1] = 'W';                  \
+  if ((flags) & PF_X)                       \
+      (to_print)[2] = 'X';                  \
+  }while(0)
+
 #endif // IAN_MAIN_H

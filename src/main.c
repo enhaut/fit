@@ -75,7 +75,10 @@ int file_type(Elf *file)
 
 void print_segment(int i, GElf_Phdr *seg)
 {
-  printf("%03d %-15s \n", i, get_seg_type(seg->p_type));
+  char permissions[] = "---";
+  SET_PERMISSIONS(permissions, seg->p_flags);
+
+  printf("%03d %-15s %-10s\n", i, get_seg_type(seg->p_type), permissions);
 }
 
 int segments(Elf *file)
