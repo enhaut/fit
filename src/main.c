@@ -1,5 +1,5 @@
 /**
- * ian
+ * ELF reader
  *
  * @file main.c
  *
@@ -67,33 +67,33 @@ int file_type(Elf *file)
 }
 
 
-void print_sections(Elf *e, GElf_Phdr *program_header)
+int print_sections(Elf *file, GElf_Phdr *program_header)
 {
-  GElf_Shdr shdr;
-  size_t shstrndx;
-  Elf_Scn *scn = NULL;
+  GElf_Shdr section_header;
+  size_t sec_index;
+  Elf_Scn *section = NULL;
   char *name;
 
-  elf_getshdrstrndx(e, &shstrndx);
+  if (elf_getshdrstrndx(file, &sec_index))
+    return EXIT_FAILURE;
 
-  while (( scn = elf_nextscn (e, scn)) != NULL )
+  while ((section = elf_nextscn(file, section)) != NULL)
   {
-    if (gelf_getshdr( scn, &shdr) != &shdr)
-      printf("ERR");
+    if (gelf_getshdr(section, &section_header) != &section_header)
+      return EXIT_FAILURE;
 
-    if ((name = elf_strptr(e, shstrndx, shdr.sh_name)) == NULL)
-      printf("ERROR2");
+    if ((name = elf_strptr(file, sec_index, section_header.sh_name)) == NULL)
+      return EXIT_FAILURE;
 
-    if (shdr.sh_addr &&
-        shdr.sh_size &&
-        (program_header->p_offset <= shdr.sh_offset &&
-         shdr.sh_offset < (program_header->p_offset + program_header->p_memsz)))
+    if (section_header.sh_addr && section_header.sh_size &&
+        (program_header->p_offset <= section_header.sh_offset &&
+         section_header.sh_offset < (program_header->p_offset + program_header->p_memsz)))
        printf ( "%s ", name);
   }
-
+  return EXIT_SUCCESS;
 }
 
-void print_segment(Elf *file, GElf_Phdr *seg, int i)
+int print_segment(Elf *file, GElf_Phdr *seg, int i)
 {
   char permissions[] = "---";
   SET_PERMISSIONS(permissions, seg->p_flags);
@@ -107,9 +107,11 @@ void print_segment(Elf *file, GElf_Phdr *seg, int i)
       type,
       permissions
   );
-  print_sections(file, seg);
+  if (print_sections(file, seg))
+    return EXIT_FAILURE;
 
   putc('\n', stdout);
+  return EXIT_SUCCESS;
 }
 
 int segments(Elf *file)
@@ -118,12 +120,15 @@ int segments(Elf *file)
   if (elf_getphdrnum(file, &segments_no))
     return EXIT_FAILURE;
   printf("Segments: %lu\n", segments_no);
+  printf("%s\t\t%-17s %-7s %s\n", "Segment", "Type", "Perm", "Sections");
 
   GElf_Phdr prog_header;
   for (int i = 0; i < (int)segments_no; ++i)
   {
-    gelf_getphdr(file, i, &prog_header);  // TODO: check
-    print_segment(file, &prog_header, i);
+    if (gelf_getphdr(file, i, &prog_header) == NULL)
+      return EXIT_FAILURE;
+    if (print_segment(file, &prog_header, i))
+      return EXIT_FAILURE;
   }
 
   return EXIT_SUCCESS;
@@ -134,19 +139,25 @@ int main(int argc, char *args[])
   check_args(argc);
   int fd = open_file(args[1]);
 
-  initialize_elf();
-  Elf *file = elf_begin(fd, ELF_C_READ, NULL);
-  //elf_errmsg ( -1);
-  if (file)
+  if (initialize_elf())
+    fprintf(stderr, "Could not initialize ELF\n");
+  else
   {
-    file_type(file); // TODO: check it
-    segments(file);
+    Elf *file = elf_begin(fd, ELF_C_READ, NULL);
+    if (file)
+    {
+      if (file_type(file))
+        fprintf(stderr, "Could not get file type!\n");
+      else
+      {
+        if(segments(file))
+          fprintf(stderr, "Could not print segments!\n");
 
-    elf_end(file);
-  }else
-    fprintf(stderr, "Could not load file by elf_begin()\n");
-
-
+        elf_end(file);
+      }
+    }else
+      fprintf(stderr, "Could not load file by elf_begin()\n");
+  }
   close(fd);
   return 0;
 }

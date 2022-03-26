@@ -6,10 +6,10 @@ LDFLAGS=
 all: ian-proj1
 
 clean:
-	rm src/*.o ian-proj1 xdobro23.zip 2> /dev/null || true
+	rm src/*.o ian-proj1 ian-proj1.tar.gz 2> /dev/null || true
 
 pack:
-	tar -zcvf xdobro23.tar.gz src/* Makefile
+	tar -zcvf ian-proj1.tar.gz src/* Makefile
 
 ian-proj1: src/main.o
 	$(CC) $(CFLAGS) $^ -o $@

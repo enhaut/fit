@@ -1,5 +1,5 @@
 /**
- * ian
+ * ELF reader
  *
  * @file main.h
  *
