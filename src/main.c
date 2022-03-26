@@ -88,11 +88,11 @@ int segments(Elf *file)
     return EXIT_FAILURE;
   printf("Segments: %lu\n", segments_no);
 
-  GElf_Phdr seg;
+  GElf_Phdr prog_header;
   for (int i = 0; i < (int)segments_no; ++i)
   {
-    gelf_getphdr(file, i, &seg);  // TODO: check
-    print_segment(i, &seg);
+    gelf_getphdr(file, i, &prog_header);  // TODO: check
+    print_segment(i, &prog_header);
   }
 
   return EXIT_SUCCESS;
