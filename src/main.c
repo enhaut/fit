@@ -75,7 +75,7 @@ int file_type(Elf *file)
 
 void print_segment(int i, GElf_Phdr *seg)
 {
-  printf("%03d\n", i);
+  printf("%03d %-15s \n", i, get_seg_type(seg->p_type));
 }
 
 int segments(Elf *file)
