@@ -11,5 +11,5 @@ clean:
 pack:
 	tar -zcvf ian-proj1.tar.gz src/* Makefile
 
-ian-proj1: src/main.o
+ian-proj1: src
 	$(CC) $(CFLAGS) $^ -o $@
