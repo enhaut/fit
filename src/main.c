@@ -98,10 +98,13 @@ void print_segment(Elf *file, GElf_Phdr *seg, int i)
   char permissions[] = "---";
   SET_PERMISSIONS(permissions, seg->p_flags);
 
+  char *type;
+  SET_SEG_TYPE(seg->p_type, type);
+
   printf(
-      "%03d %-15s %-10s ",
+      "%03d\t\t%-17s %-7s ",
       i,
-      get_seg_type(seg->p_type),
+      type,
       permissions
   );
   print_sections(file, seg);

@@ -21,38 +21,39 @@
         exit(EXIT_FAILURE);               \
     }while(0)
 
-#define TYPES_COUNT 12
-char *seg_types[TYPES_COUNT] = {
-    "NULL(unused)",
-    "LOAD",
-    "DYNAMIC",
-    "INTERP",
-    "NOTE",
-    "RESERVED",
-    "PHDR",
-    "LOOS(env. spec.)",
-    "HIOS",
-    "LOPROC(cpu spec.)",
-    "HIPROC",
-    "UNSUPPORTED"  // keep as last entry
-};
-
-char *get_seg_type(Elf64_Word type)
-{
-  switch (type)
-  {
-    case 0x60000000:
-      return seg_types[7];
-    case 0x6fffffff:
-      return seg_types[8];
-    case 0x70000000:
-      return seg_types[9];
-    case 0x7fffffff:
-      return seg_types[10];
-    default:
-      return (type >= 0 && type <= 6) ? seg_types[type] : seg_types[TYPES_COUNT - 1];
-    }
-}
+#define SET_SEG_TYPE(type, string) do{              \
+  if (type >= PT_LOOS && type <= PT_HIOS)           \
+    (string) = "LOOS(env. spec.)";                  \
+  else if (type >= PT_LOPROC && type <= PT_HIPROC)  \
+    (string) = "LOPROC(cpu spec.)";                 \
+  else {                                            \
+      switch (type) {                               \
+        case PT_NULL:                               \
+          (string) = "NULL(unused)";                \
+          break;                                    \
+        case PT_LOAD:                               \
+          (string) = "LOAD";                        \
+          break;                                    \
+        case PT_DYNAMIC:                            \
+          (string) = "DYNAMIC";                     \
+          break;                                    \
+        case PT_INTERP:                             \
+          (string) = "INTERP";                      \
+          break;                                    \
+        case PT_NOTE:                               \
+          (string) = "NOTE";                        \
+          break;                                    \
+        case PT_SHLIB:                              \
+          (string) = "RESERVED";                    \
+          break;                                    \
+        case PT_PHDR:                               \
+          (string) = "PHDR";                        \
+          break;                                    \
+        default:                                    \
+          (string) = "???";                         \
+      }                                             \
+  }                                                 \
+  }while(0)
 
 #define SET_PERMISSIONS(to_print, flags) do{\
   if ((flags) & PF_R)                       \
