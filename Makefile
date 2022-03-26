@@ -1,6 +1,6 @@
 LC_ALL=en_GB.UTF-8
 CC=gcc
-CFLAGS= -O3 -g -std=c99 -pedantic -Wall -Wextra
+CFLAGS= -O0 -g -std=c99 -pedantic -Wall -Wextra -lelf
 LDFLAGS=
 
 all: ian-proj1
