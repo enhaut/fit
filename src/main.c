@@ -46,7 +46,30 @@ int initialize_elf()
   return EXIT_SUCCESS;
 }
 
+int file_type(Elf *file)
+{
+  Elf_Kind ek = elf_kind (file);
+  char *type;
+  int ret = EXIT_SUCCESS;
 
+  if (ek == ELF_K_AR)
+    type = "shared library";
+  else if (ek == ELF_K_ELF)
+    type = "elf";
+  else {
+    type = "??? unrecognized, maybe text data";
+    ret = EXIT_FAILURE;
+  }
+
+  if (ret == EXIT_SUCCESS && !elf64_newehdr(file))
+  {
+      fprintf(stderr, "Only 64-bit ELF files are supported\n");
+      ret = EXIT_FAILURE;
+  }
+
+  printf("File type: %s32\n", type);
+  return ret;
+}
 
 int main(int argc, char *args[])
 {
@@ -58,6 +81,7 @@ int main(int argc, char *args[])
   //elf_errmsg ( -1);
   if (file)
   {
+    file_type(file); // TODO: check it
 
     elf_end(file);
   }else
