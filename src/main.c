@@ -99,7 +99,13 @@ int print_segment(Elf *file, GElf_Phdr *seg, int i)
   SET_PERMISSIONS(permissions, seg->p_flags);
 
   char *type;
-  SET_SEG_TYPE(seg->p_type, type);
+  char invalid_type[20];
+  if (seg->p_type <= 6)
+    SET_SEG_TYPE(seg->p_type, type);
+  else{
+    sprintf(invalid_type, "0x%X", seg->p_type);
+    type = invalid_type;
+  }
 
   printf(
       "%03d\t\t%-17s %-7s ",

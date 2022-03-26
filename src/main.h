@@ -22,11 +22,6 @@
     }while(0)
 
 #define SET_SEG_TYPE(type, string) do{              \
-  if (type >= PT_LOOS && type <= PT_HIOS)           \
-    (string) = "LOOS(env. spec.)";                  \
-  else if (type >= PT_LOPROC && type <= PT_HIPROC)  \
-    (string) = "LOPROC(cpu spec.)";                 \
-  else {                                            \
       switch (type) {                               \
         case PT_NULL:                               \
           (string) = "NULL(unused)";                \
@@ -52,7 +47,6 @@
         default:                                    \
           (string) = "???";                         \
       }                                             \
-  }                                                 \
   }while(0)
 
 #define SET_PERMISSIONS(to_print, flags) do{\
