@@ -26,6 +26,12 @@ class MemoryFrame:
 
             super().__setattr__(key, value)
 
+        def __getattr__(self, item):
+            if item == "value" and not self.initialized:
+                error_exit("Variable is not initialized", 56)
+
+            return super().__getattribute__(item)
+
     def __init__(self, initialized=False, parent="MemoryFrame"):
         self._initialized = initialized
         self._variables: List["MemoryFrame.Variable"] = []
@@ -505,8 +511,6 @@ class InstructionNOT(DoubleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != bool:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         to_not = self._get_value_from_symb(self.arg2, memory)
         if not isinstance(to_not, bool):
@@ -521,8 +525,6 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         convert = self._get_value_from_symb(self.arg2, memory)
         if not isinstance(convert, int):
@@ -556,8 +558,6 @@ class InstructionTYPE(DoubleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         if isinstance(self.arg2, ConstantArgument):
             var_type = self.__get_type(self.arg2.type)
@@ -577,9 +577,6 @@ class InstructionSTRLEN(DoubleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != int:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
-
         operand = self._get_value_from_symb(self.arg2, memory)
         if not isinstance(operand, str):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
@@ -709,13 +706,6 @@ class LogicalInstruction(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def __get_result_variable(self, memory):
-        result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != bool:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
-
-        return result
-
     def get_values(self, memory):
         first = self._get_value_from_symb(self.arg2, memory)
         second = self._get_value_from_symb(self.arg3, memory)
@@ -730,7 +720,7 @@ class LogicalInstruction(TripleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         first, second = self.get_values(memory)
-        result = self.__get_result_variable(memory)
+        result = self._get_variable(self.arg1.name, memory)
 
         result.value = self.compare(first, second, memory)
 
@@ -797,8 +787,6 @@ class InstructionSTRI2INT(TripleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         first = self._get_value_from_symb(self.arg2, memory)
         second = self._get_value_from_symb(self.arg3, memory)
@@ -818,8 +806,6 @@ class InstructionCONCAT(TripleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         first = self._get_value_from_symb(self.arg2, memory)
         second = self._get_value_from_symb(self.arg3, memory)
@@ -836,8 +822,6 @@ class InstructionGETCHAR(TripleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
 
         first = self._get_value_from_symb(self.arg2, memory)
         second = self._get_value_from_symb(self.arg3, memory)
@@ -857,8 +841,6 @@ class InstructionSETCHAR(TripleArgsInstruction):
 
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         result = self._get_variable(self.arg1.name, memory)
-        if result.initialized and result.var_type != str:
-            error_exit(f"Invalid target variable type: {result.name}", 53)
         to_replace = list(self._get_value_from_symb(self.arg1, memory))
 
         replace_with = self._get_value_from_symb(self.arg3, memory)[0]
