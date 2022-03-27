@@ -281,7 +281,7 @@ class Instruction:
 
         error_exit(f"Invalid frame name: {name}", 55)
 
-    def _get_variable(self, name: str, memory: Dict[str, List[MemoryFrame]]):
+    def _get_variable(self, name: str, memory: Dict[str, List[MemoryFrame]]) -> "MemoryFrame.Variable":
         frame = self._get_frame_from_var_name(name)
         if not memory[frame]:
             error_exit(f"Frame {frame} is not initialized", 55)
@@ -317,18 +317,12 @@ class Instruction:
 
         error_exit("Unsupported constant value", 52)
 
-    def __get_value_from_var(self, var: VariableArgument, memory):
-        variable = self._get_variable(var.name, memory)
-        if not variable.initialized:
-            error_exit(f"Variable {var} is not initialized!", 52)
-
-        return variable.value
-
     def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
         if isinstance(symb, ConstantArgument):
             return self.__get_value_from_constant(symb)
         else:
-            return self.__get_value_from_var(symb, memory)
+            variable = self._get_variable(symb.name, memory)
+            return variable.value
 
     @staticmethod
     def set_value(variable: "MemoryFrame.Variable", symb_value: Union[bool, int, str, None]):
