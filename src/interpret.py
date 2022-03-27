@@ -22,6 +22,7 @@ class MemoryFrame:
         def __setattr__(self, key, value):
             if key == "value":
                 self.var_type = type(value)  # set variable type based on its value
+                self.initialized = True
 
             super().__setattr__(key, value)
 
