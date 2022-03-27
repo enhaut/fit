@@ -595,6 +595,37 @@ class InstructionSTRLEN(DoubleArgsInstruction):
         self.set_value(result, len(operand))
 
 
+class InstructionREAD(DoubleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __get_type(self):
+        if self.arg2.value == "int":
+            return int
+        elif self.arg2.value == "string":
+            return str
+        elif self.arg2.value == "bool":
+            return bool
+        else:
+            raise ValueError("This should never happen, check regexp")
+
+    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+        result = self._get_variable(self.arg1.name, memory)
+
+        var_type = self.__get_type()
+        value = None
+
+        try:
+            raw_value = input()
+            value = (var_type)(raw_value)  # C style conversion
+        except (ValueError, TypeError):  # invalid type conversion
+            pass
+        except EOFError:  # invalid file
+            pass
+
+        result.value = value
+
+
 class TripleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
@@ -850,7 +881,6 @@ class Interpret:
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
 
         self.source_code = None
-        self.inputs = None
 
         self._instructions: List[ET.ElementTree] = []
         self._parsed: List[Instruction] = []
@@ -881,7 +911,9 @@ class Interpret:
         args = self.arg_parser.parse_args()
 
         self.source_code = args.source
-        self.inputs = args.input
+
+        if args.input != sys.stdin:
+            sys.stdin = args.input
 
     def load_instructions(self):
         tree = ET.parse(self.source_code)
