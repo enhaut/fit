@@ -324,14 +324,6 @@ class Instruction:
             variable = self._get_variable(symb.name, memory)
             return variable.value
 
-    @staticmethod
-    def set_value(variable: "MemoryFrame.Variable", symb_value: Union[bool, int, str, None]):
-        if variable.initialized and variable.var_type != type(symb_value):
-            error_exit(f"Incompatible types of variables: {variable.name} <- {symb_value}", 53)
-
-        variable.value = symb_value
-        variable.initialized = True
-
     def interpret(self, memory: Dict[str, List[MemoryFrame]]):
         raise NotImplementedError()
 
@@ -434,7 +426,7 @@ class InstructionPOPS(SingleArgsInstruction):
         value = memory["GF"][0].get_stack_var()
         variable = self._get_variable(self.arg1.value, memory)
 
-        self.set_value(variable, value)
+        variable.value = value
 
 
 class InstructionWRITE(SingleArgsInstruction):
@@ -504,7 +496,7 @@ class InstructionMOVE(DoubleArgsInstruction):
         variable = self._get_variable(self.arg1.value, memory)
         symb_value = self._get_value_from_symb(self.arg2, memory)
 
-        self.set_value(variable, symb_value)
+        variable.value = symb_value
 
 
 class InstructionNOT(DoubleArgsInstruction):
@@ -520,7 +512,7 @@ class InstructionNOT(DoubleArgsInstruction):
         if not isinstance(to_not, bool):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
-        self.set_value(result, not to_not)
+        result.value = (not to_not)
 
 
 class InstructionINT2CHAR(DoubleArgsInstruction):
@@ -542,7 +534,7 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
             error_exit("Invalid ordinal number", 58)
             return
 
-        self.set_value(result, converted)
+        result.value = converted
 
 
 class InstructionTYPE(DoubleArgsInstruction):
@@ -576,7 +568,7 @@ class InstructionTYPE(DoubleArgsInstruction):
             else:
                 var_type = ""
 
-        self.set_value(result, var_type)
+        result.value = var_type
 
 
 class InstructionSTRLEN(DoubleArgsInstruction):
@@ -592,7 +584,7 @@ class InstructionSTRLEN(DoubleArgsInstruction):
         if not isinstance(operand, str):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
-        self.set_value(result, len(operand))
+        result.value = len(operand)
 
 
 class InstructionREAD(DoubleArgsInstruction):
@@ -623,7 +615,7 @@ class InstructionREAD(DoubleArgsInstruction):
         except EOFError:  # invalid file
             pass
 
-        result.value = value
+        result.value = value  # TODO: maybe set None also when file does not exists
 
 
 class TripleArgsInstruction(Instruction):
@@ -675,7 +667,7 @@ class MathInstruction(TripleArgsInstruction):
         first = self._get_value_from_symb(self.arg2, memory)
         second = self._get_value_from_symb(self.arg3, memory)
 
-        self.set_value(result, self.calculate(first, second))
+        result.value = self.calculate(first, second)
 
 
 class InstructionADD(MathInstruction):
@@ -740,7 +732,7 @@ class LogicalInstruction(TripleArgsInstruction):
         first, second = self.get_values(memory)
         result = self.__get_result_variable(memory)
 
-        self.set_value(result, self.compare(first, second, memory))
+        result.value = self.compare(first, second, memory)
 
 
 class InstructionLT(LogicalInstruction):
@@ -817,7 +809,7 @@ class InstructionSTRI2INT(TripleArgsInstruction):
         if second >= len(first):
             error_exit(f"Index {self.arg3.name} out of range in {self.arg2.name}", 58)
 
-        self.set_value(result, ord(first[second]))
+        result.value = ord(first[second])
 
 
 class InstructionCONCAT(TripleArgsInstruction):
@@ -835,7 +827,7 @@ class InstructionCONCAT(TripleArgsInstruction):
         if not isinstance(first, str) or not isinstance(second, str):
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
 
-        self.set_value(result, first + second)
+        result.value = first + second
 
 
 class InstructionGETCHAR(TripleArgsInstruction):
@@ -856,7 +848,7 @@ class InstructionGETCHAR(TripleArgsInstruction):
         if second >= len(first):
             error_exit(f"Character out of bonds: {self.arg3.name}", 58)
 
-        self.set_value(result, first[second])
+        result.value = first[second]
 
 
 class InstructionSETCHAR(TripleArgsInstruction):
@@ -873,7 +865,7 @@ class InstructionSETCHAR(TripleArgsInstruction):
         replace_at = self._get_value_from_symb(self.arg2, memory)
 
         to_replace[replace_at] = replace_with[0]
-        self.set_value(result, "".join(to_replace))
+        result.value = "".join(to_replace)
 
 
 class Interpret:
