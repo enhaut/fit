@@ -205,7 +205,7 @@ class Instruction:
         ]
     ]
 
-    def __init__(self, name: str, xml_raw: ET.ElementTree):
+    def __init__(self, name: str, xml_raw: ET.ElementTree, memory: Dict[str, List[MemoryFrame]]):
         self.name = name.upper()
         self.raw_instruction = xml_raw
         self.ins_regexp = self.get_instruction_regexp()
@@ -214,6 +214,8 @@ class Instruction:
         self.arg2: ArgumentType = None
         self.arg3: ArgumentType = None
         self.set_arguments()
+
+        self.memory = memory
 
     def __repr__(self):
         ret = f"{self.__class__.__name__} - {self.name} \n"
@@ -287,12 +289,12 @@ class Instruction:
 
         error_exit(f"Invalid frame name: {name}", 55)
 
-    def _get_variable(self, name: str, memory: Dict[str, List[MemoryFrame]]) -> "MemoryFrame.Variable":
+    def _get_variable(self, name: str) -> "MemoryFrame.Variable":
         frame = self._get_frame_from_var_name(name)
-        if not memory[frame]:
+        if not self.memory[frame]:
             error_exit(f"Frame {frame} is not initialized", 55)
 
-        variable = memory[frame][0].get_variable(name[3:])
+        variable = self.memory[frame][0].get_variable(name[3:])
         if variable is None:
             error_exit(f"Undefined variable {name}", 54)
 
@@ -323,14 +325,14 @@ class Instruction:
 
         error_exit("Unsupported constant value", 52)
 
-    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
+    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType]):
         if isinstance(symb, ConstantArgument):
             return self.__get_value_from_constant(symb)
         else:
-            variable = self._get_variable(symb.name, memory)
+            variable = self._get_variable(symb.name)
             return variable.value
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+    def interpret(self):
         raise NotImplementedError()
 
 
@@ -341,47 +343,47 @@ class NoArgsInstruction(Instruction):
     def set_arguments(self):
         pass
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        super().interpret(memory)
+    def interpret(self):
+        super().interpret()
 
 
 class InstructionCREATEFRAME(NoArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        memory["TF"] = [MemoryFrame(True, None)]
+    def interpret(self):
+        self.memory["TF"] = [MemoryFrame(True, None)]
 
 
 class InstructionPUSHFRAME(NoArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        if not memory["TF"]:
+    def interpret(self):
+        if not self.memory["TF"]:
             error_exit("No frame to push!", 55)
 
-        memory["LF"].append(memory["TF"][0])
-        memory["TF"] = []
+        self.memory["LF"].append(self.memory["TF"][0])
+        self.memory["TF"] = []
 
 
 class InstructionPOPFRAME(NoArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        if not memory["LF"]:
+    def interpret(self):
+        if not self.memory["LF"]:
             error_exit("No frame to pop!", 55)
 
-        memory["TF"] = [memory["LF"].pop()]
+        self.memory["TF"] = [self.memory["LF"].pop()]
 
 
 class InstructionBREAK(NoArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        print(memory, file=sys.stderr)
+    def interpret(self):
+        print(self.memory, file=sys.stderr)
 
 
 class SingleArgsInstruction(Instruction):
@@ -395,42 +397,42 @@ class SingleArgsInstruction(Instruction):
         self.check_argument(0, arg)
         self.arg1 = self.get_argument(arg)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        super().interpret(memory)
+    def interpret(self):
+        super().interpret()
 
 
 class InstructionDEFVAR(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
+    def interpret(self):
         frame = self._get_frame_from_var_name()
-        if not memory[frame]:
+        if not self.memory[frame]:
             error_exit(f"Frame {frame} is not initialized", 55)
 
-        if memory[frame][0].get_variable(self.arg1.value[3:]) is not None:
+        if self.memory[frame][0].get_variable(self.arg1.value[3:]) is not None:
             error_exit(f"Redefining variable {self.arg1.value}", 52)
 
-        memory[frame][0].set_variable(self.arg1.value[3:])
+        self.memory[frame][0].set_variable(self.arg1.value[3:])
 
 
 class InstructionPUSHS(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        symb_value = self._get_value_from_symb(self.arg1, memory)
+    def interpret(self):
+        symb_value = self._get_value_from_symb(self.arg1)
 
-        memory["GF"][0].set_stack_var(symb_value)
+        self.memory["GF"][0].set_stack_var(symb_value)
 
 
 class InstructionPOPS(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        value = memory["GF"][0].get_stack_var()
-        variable = self._get_variable(self.arg1.value, memory)
+    def interpret(self):
+        value = self.memory["GF"][0].get_stack_var()
+        variable = self._get_variable(self.arg1.value)
 
         variable.value = value
 
@@ -439,8 +441,8 @@ class InstructionWRITE(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        to_print = self._get_value_from_symb(self.arg1, memory)
+    def interpret(self):
+        to_print = self._get_value_from_symb(self.arg1)
 
         if to_print is None:
             to_print = ""
@@ -456,8 +458,8 @@ class InstructionDPRINT(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        to_print = self._get_value_from_symb(self.arg1, memory)
+    def interpret(self):
+        to_print = self._get_value_from_symb(self.arg1)
 
         print(to_print, file=sys.stderr, end="")
 
@@ -466,8 +468,8 @@ class InstructionEXIT(SingleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        code = self._get_value_from_symb(self.arg1, memory)
+    def interpret(self):
+        code = self._get_value_from_symb(self.arg1)
 
         if not isinstance(code, int) or code < 0 or code > 49:
             error_exit("Invalid exit code", 57)
@@ -490,17 +492,17 @@ class DoubleArgsInstruction(Instruction):
         self.arg1 = self.get_argument(arg)
         self.arg2 = self.get_argument(arg2)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        super().interpret(memory)
+    def interpret(self):
+        super().interpret()
 
 
 class InstructionMOVE(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        variable = self._get_variable(self.arg1.value, memory)
-        symb_value = self._get_value_from_symb(self.arg2, memory)
+    def interpret(self):
+        variable = self._get_variable(self.arg1.value)
+        symb_value = self._get_value_from_symb(self.arg2)
 
         variable.value = symb_value
 
@@ -509,10 +511,10 @@ class InstructionNOT(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
-        to_not = self._get_value_from_symb(self.arg2, memory)
+        to_not = self._get_value_from_symb(self.arg2)
         if not isinstance(to_not, bool):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
@@ -523,10 +525,10 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
-        convert = self._get_value_from_symb(self.arg2, memory)
+        convert = self._get_value_from_symb(self.arg2)
         if not isinstance(convert, int):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
@@ -556,13 +558,13 @@ class InstructionTYPE(DoubleArgsInstruction):
 
         error_exit("Invalid constant type", 53)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
         if isinstance(self.arg2, ConstantArgument):
             var_type = self.__get_type(self.arg2.type)
         else:
-            variable = self._get_variable(self.arg2.name, memory)
+            variable = self._get_variable(self.arg2.name)
             if variable.initialized:
                 var_type = self.__get_type(variable.value)
             else:
@@ -575,9 +577,9 @@ class InstructionSTRLEN(DoubleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
-        operand = self._get_value_from_symb(self.arg2, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
+        operand = self._get_value_from_symb(self.arg2)
         if not isinstance(operand, str):
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
@@ -598,8 +600,8 @@ class InstructionREAD(DoubleArgsInstruction):
         else:
             raise ValueError("This should never happen, check regexp")
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
         var_type = self.__get_type()
         value = None
@@ -639,15 +641,15 @@ class MathInstruction(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType], memory):
+    def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType]):
         if isinstance(symb, VariableArgument):
-            variable = self._get_variable(symb.name, memory)
+            variable = self._get_variable(symb.name)
             if variable.initialized and variable.var_type != int:
                 error_exit(f"Incompatible operand {symb.name} type!", 53)
 
             return variable.value
         else:
-            constant = super()._get_value_from_symb(symb, memory)
+            constant = super()._get_value_from_symb(symb)
             if not isinstance(constant, int):
                 error_exit(f"Incompatible operand {symb.name} type!", 53)
 
@@ -656,13 +658,13 @@ class MathInstruction(TripleArgsInstruction):
     def calculate(self, first: int, second: int) -> int:
         raise NotImplementedError("Needs to be implemented in inherited classes")
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
         if result.initialized and result.var_type != int:
             error_exit(f"Incompatible result variable {result.name} type!", 53)
 
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         result.value = self.calculate(first, second)
 
@@ -706,30 +708,30 @@ class LogicalInstruction(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_values(self, memory):
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+    def get_values(self):
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         if not isinstance(first, type(second)) or isinstance(first, type(None)):
             error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
 
         return first, second
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         raise NotImplementedError("Should be evaluated in inherited classes")
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        first, second = self.get_values(memory)
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        first, second = self.get_values()
+        result = self._get_variable(self.arg1.name)
 
-        result.value = self.compare(first, second, memory)
+        result.value = self.compare(first, second)
 
 
 class InstructionLT(LogicalInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         return first < second
 
 
@@ -737,7 +739,7 @@ class InstructionGT(LogicalInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         return first > second
 
 
@@ -745,9 +747,9 @@ class InstructionEQ(LogicalInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_values(self, memory):
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+    def get_values(self):
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         if not isinstance(first, type(second)) and \
                 not (isinstance(first, type(None)) or isinstance(second, type(None))):
@@ -755,7 +757,7 @@ class InstructionEQ(LogicalInstruction):
 
         return first, second
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         return first == second
 
 
@@ -763,7 +765,7 @@ class InstructionAND(LogicalInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         if not isinstance(first, bool) or not isinstance(second, bool):
             error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
 
@@ -774,7 +776,7 @@ class InstructionOR(LogicalInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def compare(self, first, second, memory):
+    def compare(self, first, second):
         if not isinstance(first, bool) or not isinstance(second, bool):
             error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
 
@@ -785,11 +787,11 @@ class InstructionSTRI2INT(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         if not isinstance(first, str) or not isinstance(second, int):
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
@@ -804,11 +806,11 @@ class InstructionCONCAT(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         if not isinstance(first, str) or not isinstance(second, str):
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
@@ -820,11 +822,11 @@ class InstructionGETCHAR(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
 
-        first = self._get_value_from_symb(self.arg2, memory)
-        second = self._get_value_from_symb(self.arg3, memory)
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
 
         if not isinstance(first, str) or not isinstance(second, int):
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
@@ -839,12 +841,12 @@ class InstructionSETCHAR(TripleArgsInstruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def interpret(self, memory: Dict[str, List[MemoryFrame]]):
-        result = self._get_variable(self.arg1.name, memory)
-        to_replace = list(self._get_value_from_symb(self.arg1, memory))
+    def interpret(self):
+        result = self._get_variable(self.arg1.name)
+        to_replace = list(self._get_value_from_symb(self.arg1))
 
-        replace_with = self._get_value_from_symb(self.arg3, memory)[0]
-        replace_at = self._get_value_from_symb(self.arg2, memory)
+        replace_with = self._get_value_from_symb(self.arg3)[0]
+        replace_at = self._get_value_from_symb(self.arg2)
 
         to_replace[replace_at] = replace_with[0]
         result.value = "".join(to_replace)
@@ -940,7 +942,7 @@ class Interpret:
         for instruction in self._instructions:
             name, ins_class = self.__get_instruction_class(instruction)
 
-            self._parsed.append(ins_class(name, instruction))
+            self._parsed.append(ins_class(name, instruction, self.frames))
 
     def run(self):
         self.load_instructions()
