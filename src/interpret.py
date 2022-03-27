@@ -152,7 +152,7 @@ class TypeArgument(ArgumentType):
 
 class Instruction:
     __VAR_NAME_REGEXP = r"[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*"
-    __CONSTANTS_REGEXP = r"(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\\\d{3})*"
+    __CONSTANTS_REGEXP = r"(?:(?:0[xX][0-9a-fA-F]+|[+-]?[0-9]+))|(?:true|false)|nil|(?:[^#\\\\\s]|\\\d{3})*"
     VAR_REGEXPS = {
         "var": "([LTG]F@" + __VAR_NAME_REGEXP + ")",
         "label": "(" + __VAR_NAME_REGEXP + ")",
@@ -292,8 +292,14 @@ class Instruction:
 
         return variable
 
-    @staticmethod
-    def __get_value_from_constant(const: ConstantArgument):
+    def __encode_string(self, value: str):
+        match = re.search(r"\\(\d{3})", value)
+        if match:
+            value = value[:match.start()] + chr(int(match.group(1))) + self.__encode_string(value[match.end():])
+
+        return value
+
+    def __get_value_from_constant(self, const: ConstantArgument):
         if const.type == int:
             try:
                 return int(const.value)  # TODO: implement another basis
@@ -305,7 +311,7 @@ class Instruction:
             else:
                 return True  # TODO: check if everything != false is evaluated as a true
         elif const.type == str:
-            return const.value
+            return self.__encode_string(const.value)
         elif const.type == type(None):
             return None
 
