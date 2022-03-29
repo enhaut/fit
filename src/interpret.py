@@ -248,17 +248,25 @@ class Instruction:
             return True
         error_exit("Invalid param attributes", 31)
 
+    """
+        @brief JUMPIFEQ is inherited from SingleArgsIns and also TripleArgsIns,
+        so it needs to find parent with highest # of args to parse them all correctly
+    """
     def __get_instruction_array_index(self):
+        ret = -1
+
         if isinstance(self, NoArgsInstruction):
-            return 0
-        elif isinstance(self, SingleArgsInstruction):
-            return 1
-        elif isinstance(self, DoubleArgsInstruction):
-            return 2
-        elif isinstance(self, TripleArgsInstruction):
-            return 3
-        else:
+            ret = 0
+        if isinstance(self, SingleArgsInstruction):
+            ret = 1
+        if isinstance(self, DoubleArgsInstruction):
+            ret = 2
+        if isinstance(self, TripleArgsInstruction):
+            ret = 3
+
+        if ret == -1:
             raise NotImplementedError("Instruction with >3 arguments is not (yet) supported")
+        return ret
 
     def get_instruction_regexp(self):
         instructions_array = self.INSTRUCTIONS[self.__get_instruction_array_index()]
@@ -513,6 +521,53 @@ class InstructionLABEL(SingleArgsInstruction):
             self._check_duplicity()
         except ValueError as e:
             error_exit(str(e), 52)
+
+
+class InstructionJUMP(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._jump_dest = None
+
+    @property
+    def next(self):
+        if self._jump_dest:
+            dest = self._jump_dest
+            self._jump_dest = None
+
+            return dest
+
+        return self._next
+
+    @next.setter
+    def next(self, value):
+        self._next = value
+
+    def _get_jump_destination(self):
+        prev = self.prev
+        while prev:
+            if isinstance(prev, InstructionLABEL) and prev.label_name == self.arg1.value:
+                return prev
+            prev = prev.prev
+
+        next_ins = self.next
+        while next_ins:
+            if isinstance(next_ins, InstructionLABEL) and next_ins.label_name == self.arg1.value:
+                return next_ins
+            next_ins = next_ins.next
+
+        return None
+
+    def _check_jump_dest(self):
+        destination = self._get_jump_destination()
+        if not destination:
+            error_exit("Could not locate jump", 52)
+
+        return destination
+
+    def interpret(self):
+        destination = self._check_jump_dest()
+
+        self._jump_dest = destination
 
 
 class DoubleArgsInstruction(Instruction):
@@ -890,6 +945,38 @@ class InstructionSETCHAR(TripleArgsInstruction):
         result.value = "".join(to_replace)
 
 
+class InstructionJUMPIFEQ(InstructionJUMP, TripleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        for base in InstructionJUMPIFEQ.__bases__:
+            if base == TripleArgsInstruction:
+                base.set_arguments(self)
+                break
+
+    def _compare(self, first, second):
+        return first == second
+
+    def interpret(self):
+        first = self._get_value_from_symb(self.arg2)
+        second = self._get_value_from_symb(self.arg3)
+
+        first_type = type(first)
+        second_type = type(second)
+
+        if (first_type == second_type or first_type == type(None) or second_type == type(None)) and \
+                self._check_jump_dest() and self._compare(first, second):
+            super().interpret()
+
+
+class InstructionJUMPIFNEQ(InstructionJUMPIFEQ):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _compare(self, first, second):
+        return first != second
+
+
 class Interpret:
     def __init__(self):
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
@@ -1008,7 +1095,7 @@ class Interpret:
             except SystemExit as e:  # used for `EXIT` instruction
                 exit(e.code)
 
-            if to_run.next:
+            if to_run._next:
                 self.IP.append(to_run.next)
 
 
