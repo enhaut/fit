@@ -209,6 +209,8 @@ class Instruction:
         self.name = name.upper()
         self.raw_instruction = xml_raw
         self.ins_regexp = self.get_instruction_regexp()
+        self._prev: Instruction = None
+        self._next: Instruction = None
 
         self.arg1: ArgumentType = None
         self.arg2: ArgumentType = None
@@ -223,6 +225,22 @@ class Instruction:
         ret += f"\t{self.arg2}\n"
         ret += f"\t{self.arg3}"
         return ret
+
+    @property
+    def next(self):
+        return self._next
+
+    @next.setter
+    def next(self, value: "Instruction"):
+        self._next = value
+
+    @property
+    def prev(self):
+        return self._prev
+
+    @prev.setter
+    def prev(self, value: "Instruction"):
+        self._prev = value
 
     @staticmethod
     def check_parameter_attributes(parameter: ET.Element):
@@ -859,13 +877,13 @@ class Interpret:
         self.source_code = None
 
         self._instructions: List[ET.ElementTree] = []
-        self._parsed: List[Instruction] = []
 
         self.frames: Dict[str, List[MemoryFrame]] = {
             "GF": [MemoryFrame(True, None)],
             "TF": [],
             "LF": []
         }
+        self.IP: List[Instruction] = []  # next instruction pointers stack
 
     def __register_arguments(self):
         group = self.arg_parser.add_mutually_exclusive_group(required=True)
@@ -939,14 +957,39 @@ class Interpret:
             error_exit("Invalid arguments count", 31)
 
     def parse_instructions(self):
+        prev = None
+
         for instruction in self._instructions:
             name, ins_class = self.__get_instruction_class(instruction)
+            initialized: Instruction = ins_class(name, instruction, self.frames)
 
-            self._parsed.append(ins_class(name, instruction, self.frames))
+            initialized.prev = prev
+            if prev:
+                prev.next = initialized
+            prev = initialized
+
+        return prev  # it returns the last instruction
+
+    def prepare_instruction_ptr(self, last: Instruction):
+        while last.prev:
+            last = last.prev
+
+        self.IP.append(last)
 
     def run(self):
         self.load_instructions()
-        self.parse_instructions()
+        last_ins = self.parse_instructions()
+        self.prepare_instruction_ptr(last_ins)
+
+        while self.IP:
+            to_run = self.IP.pop()
+            try:
+                to_run.interpret()
+            except SystemExit as e:  # used for `EXIT` instruction
+                exit(e.code)
+
+            if to_run.next:
+                self.IP.append(to_run.next)
 
 
 if __name__ == "__main__":
