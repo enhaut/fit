@@ -495,6 +495,26 @@ class InstructionEXIT(SingleArgsInstruction):
         raise SystemExit(code)
 
 
+class InstructionLABEL(SingleArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label_name = self.arg1.value
+
+    def _check_duplicity(self):
+        prev = self.prev
+
+        while prev:
+            if isinstance(prev, InstructionLABEL) and prev.label_name == self.label_name:
+                raise ValueError(f"Redefining label: {self.label_name}")
+            prev = prev.prev
+
+    def interpret(self):
+        try:
+            self._check_duplicity()
+        except ValueError as e:
+            error_exit(str(e), 52)
+
+
 class DoubleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
