@@ -246,7 +246,7 @@ class Instruction:
     def check_parameter_attributes(parameter: ET.Element):
         if parameter is not None and "type" in parameter.keys() and len(parameter.items()) == 1:
             return True
-        error_exit("Invalid param attributes", 31)
+        error_exit("Invalid param attributes", 32)
 
     """
         @brief JUMPIFEQ is inherited from SingleArgsIns and also TripleArgsIns,
@@ -338,7 +338,7 @@ class Instruction:
             try:
                 return int(const.value)  # TODO: implement another basis
             except ValueError:
-                error_exit("Invalid number", 52)
+                error_exit("Invalid number", 32)
         elif const.type == bool:
             if const.value == "false":
                 return False
@@ -1095,19 +1095,19 @@ class Interpret:
 
         for parameter in children:
             if parameter.tag not in allowed_tags:
-                error_exit("Invalid instruction argument", 31)
+                error_exit("Invalid instruction argument", 32)
 
         params_count = len(children)
         name = instruction.attrib["opcode"]  # TODO: check for opcode attr
 
-        if params_count == 0:
-            return name, globals()[f"Instruction{name.upper()}"]
-        elif params_count == 1:
-            return name, globals()[f"Instruction{name.upper()}"]
-        elif params_count == 2:
-            return name, globals()[f"Instruction{name.upper()}"]
-        elif params_count == 3:
-            return name, globals()[f"Instruction{name.upper()}"]
+        try:
+            instruction_class = globals()[f"Instruction{name.upper()}"]
+        except KeyError:
+            instruction_class = None
+            error_exit("Invalid instruciton name", 52)
+
+        if 0 <= params_count <= 3:
+            return name, instruction_class
         else:
             error_exit("Invalid arguments count", 31)
 
