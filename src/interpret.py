@@ -412,6 +412,32 @@ class InstructionBREAK(NoArgsInstruction):
         print(self.memory, file=sys.stderr)
 
 
+class InstructionRETURN(NoArgsInstruction):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._jump_dest = None
+
+    @property
+    def next(self):
+        if self._jump_dest:
+            dest = self._jump_dest
+            self._jump_dest = None
+
+            return dest
+
+        return self._next
+
+    @next.setter
+    def next(self, value):
+        self._next = value
+
+    def interpret(self):
+        try:
+            self._jump_dest = self.memory["--CALL_STACK"].pop()
+        except IndexError:
+            error_exit("Nowhere to return!", 56)
+
+
 class SingleArgsInstruction(Instruction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
@@ -568,6 +594,16 @@ class InstructionJUMP(SingleArgsInstruction):
         destination = self._check_jump_dest()
 
         self._jump_dest = destination
+
+
+class InstructionCALL(InstructionJUMP):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def interpret(self):
+        self.memory["--CALL_STACK"].append(self.next)
+
+        super().interpret()
 
 
 class DoubleArgsInstruction(Instruction):
@@ -988,7 +1024,8 @@ class Interpret:
         self.frames: Dict[str, List[MemoryFrame]] = {
             "GF": [MemoryFrame(True, None)],
             "TF": [],
-            "LF": []
+            "LF": [],
+            "--CALL_STACK": []
         }
         self.IP: List[Instruction] = []  # next instruction pointers stack
 
