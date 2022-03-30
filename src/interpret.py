@@ -1054,26 +1054,37 @@ class Interpret:
             sys.stdin = args.input
 
     def load_instructions(self):
-        tree = ET.parse(self.source_code)
+        try:
+            tree = ET.parse(self.source_code)
+        except ET.ParseError:
+            error_exit("Invalid source code syntax", 31)
+
         raw_instructions = tree.findall("instruction")
+        if len(raw_instructions) != len([*tree.getroot()]):
+            error_exit("Invalid tag name!", 32)
+
+        try:
+            raw_instructions = sorted(raw_instructions, key=(lambda ins: int(ins.get("order", default=0))))
+        except ValueError:
+            error_exit("Invalid instruction order", 32)  # invalid `order` attribute
+
         instruction_count = len(raw_instructions)
 
         self._instructions = [None for _ in range(instruction_count)]
+        orders = []
+        instruction_index = 0
+
         for instruction in raw_instructions:
             if "order" not in instruction.keys() or "opcode" not in instruction.keys():
                 error_exit("Invalid instruction attributes", 32)
 
-            order = 1
-            try:
-                order = int(instruction.get("order"))
-            except ValueError:
+            order = int(instruction.get("order"))
+            if order <= 0 or order in orders:
                 error_exit("Invalid instruction order", 32)
 
-            if self._instructions[order - 1]:
-                error_exit("Duplicity of instruction order", 32)
-
-            self._instructions[order - 1] = instruction
-        # no need to check for `None` in list, all elements are occupied
+            self._instructions[instruction_index] = instruction
+            orders.append(order)
+            instruction_index += 1
 
     @staticmethod
     def __get_instruction_class(instruction: ET.ElementTree):
@@ -1104,6 +1115,9 @@ class Interpret:
         prev = None
 
         for instruction in self._instructions:
+            if instruction.tag != "instruction":
+                error_exit("Invalid instruction tag", 32)
+
             name, ins_class = self.__get_instruction_class(instruction)
             initialized: Instruction = ins_class(name, instruction, self.frames)
 
