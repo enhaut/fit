@@ -1053,12 +1053,18 @@ class Interpret:
         if args.input != sys.stdin:
             sys.stdin = args.input
 
+    @staticmethod
+    def _check_header(header: ET.ElementTree):
+        if header.getroot().get("language", None) != "IPPcode22":
+            error_exit("Invalid program header", 32)
+
     def load_instructions(self):
         try:
             tree = ET.parse(self.source_code)
         except ET.ParseError:
             error_exit("Invalid source code syntax", 31)
 
+        self._check_header(tree)
         raw_instructions = tree.findall("instruction")
         if len(raw_instructions) != len([*tree.getroot()]):
             error_exit("Invalid tag name!", 32)
@@ -1104,7 +1110,7 @@ class Interpret:
             instruction_class = globals()[f"Instruction{name.upper()}"]
         except KeyError:
             instruction_class = None
-            error_exit("Invalid instruciton name", 52)
+            error_exit("Invalid instruciton name", 32)
 
         if 0 <= params_count <= 3:
             return name, instruction_class
@@ -1115,9 +1121,6 @@ class Interpret:
         prev = None
 
         for instruction in self._instructions:
-            if instruction.tag != "instruction":
-                error_exit("Invalid instruction tag", 32)
-
             name, ins_class = self.__get_instruction_class(instruction)
             initialized: Instruction = ins_class(name, instruction, self.frames)
 
