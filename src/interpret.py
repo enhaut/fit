@@ -216,6 +216,7 @@ class Instruction:
         self.arg2: ArgumentType = None
         self.arg3: ArgumentType = None
         self.set_arguments()
+        self._check_arguments_count()
 
         self.memory = memory
 
@@ -277,6 +278,15 @@ class Instruction:
             return instruction_array
 
         error_exit(f"Invalid instruction: {self.name}", 32)
+
+    def _check_arguments_count(self):
+        allowed_count = self.__get_instruction_array_index()
+        count = len(self.raw_instruction.findall("arg1"))
+        count += len(self.raw_instruction.findall("arg2"))
+        count += len(self.raw_instruction.findall("arg3"))
+
+        if allowed_count != count:
+            error_exit(f"Invalid number of arguments for function {self.name}", 32)
 
     def set_arguments(self):
         raise NotImplementedError
