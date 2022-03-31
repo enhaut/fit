@@ -39,7 +39,7 @@ class MemoryFrame:
         self._parent = parent
 
     def __repr__(self):
-        ret = ""
+        ret = "("
         for variable in self._variables:
             ret += f"{variable.name}/{variable.var_type}({variable.initialized})={variable.value};"
 
@@ -47,7 +47,7 @@ class MemoryFrame:
         for value in self._stack:
             ret += f"{value};"
 
-        return ret
+        return ret + ")"
 
     def get_variable(self, name: str):
         for variable in self._variables:
@@ -320,7 +320,7 @@ class Instruction:
         if not self.memory[frame]:
             error_exit(f"Frame {frame} is not initialized", 55)
 
-        variable = self.memory[frame][0].get_variable(name[3:])
+        variable = self.memory[frame][-1].get_variable(name[3:])
         if variable is None:
             error_exit(f"Undefined variable {name}", 54)
 
@@ -462,10 +462,10 @@ class InstructionDEFVAR(SingleArgsInstruction):
         if not self.memory[frame]:
             error_exit(f"Frame {frame} is not initialized", 55)
 
-        if self.memory[frame][0].get_variable(self.arg1.value[3:]) is not None:
+        if self.memory[frame][-1].get_variable(self.arg1.value[3:]) is not None:
             error_exit(f"Redefining variable {self.arg1.value}", 52)
 
-        self.memory[frame][0].set_variable(self.arg1.value[3:])
+        self.memory[frame][-1].set_variable(self.arg1.value[3:])
 
 
 class InstructionPUSHS(SingleArgsInstruction):
