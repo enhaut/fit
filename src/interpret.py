@@ -510,9 +510,9 @@ class InstructionWRITE(SingleArgsInstruction):
 
         if to_print is None:
             to_print = ""
-        elif to_print == True:
+        elif type(to_print) == bool and to_print:
             to_print = "true"
-        elif to_print == False:
+        elif type(to_print) == bool and not to_print:
             to_print = "false"
 
         print(to_print, end="")
@@ -535,7 +535,7 @@ class InstructionEXIT(SingleArgsInstruction):
     def interpret(self):
         code = self._get_value_from_symb(self.arg1)
 
-        if not isinstance(code, int) or code < 0 or code > 49:
+        if isinstance(code, bool) or not isinstance(code, int) or code < 0 or code > 49:
             error_exit("Invalid exit code", 57)
 
         raise SystemExit(code)
@@ -670,7 +670,7 @@ class InstructionINT2CHAR(DoubleArgsInstruction):
         result = self._get_variable(self.arg1.name)
 
         convert = self._get_value_from_symb(self.arg2)
-        if not isinstance(convert, int):
+        if type(convert) != int:
             error_exit(f"Invalid operand {self.arg2.name} type!", 53)
 
         try:
@@ -688,7 +688,7 @@ class InstructionTYPE(DoubleArgsInstruction):
 
     @staticmethod
     def __get_type(value):
-        if isinstance(value, int) or value == int:
+        if (isinstance(value, int) or value == int) and not isinstance(value, bool):
             return "int"
         elif isinstance(value, str) or value == str:
             return "string"
@@ -791,7 +791,7 @@ class MathInstruction(TripleArgsInstruction):
             return variable.value
         else:
             constant = super()._get_value_from_symb(symb)
-            if not isinstance(constant, int):
+            if type(constant) != int:
                 error_exit(f"Incompatible operand {symb.name} type!", 53)
 
             return constant
@@ -853,7 +853,7 @@ class LogicalInstruction(TripleArgsInstruction):
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
 
-        if not isinstance(first, type(second)) or isinstance(first, type(None)):
+        if type(first) != type(second) or isinstance(first, type(None)):  # using != because in python bool is instance of int
             error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
 
         return first, second
@@ -892,7 +892,7 @@ class InstructionEQ(LogicalInstruction):
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
 
-        if not isinstance(first, type(second)) and \
+        if type(first) != type(second) and \
                 not (isinstance(first, type(None)) or isinstance(second, type(None))):
             error_exit(f"Invalid operand types: {self.arg2.name}, {self.arg3.name}", 53)
 
@@ -934,7 +934,7 @@ class InstructionSTRI2INT(TripleArgsInstruction):
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
 
-        if not isinstance(first, str) or not isinstance(second, int):
+        if not isinstance(first, str) or type(second) != int:
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
 
         if second >= len(first):
@@ -969,7 +969,7 @@ class InstructionGETCHAR(TripleArgsInstruction):
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
 
-        if not isinstance(first, str) or not isinstance(second, int):
+        if not isinstance(first, str) or type(second) != int:
             error_exit(f"Invalid operand {self.arg2.name} or {self.arg3.name} types!", 53)
 
         if second >= len(first):
