@@ -799,6 +799,11 @@ class MathInstruction(TripleArgsInstruction):
     def calculate(self, first: int, second: int) -> int:
         raise NotImplementedError("Needs to be implemented in inherited classes")
 
+    @staticmethod
+    def _check_types_compatibility(first, second):
+        if first != second or first != int:
+            error_exit("Invalid operand types", 53)
+
     def interpret(self):
         result = self._get_variable(self.arg1.name)
         if result.initialized and result.var_type != int:
@@ -806,6 +811,7 @@ class MathInstruction(TripleArgsInstruction):
 
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
+        self._check_types_compatibility(type(first), type(second))
 
         result.value = self.calculate(first, second)
 
