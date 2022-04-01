@@ -26,7 +26,7 @@ class MemoryFrame:
 
             super().__setattr__(key, value)
 
-        def __getattr__(self, item):
+        def __getattribute__(self, item):
             if item == "value" and not self.initialized:
                 error_exit("Variable is not initialized", 56)
 
