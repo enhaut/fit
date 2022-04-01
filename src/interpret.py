@@ -111,6 +111,8 @@ class ConstantArgument(ArgumentType):
 
     def set_value(self):
         self.value = self.raw_element.text
+        if self.value is None:
+            self.value = ""
 
     def get_type(self):
         raw_type = self.raw_element.attrib["type"]
@@ -294,7 +296,7 @@ class Instruction:
     def check_argument(self, attr_id: int, attribute_element: ET.Element):
         attr_id += 1  # first member of array is instruction name
 
-        if not re.match(self.ins_regexp[attr_id], attribute_element.text, re.UNICODE):
+        if attribute_element.get("text", None) and not re.match(self.ins_regexp[attr_id], attribute_element.text, re.UNICODE):
             error_exit("Invalid attribute type!", 53)
 
     def get_argument(self, element: ET.Element) -> ArgumentType:
