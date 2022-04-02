@@ -1019,8 +1019,12 @@ class InstructionJUMPIFEQ(InstructionJUMP, TripleArgsInstruction):
         second_type = type(second)
 
         if (first_type == second_type or first_type == type(None) or second_type == type(None)) and \
-                self._check_jump_dest() and self._compare(first, second):
-            super().interpret()
+                self._check_jump_dest():
+
+            if self._compare(first, second):
+                super().interpret()
+        else:
+            error_exit("Invalid operand types", 53)
 
 
 class InstructionJUMPIFNEQ(InstructionJUMPIFEQ):
