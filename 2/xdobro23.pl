@@ -15,7 +15,7 @@ u24_r:- write('Zadej LIN: '),read(LIN),
         u24(LIN,VIN1,VIN2,LOUT),write(LOUT).
 
 
-bothBigger(VIN1,VIN2,[H|_],VOUT) :- VIN1 > VIN2, VIN1 > H, VIN2 < H, VOUT is H.
+bothBigger(VIN1,VIN2,[H|_],VOUT) :- VIN1 > VIN2, VIN1 > H, VIN2 < H, VOUT is H, !.
 bothBigger(VIN1,VIN2,[_|T],VOUT) :- bothBigger(VIN1,VIN2,T,VOUT).
 
 u24(LIN,VIN1,VIN2,VOUT):- bothBigger(VIN1,VIN2,LIN,VOUT).
