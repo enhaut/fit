@@ -1,11 +1,11 @@
-% Zad·nÌ Ë. 24:
-% Napiöte program ¯eöÌcÌ ˙kol dan˝ predik·tem u24(LIN,VIN1,VIN2,VOUT), kde 
-% LIN je vstupnÌ ËÌseln˝ seznam, promÏnnÈ VIN1 a VIN2 obsahujÌ ËÌsla 
-% splÚujÌcÌ podmÌnku VIN1>VIN2 a VOUT je promÏnn·, ve kterÈ se vracÌ prvnÌ 
-% ËÌslo seznamu LIN splÚujÌcÌ podmÌnku VIN1>VOUT>VIN2. Pokud û·dnÈ takovÈ 
-% ËÌslo neexistuje je predik·t nepravdiv˝ (vracÌ hodnotu false).  
+% Zad√°n√≠ ƒç. 24:
+% Napi≈°te program ≈ôe≈°√≠c√≠ √∫kol dan√Ω predik√°tem u24(LIN,VIN1,VIN2,VOUT), kde 
+% LIN je vstupn√≠ ƒç√≠seln√Ω seznam, promƒõnn√© VIN1 a VIN2 obsahuj√≠ ƒç√≠sla 
+% spl≈àuj√≠c√≠ podm√≠nku VIN1>VIN2 a VOUT je promƒõnn√°, ve kter√© se vrac√≠ prvn√≠ 
+% ƒç√≠slo seznamu LIN spl≈àuj√≠c√≠ podm√≠nku VIN1>VOUT>VIN2. Pokud ≈æ√°dn√© takov√© 
+% ƒç√≠slo neexistuje je predik√°t nepravdiv√Ω (vrac√≠ hodnotu false).  
 
-% TestovacÌ predik·ty:                         			% VOUT        
+% Testovac√≠ predik√°ty:                         			% VOUT        
 u24_1:- u24([15,2,4,9,12,17],10,2,VOUT),write(VOUT).		% 4
 u24_2:- u24([15,2,-14,9,12,17],10,2,VOUT),write(VOUT).		% 9
 u24_3:- u24([-10,-20.8,-5.3,0,7],0,-10,VOUT),write(VOUT).	% -5.3
