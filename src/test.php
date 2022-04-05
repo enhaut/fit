@@ -49,17 +49,21 @@
         public function summary($results)
         {
             $tests = count($results);
+            if ($tests == 0)
+                $tests == 1;  // division by zero workaround
+
             $passed = 0;
             foreach ($results as $result)
                 if ($result->evaluated)
                     $passed++;
+            $percentage =  round(($passed / $tests * 100));
 
-            $summary = "<div class='dir'>";
+            $summary = "<div class='dir' style='text-align: center'>";
             $summary .= "<h1>Summary</h1>";
             $summary .= "<h3>Tests: ". $tests;
             $summary .= "<br>Passed: ". $passed;
             $summary .= "<br>Failed: ". ($tests - $passed);
-            $summary .= "</h3><h2>Result: ". round((($passed / $tests) * 100), 0);
+            $summary .= "</h3><h2 style='color:". (($percentage >= 50) ? "darkgreen" : "firebrick") ."'>Result: ". $percentage;
             $summary .= "%</h2></div>";
 
             $this->output = str_replace("{SUMMARY}", $summary, $this->output);
