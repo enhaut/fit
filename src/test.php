@@ -27,7 +27,7 @@
         public function test_dir($directory, $results)
         {
             $this->output .= "<div class='dir'>";
-            $this->output .= "<h1>".$directory."</h1>";
+            $this->output .= "<h1>".str_replace("//", "/", $directory)."</h1>";
 
             foreach ($results as $result)
             {
