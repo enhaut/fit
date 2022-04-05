@@ -2,6 +2,79 @@
     ini_set('display_errors', 'stderr');
 
 
+    class HTMLGenerator{
+        private $output;
+
+        public function __construct()
+        {
+            $this->output = "";
+        }
+
+        public function head()
+        {
+            $this->output .= "<html lang=\"en\"><meta charset=\"UTF-8\">";
+            $this->output .= "<style>
+                                .dir{width:60%;margin-left: auto;margin-right: auto; background-color: darkgray; border-radius: 10px;padding-left: 1em;padding-bottom: .5em}
+                                .test{width: 80%; margin-left: 3%}
+                                p{margin-left: 7.5%;margin-top: -1em;}
+                              </style>{SUMMARY}";
+        }
+
+        public function footer()
+        {
+            $this->output .= "</html>\n";
+        }
+        public function test_dir($directory, $results)
+        {
+            $this->output .= "<div class='dir'>";
+            $this->output .= "<h1>".$directory."</h1>";
+
+            foreach ($results as $result)
+            {
+                $test_name = explode("/", $result->path);
+                $this->test($test_name[count($test_name) - 1], $result->evaluated, $result->description);
+            }
+        }
+        public function test($path, $result, $desc)
+        {
+            $passed_emoji = ($result) ? "✅ " : "❌ ";
+            $this->output .= "<div class='test'> <h2 class='test'>". $passed_emoji . $path ."</h2>";
+            if ($desc)
+                $this->output .= "<p>". $desc ."</p>";
+
+            $this->output .= "</div>";
+
+        }
+
+        public function summary($results)
+        {
+            $tests = count($results);
+            $passed = 0;
+            foreach ($results as $result)
+                if ($result->evaluated)
+                    $passed++;
+
+            $summary = "<div class='dir'>";
+            $summary .= "<h1>Summary</h1>";
+            $summary .= "<h3>Tests: ". $tests;
+            $summary .= "<br>Passed: ". $passed;
+            $summary .= "<br>Failed: ". ($tests - $passed);
+            $summary .= "</h3><h2>Result: ". round((($passed / $tests) * 100), 0);
+            $summary .= "%</h2></div>";
+
+            $this->output = str_replace("{SUMMARY}", $summary, $this->output);
+        }
+
+        public function div_end()
+        {
+            $this->output .= "</div>";
+        }
+
+        public function save()
+        {
+            echo $this->output;
+        }
+    }
     class ArgumentParser{
         private $argc;
         private $argv;
@@ -132,14 +205,110 @@
         }
     }
 
+    class TestResult{
+        public $output;
+        public $code;
+        public $evaluated;
+        public $path;
+        public $description;
+
+        public function __construct($output, $code, $evaluated, $path, $desc)
+        {
+            $this->output = $output;
+            $this->code = $code;
+            $this->evaluated = $evaluated;
+            $this->path = $path;
+            $this->description = $desc;
+        }
+    }
+
+    class Tester{
+        private $args;
+        private $generator;
+
+        public function __construct($args)
+        {
+            $this->args = $args;
+            $this->generator = new HTMLGenerator();
+        }
+
+        private function get_test_dirs($directory)
+        {
+            $files = scandir($directory);
+            $dirs = array($directory);
+
+            if ($this->args->recursive)
+                foreach ($files as $key => $subdir)
+                {
+                    if (!str_starts_with($subdir, "."))  // skip hidden directories
+                    {
+                        $file = $directory . DIRECTORY_SEPARATOR . $subdir;
+                        if (is_dir($file))
+                            $dirs = array_merge($dirs, $this->get_test_dirs($file));
+                    }
+                }
+            return $dirs;
+        }
+
+        private function get_tests($directory)
+        {
+            $files = scandir($directory);
+            $tests = array();
+
+            foreach ($files as $key => $file)
+            {
+                $name = $directory . DIRECTORY_SEPARATOR . $file;
+                if (str_ends_with($name, ".src"))
+                    $tests[] = $name;
+            }
+            return $tests;
+        }
+
+        private function run_test($directory)
+        {
+            return new TestResult("", 0, rand(0,1) == 1, $directory, "test");
+        }
+
+        private function test_dir($directory)
+        {
+            $tests = $this->get_tests($directory);
+            $results = array();
+
+            foreach ($tests as $key => $test)
+            {
+                $results[] = $this->run_test($test);
+            }
+
+            if (count($results) > 0)
+            {
+                $this->generator->test_dir($directory, $results);
+                $this->generator->div_end();
+            }
+            return $results;
+        }
+
+        public function test()
+        {
+            $this->generator->head();
+            $results = array();
+
+            $dirs = $this->get_test_dirs($this->args->directory);
+            foreach ($dirs as $key => $path)
+                $results = array_merge($results, $this->test_dir($path));
+
+            $this->generator->summary($results);
+            $this->generator->footer();
+        }
+
+        public function save()
+        {
+            $this->generator->save();
+        }
+    }
+
     $arguments = new ArgumentParser($argc, $argv);
     $arguments->parse();
 
-    echo "dir:".$arguments->directory."\n";
-    echo "rec:".$arguments->recursive."\n";
-    echo "parse scr:".$arguments->parse_script."\n";
-    echo "int scr:".$arguments->int_script."\n";
-    echo "parse only:".$arguments->parse_only."\n";
-    echo "int only:".$arguments->int_only."\n";
-    echo "jexam:".$arguments->jexampath."\n";
-    echo "noclean:".$arguments->nocleanup."\n";
+    $tester = new Tester($arguments);
+    $tester->test();
+    $tester->save();
