@@ -273,7 +273,84 @@
             return $tests;
         }
 
-        private function run_test($directory)
+        private function get_file($file)
+        {
+            try {
+                if (!file_exists($file))
+                {
+                    $this->tmp_files[] = $file;
+                    $created = fopen($file, 'w');
+                    if (!$created)
+                        exit(11);
+
+                    if (str_ends_with($file, ".rc"))
+                        fwrite($created, "0");
+
+                    fclose($created);
+                }
+            }catch (Exception){
+                exit(11);
+            }
+        }
+
+        private function run_command($command)
+        {
+            $code = 0;
+            $output = "";
+            exec($command, $output, $code);
+
+            return array($code, $output);
+        }
+        private function read_file($name)
+        {
+            $file = fopen($name, "r");
+            if (!$file)
+                exit(11);
+
+            return fread($file, filesize($name));
+        }
+        private function int_test($test, $source)
+        {
+            $input = str_replace(".src", ".in", $test);
+            $this->get_file($input);
+
+            $output = str_replace(".src", ".tmp_out", $test);
+            if (!file_exists($output))
+                $this->tmp_files[] = $output;
+
+            $command = "cat ".$source." | python3 ". $this->args->int_script ." --input=".$input." &> ".$output;
+            $out = $this->run_command($command);
+
+            $result = false;
+            $desc = "";
+
+            if ($out[0] != 0)
+            {
+                $rc_filename = str_replace(".src", ".rc", $test);
+                $this->get_file($rc_filename);
+
+                $rc = $this->read_file($rc_filename);
+                if ($rc == $out[0])
+                    $result = true;
+                else
+                    $desc = "Invalid exit code: ". $out[0] . " expected: ".$rc;
+            }else{
+                $out_filename = str_replace(".src", ".out", $test);
+                $this->get_file($out_filename);
+
+                $command = "diff ".$out_filename." ".$output;
+                $out = $this->run_command($command);
+
+                if ($out[0] != 0)
+                    $desc = implode('<br>', $out[1]);
+                else
+                    $result = true;
+            }
+
+            return new TestResult("", 0, $result, $test, $desc);
+        }
+
+        private function run_test($file)
         {
             return new TestResult("", 0, rand(0,1) == 1, $directory, "test");
         }
