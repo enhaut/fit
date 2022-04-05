@@ -225,11 +225,13 @@
     class Tester{
         private $args;
         private $generator;
+        private $tmp_files;
 
         public function __construct($args)
         {
             $this->args = $args;
             $this->generator = new HTMLGenerator();
+            $this->tmp_files = array();
         }
 
         private function get_test_dirs($directory)
@@ -287,6 +289,18 @@
             return $results;
         }
 
+        private function remove_tmp()
+        {
+            foreach ($this->tmp_files as $file)
+            {
+                try{
+                    unlink($file);
+                }catch (Exception)
+                {
+                    continue;
+                }
+            }
+        }
         public function test()
         {
             $this->generator->head();
@@ -298,6 +312,7 @@
 
             $this->generator->summary($results);
             $this->generator->footer();
+            $this->remove_tmp();
         }
 
         public function save()
