@@ -16,7 +16,7 @@
             $this->output .= "<style>
                                 .dir{width:60%;margin-left: auto;margin-right: auto; background-color: darkgray; border-radius: 10px;padding-left: 1em;padding-bottom: .5em}
                                 .test{width: 80%; margin-left: 3%}
-                                p{margin-left: 7.5%;margin-top: -1em;}
+                                p{margin-left: 7.5%;margin-top: -1em;background-color: peachpuff;padding: .3em;border-radius: 5px}
                               </style>{SUMMARY}";
         }
 
@@ -240,6 +240,9 @@
 
         private function get_test_dirs($directory)
         {
+            if (!is_dir($directory))
+                return array();
+
             $files = scandir($directory);
             $dirs = array($directory);
 
@@ -316,7 +319,9 @@
 
             $this->generator->summary($results);
             $this->generator->footer();
-            $this->remove_tmp();
+
+            if (!$this->args->nocleanup)
+                $this->remove_tmp();
         }
 
         public function save()
