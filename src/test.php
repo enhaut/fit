@@ -319,7 +319,7 @@
             if (!file_exists($output))
                 $this->tmp_files[] = $output;
 
-            $command = "cat ".$source." | python3 ". $this->args->int_script ." --input=".$input." &> ".$output;
+            $command = "cat ".$source." | python3.8 ". $this->args->int_script ." --input=".$input." &> ".$output;
             $out = $this->run_command($command);
 
             $result = false;
@@ -339,7 +339,7 @@
                 $out_filename = str_replace(".src", ".out", $test);
                 $this->get_file($out_filename);
 
-                $command = "diff ".$out_filename." ".$output;
+                $command = "diff -u ".$out_filename." ".$output;
                 $out = $this->run_command($command);
 
                 if ($out[0] != 0)
@@ -351,9 +351,63 @@
             return new TestResult("", 0, $result, $test, $desc);
         }
 
+        private function parse_test($file)
+        {
+            $input = str_replace(".src", ".in", $file);
+            $this->get_file($input);
+
+            $output = str_replace(".src", ".tmp_parse_out", $file);
+            if (!file_exists($output))
+                $this->tmp_files[] = $output;
+
+            $command = "cat ".$file." | php8.1 ". $this->args->parse_script ." &> ".$output;
+            $out = $this->run_command($command);
+
+            $result = false;
+            $desc = "";
+
+            if ($out[0] != 0)
+            {
+                $rc_filename = str_replace(".src", ".rc", $file);
+                $this->get_file($rc_filename);
+
+                $rc = $this->read_file($rc_filename);
+                if ($rc == $out[0])
+                    $result = true;
+                else
+                    $desc = "Invalid exit code: ". $out[0] . " expected: ".$rc;
+            }else{
+                $out_filename = str_replace(".src", ".out", $file);
+                $this->get_file($out_filename);
+                $delta_filename = str_replace(".src", ".out_delta", $file);
+                $this->get_file($out_filename);
+
+                $command = "java -jar ". $this->args->jexampath ."/jexamxml.jar ". $output ." ". $out_filename ." ". $delta_filename ." ". $this->args->jexampath ."/options";
+                $out = $this->run_command($command);
+
+                if ($out[0] != 0)
+                    $desc = implode('<br>', $out[1]);
+                else
+                    $result = true;
+            }
+            return new TestResult("", 0, $result, $output, $desc);
+        }
+
         private function run_test($file)
         {
-            return new TestResult("", 0, rand(0,1) == 1, $directory, "test");
+            if (!$this->args->int_only and !$this->args->parse_only) // both tests
+            {
+                $result = $this->parse_test($file);
+                if ($result->evaluated)
+                    return $this->int_test($file, $result->path);
+
+                return $result;
+            }else if ($this->args->int_only)
+                return $this->int_test($file, $file);
+            else if ($this->args->parse_only)
+                return $this->parse_test($file);
+
+            return new TestResult("", 0, false, $file, "test");
         }
 
         private function test_dir($directory)
