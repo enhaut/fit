@@ -12,11 +12,12 @@
 
         public function head()
         {
-            $this->output .= "<html lang=\"en\"><meta charset=\"UTF-8\">";
+            $this->output .= "<html lang=\"en\"><meta charset=\"UTF-8\"><meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">";
             $this->output .= "<style>
+                                body {font-family: 'Segoe UI', Arial, 'Noto Sans', sans-serif;}
                                 .dir{width:60%;margin-left: auto;margin-right: auto; background-color: darkgray; border-radius: 10px;padding-left: 1em;padding-bottom: .5em}
                                 .test{width: 80%; margin-left: 3%}
-                                p{margin-left: 7.5%;margin-top: -1em;background-color: peachpuff;padding: .3em;border-radius: 5px}
+                                p{margin-left: 7.5%;margin-top: -1em;background-color: peachpuff;padding: .3em;border-radius: 5px;max-height: 15em;overflow-y: scroll;}
                               </style>{SUMMARY}";
         }
 
