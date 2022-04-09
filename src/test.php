@@ -50,14 +50,15 @@
         public function summary($results)
         {
             $tests = count($results);
-            if ($tests == 0)
-                $tests == 1;  // division by zero workaround
-
             $passed = 0;
-            foreach ($results as $result)
-                if ($result->evaluated)
-                    $passed++;
-            $percentage =  round(($passed / $tests * 100));
+            if ($tests > 0)
+            {
+                foreach ($results as $result)
+                    if ($result->evaluated)
+                        $passed++;
+                $percentage =  round(($passed / $tests * 100));
+            }else
+                $percentage = 100;
 
             $summary = "<div class='dir' style='text-align: center'>";
             $summary .= "<h1>Summary</h1>";
