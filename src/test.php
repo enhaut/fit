@@ -385,7 +385,8 @@
             else
                 $evaluated[0] = ($out[0] == 0);
 
-            return new TestResult("", 0, $evaluated[0], $output, $evaluated[1]);
+            $test_name = ($this->args->parse_only) ? $file : $output;
+            return new TestResult("", 0, $evaluated[0], $test_name, $evaluated[1]);
         }
 
         private function run_test($file)
