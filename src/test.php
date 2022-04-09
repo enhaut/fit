@@ -169,7 +169,7 @@
             if ($this->int_script === null)
                 $this->int_script = "interpret.py";
             if ($this->jexampath === null)
-                $this->jexampath = "/pub/courses/ipp/jexamxml/";
+                $this->jexampath = "/pub/courses/ipp/jexamxml";
             if ($this->directory === null)
                 $this->directory = ".";
         }
@@ -310,18 +310,9 @@
 
             return fread($file, filesize($name));
         }
-        private function int_test($test, $source)
+
+        private function evaluate($out, $test, $output, $xml_output=false)
         {
-            $input = str_replace(".src", ".in", $test);
-            $this->get_file($input);
-
-            $output = str_replace(".src", ".tmp_out", $test);
-            if (!file_exists($output))
-                $this->tmp_files[] = $output;
-
-            $command = "cat ".$source." | python3.8 ". $this->args->int_script ." --input=".$input." &> ".$output;
-            $out = $this->run_command($command);
-
             $result = false;
             $desc = "";
 
@@ -339,7 +330,15 @@
                 $out_filename = str_replace(".src", ".out", $test);
                 $this->get_file($out_filename);
 
-                $command = "diff -u ".$out_filename." ".$output;
+                if ($xml_output)
+                {
+                    $delta_filename = str_replace(".src", ".out_delta", $test);
+                    $this->get_file($out_filename);
+
+                    $command = "java -jar " . $this->args->jexampath . "/jexamxml.jar " . $output . " " . $out_filename . " " . $delta_filename . " " . $this->args->jexampath . "/options";
+                }else
+                    $command = "diff -u ".$out_filename." ".$output;
+
                 $out = $this->run_command($command);
 
                 if ($out[0] != 0)
@@ -347,8 +346,24 @@
                 else
                     $result = true;
             }
+            return array($result, $desc);
+        }
 
-            return new TestResult("", 0, $result, $test, $desc);
+        private function int_test($test, $source)
+        {
+            $input = str_replace(".src", ".in", $test);
+            $this->get_file($input);
+
+            $output = str_replace(".src", ".tmp_out", $test);
+            if (!file_exists($output))
+                $this->tmp_files[] = $output;
+
+            $command = "cat ".$source." | python3.8 ". $this->args->int_script ." --input=".$input." &> ".$output;
+            $out = $this->run_command($command);
+
+            $evaluated = $this->evaluate($out, $test, $output);
+
+            return new TestResult("", 0, $evaluated[0], $test, $evaluated[1]);
         }
 
         private function parse_test($file)
@@ -363,34 +378,13 @@
             $command = "cat ".$file." | php8.1 ". $this->args->parse_script ." &> ".$output;
             $out = $this->run_command($command);
 
-            $result = false;
-            $desc = "";
+            $evaluated = array(true, "");
+            if ($this->args->parse_only)
+                $evaluated = $this->evaluate($out, $file, $output, true);
+            else
+                $evaluated[0] = ($out[0] == 0);
 
-            if ($out[0] != 0)
-            {
-                $rc_filename = str_replace(".src", ".rc", $file);
-                $this->get_file($rc_filename);
-
-                $rc = $this->read_file($rc_filename);
-                if ($rc == $out[0])
-                    $result = true;
-                else
-                    $desc = "Invalid exit code: ". $out[0] . " expected: ".$rc;
-            }else{
-                $out_filename = str_replace(".src", ".out", $file);
-                $this->get_file($out_filename);
-                $delta_filename = str_replace(".src", ".out_delta", $file);
-                $this->get_file($out_filename);
-
-                $command = "java -jar ". $this->args->jexampath ."/jexamxml.jar ". $output ." ". $out_filename ." ". $delta_filename ." ". $this->args->jexampath ."/options";
-                $out = $this->run_command($command);
-
-                if ($out[0] != 0)
-                    $desc = implode('<br>', $out[1]);
-                else
-                    $result = true;
-            }
-            return new TestResult("", 0, $result, $output, $desc);
+            return new TestResult("", 0, $evaluated[0], $output, $evaluated[1]);
         }
 
         private function run_test($file)
