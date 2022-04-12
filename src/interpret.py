@@ -1,3 +1,7 @@
+__author__ = "Samuel Dobron (xdobro23)"
+__credits__ = ["Samuel Dobron"]
+__email__ = "xdobro23@stud.fit.vutbr.cz"
+
 import argparse
 import sys
 from dataclasses import dataclass
@@ -12,13 +16,23 @@ def error_exit(message: str, code: int):
 
 
 class MemoryFrame:
+    """
+        @brief Class represents memory frame.
+    """
     @dataclass
     class Variable:
+        """
+            @brief Class represents variable. Variables are stored using `MemoryFrame`.
+        """
         name: str
         value: Union[str, int, float, bool, None] = None
         initialized: bool = False
         var_type: classmethod = None
 
+        """
+            @brief Type of variable is set by the last value stored in variable.
+            After definition, variable is not initialized.
+        """
         def __setattr__(self, key, value):
             if key == "value":
                 self.var_type = type(value)  # set variable type based on its value
@@ -26,6 +40,9 @@ class MemoryFrame:
 
             super().__setattr__(key, value)
 
+        """
+            @brief Reading an uninitialized variable leads to error 56.
+        """
         def __getattribute__(self, item):
             if item == "value" and not self.initialized:
                 error_exit("Variable is not initialized", 56)
@@ -49,6 +66,11 @@ class MemoryFrame:
 
         return ret + ")"
 
+    """
+        @brief If exists, returns wanted variable object.
+        
+        :param name: name of wanted variable without frame specification
+    """
     def get_variable(self, name: str):
         for variable in self._variables:
             if variable.name == name:
@@ -56,23 +78,40 @@ class MemoryFrame:
 
         return None  # undefined variable
 
+    """
+        @brief Creates a new variable object which is later saved. 
+    """
     def set_variable(self, name: str):
         self._variables.append(MemoryFrame.Variable(name))
 
+    """
+        @brief Pops value from stack.
+    """
     def get_stack_var(self):
         if not self._stack:
             error_exit("Stack is empty", 56)
 
         return self._stack.pop()
 
+    """
+        @brief Push value to the stack.
+        
+        :param value: value of any supported type
+    """
     def set_stack_var(self, value: Union[str, int, float, bool, None]):
         self._stack.append(value)
 
 
 class ArgumentType:
+    """
+        @brief Base class of operand in instruction. All types of operands
+        should be child of this class.
+
+        Implemented using abstract factory principle.
+    """
     def __init__(self, name: str, element: ET.Element):
-        self.name = name
-        self.value = None
+        self.name = name   # name of XML element
+        self.value = None  # value of element
         self.raw_element = element
 
         self.set_value()
@@ -85,6 +124,9 @@ class ArgumentType:
 
 
 class VariableArgument(ArgumentType):
+    """
+        @brief This class represents variable operand. For example GF@a
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -99,10 +141,14 @@ class VariableArgument(ArgumentType):
         pass
 
     def get_type(self):
-        pass
+        pass  # implemented in some child classes
 
 
 class ConstantArgument(ArgumentType):
+    """
+        @brief Internal representation of constant operand.
+        For example int@3.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -111,7 +157,7 @@ class ConstantArgument(ArgumentType):
 
     def set_value(self):
         self.value = self.raw_element.text
-        if self.value is None:
+        if self.value is None:  # fix for `string@`
             self.value = ""
 
     def get_type(self):
@@ -132,6 +178,9 @@ class ConstantArgument(ArgumentType):
 
 
 class LabelArgument(ArgumentType):
+    """
+        @brief Abstraction of label operand.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -140,6 +189,10 @@ class LabelArgument(ArgumentType):
 
 
 class TypeArgument(ArgumentType):
+    """
+        @brief Internal representation of type operand.
+        For example `int`.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.type = self.set_type()
@@ -207,6 +260,15 @@ class Instruction:
         ]
     ]
 
+    """
+        @brief Internal representation of instruction.
+        Instruction are connected each other using doubly linked list.
+        This class also checks syntax validity of instruction.
+        
+        :param name: name of variable (opcode)
+        :param xml_raw: raw XML element
+        :param memory: memory stack
+    """
     def __init__(self, name: str, xml_raw: ET.ElementTree, memory: Dict[str, List[MemoryFrame]]):
         self.name = name.upper()
         self.raw_instruction = xml_raw
@@ -245,6 +307,9 @@ class Instruction:
     def prev(self, value: "Instruction"):
         self._prev = value
 
+    """
+        @brief Checks if XML element contains allowed values only.
+    """
     @staticmethod
     def check_parameter_attributes(parameter: ET.Element):
         if parameter is not None and "type" in parameter.keys() and len(parameter.items()) == 1:
@@ -271,6 +336,9 @@ class Instruction:
             raise NotImplementedError("Instruction with >3 arguments is not (yet) supported")
         return ret
 
+    """
+        @brief Returns regexp of instruction.
+    """
     def get_instruction_regexp(self):
         instructions_array = self.INSTRUCTIONS[self.__get_instruction_array_index()]
 
@@ -293,12 +361,20 @@ class Instruction:
     def set_arguments(self):
         raise NotImplementedError
 
+    """
+        @brief Checks validity of argument in instruction.
+    """
     def check_argument(self, attr_id: int, attribute_element: ET.Element):
         attr_id += 1  # first member of array is instruction name
 
         if attribute_element.get("text", None) and not re.match(self.ins_regexp[attr_id], attribute_element.text, re.UNICODE):
             error_exit("Invalid attribute type!", 53)
 
+    """
+        @brief Returns instance of corresponding operand type class.
+        
+        :param element: XML element of argument
+    """
     def get_argument(self, element: ET.Element) -> ArgumentType:
         if element.attrib["type"] == "label":
             arg_class = LabelArgument
@@ -314,6 +390,11 @@ class Instruction:
 
         return arg_class(element.attrib["type"], element)  # TODO: check if "type" attribute is present
 
+    """
+        @brief Returns name of frame used in variable name.
+        
+        :param name: whole variable name, including frame definition
+    """
     def _get_frame_from_var_name(self, name: str = None):
         if not name:
             name = self.arg1.value
@@ -327,6 +408,11 @@ class Instruction:
 
         error_exit(f"Invalid frame name: {name}", 55)
 
+    """
+        @brief Returns instance of variable.
+        
+        :param name: name of the variable including the frame.
+    """
     def _get_variable(self, name: str) -> "MemoryFrame.Variable":
         frame = self._get_frame_from_var_name(name)
         if not self.memory[frame]:
@@ -338,6 +424,12 @@ class Instruction:
 
         return variable
 
+    """
+        @brief Encodes string.
+        Replaces all the escaping sequenced by corresponding unescaped character.
+        
+        :param value: string containing escaped characters
+    """
     def __encode_string(self, value: str):
         match = re.search(r"\\(\d{3})", value)
         if match:
@@ -345,6 +437,9 @@ class Instruction:
 
         return value
 
+    """
+        @brief Returns value from constant and converts it to corresponding type.
+    """
     def __get_value_from_constant(self, const: ConstantArgument):
         if const.type == int:
             try:
@@ -363,6 +458,11 @@ class Instruction:
 
         error_exit("Unsupported constant value", 52)
 
+    """
+        @brief Returns value of variable or constant.
+        
+        :param symb: instance of constant or variable
+    """
     def _get_value_from_symb(self, symb: Union[ConstantArgument, VariableArgument, ArgumentType]):
         if isinstance(symb, ConstantArgument):
             return self.__get_value_from_constant(symb)
@@ -370,16 +470,23 @@ class Instruction:
             variable = self._get_variable(symb.name)
             return variable.value
 
+    """
+        @brief Method called to actually interpret instruction.
+        Implemented in instruction classes. 
+    """
     def interpret(self):
         raise NotImplementedError()
 
 
 class NoArgsInstruction(Instruction):
+    """
+        @brief Abstraction of instruction that has no operands.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
     def set_arguments(self):
-        pass
+        pass  # nothing to set, it has no operands
 
     def interpret(self):
         super().interpret()
@@ -401,7 +508,7 @@ class InstructionPUSHFRAME(NoArgsInstruction):
         if not self.memory["TF"]:
             error_exit("No frame to push!", 55)
 
-        self.memory["LF"].append(self.memory["TF"][0])
+        self.memory["LF"].append(self.memory["TF"][0])  # TF supports only one frame, that's where `0` comes from
         self.memory["TF"] = []
 
 
@@ -425,10 +532,20 @@ class InstructionBREAK(NoArgsInstruction):
 
 
 class InstructionRETURN(NoArgsInstruction):
+    """
+        @brief Instruction pops next instruction after the `CALL` instruction
+        from call stack.
+        Jump destination is the stored in `self._jump_dest`. the `.next()`
+        method is overwritten to return jump destination instead of next
+        instruction.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._jump_dest = None
 
+    """
+        @brief Return jump destination instead of next instruction.
+    """
     @property
     def next(self):
         if self._jump_dest:
@@ -445,12 +562,15 @@ class InstructionRETURN(NoArgsInstruction):
 
     def interpret(self):
         try:
-            self._jump_dest = self.memory["--CALL_STACK"].pop()
+            self._jump_dest = self.memory["--CALL_STACK"].pop()  # the next instruction is the one after the callee
         except IndexError:
             error_exit("Nowhere to return!", 56)
 
 
 class SingleArgsInstruction(Instruction):
+    """
+            @brief Abstraction of instruction that has 1 operand.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
@@ -478,6 +598,7 @@ class InstructionDEFVAR(SingleArgsInstruction):
             error_exit(f"Redefining variable {self.arg1.value}", 52)
 
         self.memory[frame][-1].set_variable(self.arg1.value[3:])
+        # ^ [frame][-1] returns frame on the top of the frames stack
 
 
 class InstructionPUSHS(SingleArgsInstruction):
@@ -487,7 +608,7 @@ class InstructionPUSHS(SingleArgsInstruction):
     def interpret(self):
         symb_value = self._get_value_from_symb(self.arg1)
 
-        self.memory["GF"][0].set_stack_var(symb_value)
+        self.memory["GF"][0].set_stack_var(symb_value)  # for stack is used 0. frame of global frame
 
 
 class InstructionPOPS(SingleArgsInstruction):
@@ -568,6 +689,9 @@ class InstructionJUMP(SingleArgsInstruction):
         super().__init__(*args, **kwargs)
         self._jump_dest = None
 
+    """
+        @brief If `_jump_dest` is set, it returns it.
+    """
     @property
     def next(self):
         if self._jump_dest:
@@ -582,6 +706,9 @@ class InstructionJUMP(SingleArgsInstruction):
     def next(self, value):
         self._next = value
 
+    """
+        @brief Returns `LABEL` instruction of jump destination.
+    """
     def _get_jump_destination(self):
         prev = self.prev
         while prev:
@@ -604,6 +731,10 @@ class InstructionJUMP(SingleArgsInstruction):
 
         return destination
 
+    """
+        @brief Similar to `InstructionRETURN`. Interpreting of this instruciton just
+        changes the instruction pointer using `.next` property.
+    """
     def interpret(self):
         destination = self._check_jump_dest()
 
@@ -615,6 +746,10 @@ class InstructionCALL(InstructionJUMP):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    """
+        @brief Saves following instruction to the call stack and performs
+        jump using `InstructionJUMP`.
+    """
     def interpret(self):
         self.memory["--CALL_STACK"].append(self.next)
 
@@ -622,6 +757,9 @@ class InstructionCALL(InstructionJUMP):
 
 
 class DoubleArgsInstruction(Instruction):
+    """
+            @brief Abstraction of instruction that has 2 operands.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
@@ -691,7 +829,7 @@ class InstructionTYPE(DoubleArgsInstruction):
 
     @staticmethod
     def __get_type(value):
-        if (isinstance(value, int) or value == int) and not isinstance(value, bool):
+        if (isinstance(value, int) or value == int) and not isinstance(value, bool):  # bool is subtype of int
             return "int"
         elif isinstance(value, str) or value == str:
             return "string"
@@ -762,6 +900,9 @@ class InstructionREAD(DoubleArgsInstruction):
 
 
 class TripleArgsInstruction(Instruction):
+    """
+            @brief Abstraction of instruction that has 3 operands.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
@@ -782,6 +923,11 @@ class TripleArgsInstruction(Instruction):
 
 
 class MathInstruction(TripleArgsInstruction):
+    """
+        @brief Common class for math instructions. It basically
+        does the same, so only `.calculate()` method needs to be
+        implemented in `InstructionXXX` classes.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -853,6 +999,11 @@ class InstructionIDIV(MathInstruction):
 
 
 class LogicalInstruction(TripleArgsInstruction):
+    """
+        @brief Common class for all the logical instructions.
+        It does almost the same, so only `.compare()` method
+        needs to be implemented.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -1010,6 +1161,9 @@ class InstructionSETCHAR(TripleArgsInstruction):
 
 
 class InstructionJUMPIFEQ(InstructionJUMP, TripleArgsInstruction):
+    """
+        @brief Jumping using `InstructionJUMP`
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -1038,6 +1192,9 @@ class InstructionJUMPIFEQ(InstructionJUMP, TripleArgsInstruction):
 
 
 class InstructionJUMPIFNEQ(InstructionJUMPIFEQ):
+    """
+            @brief Jumping using `InstructionJUMP`
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -1046,6 +1203,9 @@ class InstructionJUMPIFNEQ(InstructionJUMPIFEQ):
 
 
 class Interpret:
+    """
+        @brief Internal representation of whole interpret.
+    """
     def __init__(self):
         self.arg_parser = argparse.ArgumentParser(description='IPPcode22 interpret')
 
