@@ -696,7 +696,7 @@ class InstructionTYPE(DoubleArgsInstruction):
             return "string"
         elif isinstance(value, bool) or value == bool:
             return "bool"
-        elif isinstance(value, type(None)) or value is None:
+        elif value == type(None) or value is None:
             return "nil"
 
         error_exit("Invalid constant type", 53)
