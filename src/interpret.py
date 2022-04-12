@@ -992,10 +992,13 @@ class InstructionSETCHAR(TripleArgsInstruction):
 
     def interpret(self):
         result = self._get_variable(self.arg1.name)
-        to_replace = list(self._get_value_from_symb(self.arg1))
-
-        replace_with = self._get_value_from_symb(self.arg3)[0]
         replace_at = self._get_value_from_symb(self.arg2)
+        replace_with = self._get_value_from_symb(self.arg3)
+
+        if result.var_type != str or not isinstance(replace_at, int) or not isinstance(replace_with, str):
+            error_exit("Invalid variable type", 53)
+
+        to_replace = list(self._get_value_from_symb(self.arg1))
 
         to_replace[replace_at] = replace_with[0]
         result.value = "".join(to_replace)
