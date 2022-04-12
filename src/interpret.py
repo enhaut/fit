@@ -995,10 +995,16 @@ class InstructionSETCHAR(TripleArgsInstruction):
         replace_at = self._get_value_from_symb(self.arg2)
         replace_with = self._get_value_from_symb(self.arg3)
 
+        if not result.initialized:  # var_type of uninitialized var is `None` so condition bellow would fail
+            error_exit("Unitialized variable", 56)
+
         if result.var_type != str or not isinstance(replace_at, int) or not isinstance(replace_with, str):
             error_exit("Invalid variable type", 53)
 
         to_replace = list(self._get_value_from_symb(self.arg1))
+
+        if replace_at >= len(to_replace) or len(replace_with) == 0:
+            error_exit("Index out of range", 58)
 
         to_replace[replace_at] = replace_with[0]
         result.value = "".join(to_replace)
