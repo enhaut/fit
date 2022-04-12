@@ -566,6 +566,9 @@ class InstructionRETURN(NoArgsInstruction):
         except IndexError:
             error_exit("Nowhere to return!", 56)
 
+        if not self._next and self._jump_dest:  # return won't be performed if instruction has no pointer to next member
+            self._next = True
+
 
 class SingleArgsInstruction(Instruction):
     """
@@ -739,7 +742,6 @@ class InstructionJUMP(SingleArgsInstruction):
         destination = self._check_jump_dest()
 
         self._jump_dest = destination
-        self.next = destination
 
 
 class InstructionCALL(InstructionJUMP):
