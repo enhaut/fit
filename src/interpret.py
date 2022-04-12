@@ -608,6 +608,7 @@ class InstructionJUMP(SingleArgsInstruction):
         destination = self._check_jump_dest()
 
         self._jump_dest = destination
+        self.next = destination
 
 
 class InstructionCALL(InstructionJUMP):
