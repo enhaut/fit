@@ -535,7 +535,9 @@ class InstructionEXIT(SingleArgsInstruction):
     def interpret(self):
         code = self._get_value_from_symb(self.arg1)
 
-        if isinstance(code, bool) or not isinstance(code, int) or code < 0 or code > 49:
+        if isinstance(code, bool) or not isinstance(code, int):
+            error_exit("Invalid exit code type", 53)
+        if code < 0 or code > 49:
             error_exit("Invalid exit code", 57)
 
         raise SystemExit(code)
