@@ -809,8 +809,6 @@ class MathInstruction(TripleArgsInstruction):
 
     def interpret(self):
         result = self._get_variable(self.arg1.name)
-        if result.initialized and result.var_type != int:
-            error_exit(f"Incompatible result variable {result.name} type!", 53)
 
         first = self._get_value_from_symb(self.arg2)
         second = self._get_value_from_symb(self.arg3)
