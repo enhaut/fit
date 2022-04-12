@@ -1154,10 +1154,11 @@ class Interpret:
         return prev  # it returns the last instruction
 
     def prepare_instruction_ptr(self, last: Instruction):
-        while last.prev:
-            last = last.prev
+        if last:
+            while last.prev:
+                last = last.prev
 
-        self.IP.append(last)
+            self.IP.append(last)
 
     def run(self):
         self.load_instructions()
