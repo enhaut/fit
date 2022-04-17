@@ -70,6 +70,8 @@ initialized if not, error code `56` is returned.
 These frames are defined in `Interpret::frames` dictionary.
 
 ### `ArumentType`
+Implementation of arguments parsing uses Abstract Factory principle. `ArgumentType` class is abstract factory
+and classes bellow are products.
 This class is abstraction of instruction argument - `MOVE GF@to int@5` this instruction call
 has 2 arguments - `GF@to` and `int@5`. Currently, interpret supports these arguments:
 - `ConstatArgument` - handles constants: `int@5`, `string@aaa`
@@ -88,3 +90,28 @@ Arguments parsing is not implemented absolutely from scratch. Python's standard 
 
 At least one of `--source` or `--input` needs to be set. The remaining
 one uses `stdin`.
+
+---
+
+# Tester
+## Usage
+
+#### PHP version
+Script was developed and tested for `PHP 8.1.3`.
+
+#### Exit codes
+- `0` on success
+- `10` on invalid script parameters (combination)
+
+## Implementation details
+
+### Parsing an arguments
+For program arguments parsing is responsible
+`ArgumentParser` class. It needs to be initialized with
+`$args` and `$argc` parameters - count and list of program
+arguments.   
+It has one and simple entry point - `parse()` method, which
+does all the stuff behind - checks number of arguments,
+and it's validity.  
+Only one argument is supported:
+- `--help` prints usage information
