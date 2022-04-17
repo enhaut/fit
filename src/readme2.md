@@ -37,7 +37,9 @@ to the `Instruction` constructor method.
 
 
 ### `Instruction`
-This class has to be the parent for all the instruction classes. It is responsible for checking 
+This class has to be the parent for all the instruction classes because Abstract Factory principle
+was used. The product of factory is `InstructionXXX`, where `XXX` is name of instruction - `InstructionREAD`.
+It is responsible for checking 
 validity of arguments, number of arguments, it's types, ...  
 `Instruction::__get_instruction_class()` method is responsible for choosing right instruction
 class based on `opcode` attribute value. The returned value is not the initialized instance
