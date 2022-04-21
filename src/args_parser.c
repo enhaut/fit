@@ -61,6 +61,13 @@ void set_port(sniffer_options_t *options)
 
 sniffer_options_t *process_args(int argc, char *argv[])
 {
+  if (argc == 1)
+  {
+    fprintf(stderr, "Usage:\n"
+                    "\t./ipk-sniffer [-i | -i interface | --interface interface] {-p port} {[--tcp|-t] [--udp|-u] [--arp] [--icmp] } {-n num}\n");
+    exit(1);  // nothing is allocated
+  }
+
   sniffer_options_t *options = get_options_struct();
 
   static struct option long_options[] =
