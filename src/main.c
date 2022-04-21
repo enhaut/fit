@@ -11,6 +11,12 @@
 #include "stdlib.h"
 #include "args_parser.h"
 
+void graceful_exit()
+{
+  free(snifferOptions);  // free(NULL) is safe
+  exit(0);
+}
+
 int main(int argc, char *argv[])
 {
   snifferOptions = process_args(argc, argv);
@@ -21,6 +27,6 @@ int main(int argc, char *argv[])
   printf("L4: %d\n", options->L4);
   printf("L3: %d\n", options->L3);
 
-  free(options);
+  graceful_exit();
   return 0;
 }
