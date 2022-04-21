@@ -118,10 +118,7 @@ sniffer_options_t *process_args(int argc, char *argv[])
   }
 
   if (options->inter == argv[0])
-  {
-    fprintf(stderr, "Argument -i is required!\n");
-    exit(1);
-  }
+    ERROR_EXIT("Argument -i is required!\n");
 
   return options;
 }
