@@ -9,7 +9,14 @@
  *
  */
 #include "stdlib.h"
+
 #include "args_parser.h"
+#include "devicemanager.h"
+
+#define DEBUG(fmt, ...)                       \
+  do {                                        \
+    break;fprintf(stderr, fmt "\n", __VA_ARGS__);   \
+  } while (0)
 
 void graceful_exit()
 {
@@ -19,13 +26,17 @@ void graceful_exit()
 
 int main(int argc, char *argv[])
 {
+  DEBUG("Hi", NULL);
   snifferOptions = process_args(argc, argv);
 
-  printf("port: %d\n", options->port);
-  printf("interface: %s\n", options->inter);
-  printf("to_sniff: %llu\n", options->to_sniff);
-  printf("L4: %d\n", options->L4);
-  printf("L3: %d\n", options->L3);
+  DEBUG("Getting devices...", NULL);
+  devices_ptr = getDevices();
+  DEBUG("Got devices.", NULL);
+
+  if (snifferOptions->inter)
+    return 1;
+  else
+    print_device(devices_ptr);
 
   graceful_exit();
   return 0;

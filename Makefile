@@ -1,6 +1,6 @@
 LC_ALL=en_GB.UTF-8
 CC=gcc
-CFLAGS= -O3 -g -std=c99 -pedantic -Wall -Wextra
+CFLAGS= -O3 -g -std=c99 -pedantic -Wall -Wextra -D_BSD_SOURCE -lpcap
 LDFLAGS=
 
 all: src/dependencies.txt ipk-sniffer
@@ -12,5 +12,5 @@ clean:
 src/dependencies.txt:
 	$(CC) $(CFLAGS) -MM src/*.c > $@
 
-ipk-sniffer: src/args_parser.o src/main.o
+ipk-sniffer: src/args_parser.o src/main.o src/devicemanager.o
 	$(CC) $(CFLAGS) $^ -o $@
