@@ -9,6 +9,7 @@
  *
  */
 #include "errno.h"
+#include "stdbool.h"
 #include <getopt.h>
 #include "stdlib.h"
 #include "args_parser.h"
@@ -59,6 +60,12 @@ void set_port(sniffer_options_t *options)
   options->port = (int)port;
 }
 
+// https://stackoverflow.com/a/69177115
+#define OPTIONAL_ARGUMENT_IS_PRESENT \
+    ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
+     ? (bool) (optarg = argv[optind++]) \
+     : (optarg != NULL))
+
 sniffer_options_t *process_args(int argc, char *argv[])
 {
   if (argc == 1)
@@ -91,7 +98,10 @@ sniffer_options_t *process_args(int argc, char *argv[])
         set_port(options);
         break;
       case 'i':
-        options->inter = optarg; // optarg returns ptr to `argv`
+        if (OPTIONAL_ARGUMENT_IS_PRESENT)
+          options->inter = optarg; // optarg returns ptr to `argv`
+        else
+          options->inter = NULL;
         break;
       /* TCP/UDP */
       case 't':
