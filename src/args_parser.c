@@ -72,7 +72,7 @@ sniffer_options_t *process_args(int argc, char *argv[])
 
   static struct option long_options[] =
       {
-          {"interface",  required_argument, NULL, 'i'},
+          {"interface",  optional_argument, NULL, 'i'},
           {"port",  required_argument, NULL, 'p'},
           {"tcp",  no_argument, NULL, TCP_BIT},
           {"udp",  no_argument, NULL, UDP_BIT},
@@ -81,8 +81,9 @@ sniffer_options_t *process_args(int argc, char *argv[])
           {0, 0, 0, 0}
       };
 
+  options->inter = argv[0];  // argv[0] is always present, it could be used to check if required argument -i was used
   int c, option_index;
-  while ((c = getopt_long(argc, argv, "p:i:tun:", long_options, &option_index)) != -1)
+  while ((c = getopt_long(argc, argv, "p:i::tun:", long_options, &option_index)) != -1)
   {
     switch (c)
     {
@@ -114,6 +115,12 @@ sniffer_options_t *process_args(int argc, char *argv[])
       default:
         ERROR_EXIT("Invalid argument\n");
       }
+  }
+
+  if (options->inter == argv[0])
+  {
+    fprintf(stderr, "Argument -i is required!\n");
+    exit(1);
   }
 
   return options;
