@@ -40,6 +40,7 @@ typedef struct {
 
 #define MAX_PORT 65535
 
+extern sniffer_options_t *snifferOptions;
 sniffer_options_t *process_args(int argc, char *argv[]);
 
 #endif // IPK2_ARGS_PARSER_H

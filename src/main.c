@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-  sniffer_options_t *options = process_args(argc, argv);
+  snifferOptions = process_args(argc, argv);
 
   printf("port: %d\n", options->port);
   printf("interface: %s\n", options->inter);

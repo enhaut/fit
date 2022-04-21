@@ -13,6 +13,8 @@
 #include "stdlib.h"
 #include "args_parser.h"
 
+sniffer_options_t *snifferOptions = NULL;
+
 sniffer_options_t *get_options_struct()
 {
   sniffer_options_t *options = (sniffer_options_t *)malloc(sizeof(sniffer_options_t));
