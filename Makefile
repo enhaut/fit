@@ -12,5 +12,5 @@ clean:
 src/dependencies.txt:
 	$(CC) $(CFLAGS) -MM src/*.c > $@
 
-ipk-sniffer: src/args_parser.o src/main.o src/devicemanager.o
+ipk-sniffer: src/args_parser.o src/main.o src/devicemanager.o src/packet_processors.o
 	$(CC) $(CFLAGS) $^ -o $@

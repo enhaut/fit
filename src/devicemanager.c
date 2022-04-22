@@ -12,7 +12,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "args_parser.h"
-
+#include "packet_processors.h"
 #include "devicemanager.h"
 pcap_if_t * devices_ptr = NULL;
 char error_buffer[PCAP_ERRBUF_SIZE] = {0};
@@ -58,18 +58,12 @@ void select_device(char *name)
     devices_ptr = NULL;
 }
 
-void process_eth_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
-{
-  printf("%s\n", packet);
-  return;
-}
-
 handler_func_t get_handler_function(pcap_t *handler)
 {
   switch (pcap_datalink(handler))
   {
     case DLT_EN10MB:
-      return process_eth_packet;
+      return process_eth_frame;
     default:
       return NULL;
   }
