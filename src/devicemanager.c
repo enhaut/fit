@@ -58,10 +58,21 @@ void select_device(char *name)
     devices_ptr = NULL;
 }
 
-void process_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+void process_eth_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
-  printf("%s\n", args);
+  printf("%s\n", packet);
   return;
+}
+
+handler_func_t get_handler_function(pcap_t *handler)
+{
+  switch (pcap_datalink(handler))
+  {
+    case DLT_EN10MB:
+      return process_eth_packet;
+    default:
+      return NULL;
+  }
 }
 
 #define ERROR_RETURN(message)             \
@@ -80,9 +91,12 @@ void capture()
 
   if (!handler)
     ERROR_RETURN("Could not open handler!");
-  else if (pcap_datalink(handler) != DLT_EN10MB)  // https://www.tcpdump.org/linktypes.html
-    ERROR_RETURN("Unsupported interface type");
 
-  if(pcap_loop(handler, snifferOptions->to_sniff, process_packet, NULL))
+  handler_func_t handler_func = get_handler_function(handler);
+  if (!handler_func)
+    ERROR_RETURN("Unsupported interface type!");
+
+  // TODO: maybe implement multiple looping in case, to_sniff is bigger than INT_MAX
+  if(pcap_loop(handler, (int)(snifferOptions->to_sniff), handler_func, NULL))
     fprintf(stderr, "Error during capturing packets\n");
 }
