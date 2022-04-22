@@ -13,6 +13,7 @@
 
 #include "devicemanager.h"
 pcap_if_t * devices_ptr = NULL;
+char error_buffer[PCAP_ERRBUF_SIZE] = {0};
 
 pcap_if_t * getDevices()
 {
@@ -20,8 +21,7 @@ pcap_if_t * getDevices()
   if (!dev_ptr)
     return NULL;
 
-  char errbuf[PCAP_ERRBUF_SIZE] = {0};
-  pcap_findalldevs(&dev_ptr, errbuf);
+  pcap_findalldevs(&dev_ptr, error_buffer);
   if (!dev_ptr)
     return NULL;
 
