@@ -19,4 +19,7 @@ extern pcap_if_t * devices_ptr;
 
 pcap_if_t * getDevices();
 void print_device(pcap_if_t *device);
+
+#define READING_TIMEOUT 1000
+void capture();
 #endif // IPK2_DEVICEMANAGER_H

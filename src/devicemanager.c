@@ -10,6 +10,8 @@
  */
 
 #include "stdlib.h"
+#include "string.h"
+#include "args_parser.h"
 
 #include "devicemanager.h"
 pcap_if_t * devices_ptr = NULL;
@@ -41,4 +43,46 @@ void print_device(pcap_if_t *device)
   if (device->next)
     print_device(device->next);  // recursion goes brrrrr
   // ^ tested at server with 24 devices, if it fails at your machine, adjust stack size. see `man ulimit`
+}
+
+void select_device(char *name)
+{
+  while (devices_ptr)
+  {
+    if (strcmp(devices_ptr->name, name) == 0)
+      break;
+    devices_ptr = devices_ptr->next;
+  }
+
+  if (strcmp(devices_ptr->name, name))
+    devices_ptr = NULL;
+}
+
+void process_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+{
+  printf("%s\n", args);
+  return;
+}
+
+#define ERROR_RETURN(message)             \
+      do{                                 \
+          fprintf(stderr, message "\n");  \
+          return;                         \
+      }while(0)
+
+void capture()
+{
+  select_device(snifferOptions->inter);
+  if (!devices_ptr)
+    ERROR_RETURN("Invalid device name!");
+
+  pcap_t *handler = pcap_open_live(devices_ptr->name, BUFSIZ, 1, READING_TIMEOUT, error_buffer);
+
+  if (!handler)
+    ERROR_RETURN("Could not open handler!");
+  else if (pcap_datalink(handler) != DLT_EN10MB)  // https://www.tcpdump.org/linktypes.html
+    ERROR_RETURN("Unsupported interface type");
+
+  if(pcap_loop(handler, snifferOptions->to_sniff, process_packet, NULL))
+    fprintf(stderr, "Error during capturing packets\n");
 }

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   DEBUG("Got devices.", NULL);
 
   if (snifferOptions->inter)
-    return 1;
+    capture();
   else
     print_device(devices_ptr);
 
