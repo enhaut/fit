@@ -44,6 +44,7 @@
 #define BPF_OPTIMIZATION 1
 
 extern pcap_if_t * devices_ptr;
+extern pcap_t * handler;
 
 pcap_if_t * getDevices();
 void print_device(pcap_if_t *device);

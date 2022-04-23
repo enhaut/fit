@@ -17,6 +17,8 @@
 #include "args_parser.h"
 
 pcap_if_t * devices_ptr = NULL;
+pcap_t *handler = NULL;
+
 char error_buffer[PCAP_ERRBUF_SIZE] = {0};
 
 /**
@@ -168,8 +170,7 @@ void capture()
   if (!devices_ptr)
     ERROR_RETURN("Invalid device name!");
 
-  pcap_t *handler = pcap_open_live(devices_ptr->name, BUFSIZ, 1, READING_TIMEOUT, error_buffer);
-
+  handler = pcap_open_live(devices_ptr->name, BUFSIZ, 1, READING_TIMEOUT, error_buffer);
   if (!handler)
     ERROR_RETURN("Could not open handler!");
 
@@ -183,6 +184,4 @@ void capture()
   // TODO: maybe implement multiple looping in case, to_sniff is bigger than INT_MAX
   if(pcap_loop(handler, (int)(snifferOptions->to_sniff), handler_func, NULL))
     fprintf(stderr, "Error during capturing packets\n");
-
-  pcap_close(handler);
 }

@@ -13,6 +13,7 @@
 #include <getopt.h>
 #include "stdlib.h"
 #include "args_parser.h"
+#include "devicemanager.h"
 
 sniffer_options_t *snifferOptions = NULL;
 
@@ -69,6 +70,8 @@ unsigned long long get_number(char *raw)
  */
 void grateful_exit(sniffer_options_t *options, int code)
 {
+  if (handler)
+    pcap_close(handler);
   free(options);
   exit(code);
 }
