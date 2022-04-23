@@ -134,4 +134,6 @@ void capture()
   // TODO: maybe implement multiple looping in case, to_sniff is bigger than INT_MAX
   if(pcap_loop(handler, (int)(snifferOptions->to_sniff), handler_func, NULL))
     fprintf(stderr, "Error during capturing packets\n");
+
+  pcap_close(handler);
 }
