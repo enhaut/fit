@@ -59,6 +59,8 @@ void process_IP_packet(const u_char *packet)
       process_TCP_segment(segment_start);
     case IPPROTO_UDP:
       process_UDP_segment(segment_start);
+    case IPPROTO_ICMP:
+      process_ICMP_segment(segment_start);
     }
 }
 
