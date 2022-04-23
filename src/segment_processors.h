@@ -12,6 +12,6 @@
 
 #ifndef IPK2_SEGMENT_PROCESSORS_H
 #define IPK2_SEGMENT_PROCESSORS_H
-void process_segment(struct ip *ip_packet)
+void process_segment(struct ip *ip_packet);
 
 #endif // IPK2_SEGMENT_PROCESSORS_H
