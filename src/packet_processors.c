@@ -16,6 +16,7 @@
 #include <time.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <linux/if_arp.h>
 
 #define PRINT_MAC(address)                                                \
   do{                                                                     \
@@ -54,6 +55,12 @@ void process_IP_packet(const u_char *packet)
   process_segment(ip_packet);
 }
 
+void process_ARP_packet(const u_char *packet)
+{
+  struct arphdr *arp_packet = (struct arphdr*)(packet);
+  printf("opcode: %d\n", arp_packet->ar_op);
+}
+
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
   struct ether_header *eth_header = (struct ether_header *) packet;
@@ -67,6 +74,7 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
   printf("\nframe length: %d bytes\n", header->len);
 
 
+  packet += 14;  // move ptr behind end of ETH frame header
   switch (ntohs(eth_header->ether_type))
   {
     case ETHERTYPE_IP:
@@ -77,7 +85,7 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
       break;
     case ETHERTYPE_ARP:
     case ETHERTYPE_REVARP:
-      printf("ARP\n");
+      process_ARP_packet(packet);
       break;
     case ETHERTYPE_VLAN:  // TODO
       break;
