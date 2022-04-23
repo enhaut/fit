@@ -14,6 +14,8 @@
 #include "args_parser.h"
 #include "packet_processors.h"
 #include "devicemanager.h"
+#include "args_parser.h"
+
 pcap_if_t * devices_ptr = NULL;
 char error_buffer[PCAP_ERRBUF_SIZE] = {0};
 
@@ -69,11 +71,47 @@ handler_func_t get_handler_function(pcap_t *handler)
   }
 }
 
-#define ERROR_RETURN(message)             \
-      do{                                 \
-          fprintf(stderr, message "\n");  \
-          return;                         \
-      }while(0)
+void set_rules(char *rules_str)
+{
+  int pos = 0;
+
+  // add parentheses only if L4 or L3 filter is set
+  if (snifferOptions->L4 || snifferOptions->L3)
+  {
+    pos += sprintf(rules_str + pos, "(");
+    if (snifferOptions->L4 & (TCP_BIT - L4_RANGE))
+      ADD_RULE(rules_str, " or ", "tcp", NULL);
+
+    if (snifferOptions->L4 & (UDP_BIT - L4_RANGE))
+      ADD_RULE(rules_str, " or ", "udp", NULL);
+
+    if (snifferOptions->L3 & (ICMP_BIT - L3_RANGE))
+      ADD_RULE(rules_str, " or ", "icmp or icmp6", NULL);
+
+    if (snifferOptions->L3 & (ARP_BIT - L3_RANGE))
+      ADD_RULE(rules_str, " or ", "arp or rarp", NULL);
+    pos += sprintf(rules_str + pos, ")");
+  }
+
+  if (snifferOptions->port)
+    ADD_RULE(rules_str, " and ", "port %d", snifferOptions->port);
+}
+
+int set_filter(pcap_t *handler)
+{
+  char rules[MAX_RULES_LENGTH] = {0};
+  set_rules(rules);
+  DEBUG("BPF: %s", rules);
+
+  struct bpf_program bpf;
+  if (pcap_compile(handler, &bpf, rules, BPF_OPTIMIZATION, PCAP_NETMASK_UNKNOWN))
+    return EXIT_FAILURE;
+
+  if (pcap_setfilter(handler, &bpf))
+    return EXIT_FAILURE;
+
+  return EXIT_SUCCESS;
+}
 
 void capture()
 {
@@ -89,6 +127,9 @@ void capture()
   handler_func_t handler_func = get_handler_function(handler);
   if (!handler_func)
     ERROR_RETURN("Unsupported interface type!");
+
+  if (set_filter(handler))
+    ERROR_RETURN("Invalid combination of filters (arp/icmp does NOT use ports)!");
 
   // TODO: maybe implement multiple looping in case, to_sniff is bigger than INT_MAX
   if(pcap_loop(handler, (int)(snifferOptions->to_sniff), handler_func, NULL))
