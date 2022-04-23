@@ -20,6 +20,7 @@
     if (!inet_ntop(af, &(src), dst, len))     \
       sprintf(dst, "INVAL");                  \
   }while(0)
+#define LINE_LENGTH 16
 
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
 #endif // IPK2_PACKET_PROCESSORS_H

@@ -13,6 +13,7 @@
 #include "segment_processors.h"
 #include <net/ethernet.h>
 
+#include "ctype.h"
 #include <time.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -77,6 +78,36 @@ void process_ARP_packet(const u_char *packet)
   printf("opcode: %d\n", arp_packet->ar_op);
 }
 
+void dump_line(const u_char *line, unsigned int chars)
+{
+  printf("\t");
+  for (unsigned int i = 0; i < chars; i++)
+    printf("%c", (isprint(line[i])) ? line[i] : '.');
+
+  printf("\n");
+}
+
+void dump_frame(const u_char *frame, unsigned int size)
+{
+  printf("\n");
+  unsigned char line_buffer[LINE_LENGTH] = {0};
+
+  for (unsigned int i = 0; i < size; i++)
+  {
+    line_buffer[i % LINE_LENGTH] = frame[i];
+
+    char line[9] = "";
+    if (i % LINE_LENGTH == 0)  // line is printed every 17. byte, which is start of new line with bytes => prints it before 17.byte (indexing from 1)
+      sprintf(line, "0x%04X:\t", i);
+
+    printf("%s%02x ", line, (frame[i]));
+
+    if ((i+1)%LINE_LENGTH == 0 || i+1 == size)  // (dump line after every 15. byte (because of indexing from 0)) OR (at the end of frame)
+      dump_line(line_buffer, (((size - i) > LINE_LENGTH) || i == LINE_LENGTH) ? LINE_LENGTH : ((i % LINE_LENGTH)+1));
+      // ^ print up to LINE_LENGTH bytes if available otherwise print remaining bytes up to LINE_LENGTH-1|i is indexed from 0^
+  }
+}
+
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
   struct ether_header *eth_header = (struct ether_header *) packet;
@@ -105,5 +136,6 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
       break;
     case ETHERTYPE_VLAN:  // TODO
       break;
-    }
+  }
+  dump_frame(packet, header->len);
 }
