@@ -13,6 +13,7 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/in.h>
+#include <netinet/ip6.h>
 #include <netinet/ip_icmp.h>
 #include "stdio.h"
 
@@ -61,5 +62,17 @@ void process_segment(struct ip *ip_packet)
   else if(ip_packet->ip_p == IPPROTO_UDP)
     process_UDP_segment(segment_start);
   else if (ip_packet->ip_p == IPPROTO_ICMP)
+    process_ICMP_segment(segment_start);
+}
+
+void process_v6_segment(struct ip6_hdr *ip_packet)
+{
+  void *segment_start = (void *)(ip_packet) + 40;  // move ptr to start of extension hdr
+
+  if (ip_packet->ip6_nxt == IPPROTO_TCP)
+    process_TCP_segment(segment_start);
+  else if(ip_packet->ip6_nxt == IPPROTO_UDP)
+    process_UDP_segment(segment_start);
+  else if (ip_packet->ip6_nxt == IPPROTO_ICMP)
     process_ICMP_segment(segment_start);
 }

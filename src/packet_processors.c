@@ -16,6 +16,7 @@
 #include <time.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <linux/if_arp.h>
 
 #define PRINT_MAC(address)                                                \
@@ -55,6 +56,21 @@ void process_IP_packet(const u_char *packet)
   process_segment(ip_packet);
 }
 
+void process_IPv6_packet(const u_char *packet)
+{
+  struct ip6_hdr *ip_packet = (struct ip6_hdr *)(packet);
+  char src[INET6_ADDRSTRLEN] = "";
+  char dst[INET6_ADDRSTRLEN] = "";
+
+  CONVERT_ADDR(AF_INET6, ip_packet->ip6_src, src, INET6_ADDRSTRLEN);
+  CONVERT_ADDR(AF_INET6, ip_packet->ip6_dst, dst, INET6_ADDRSTRLEN);
+
+  printf("src IP: %s\n", src);
+  printf("dst IP: %s\n", dst);
+
+  process_v6_segment(ip_packet);
+}
+
 void process_ARP_packet(const u_char *packet)
 {
   struct arphdr *arp_packet = (struct arphdr*)(packet);
@@ -81,7 +97,7 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
       process_IP_packet(packet);
       break;
     case ETHERTYPE_IPV6:
-      printf("IPv6\n");
+      process_IPv6_packet(packet);
       break;
     case ETHERTYPE_ARP:
     case ETHERTYPE_REVARP:
