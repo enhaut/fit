@@ -20,12 +20,6 @@
 #include <netinet/ip6.h>
 #include <linux/if_arp.h>
 
-#define PRINT_MAC(address)                                                \
-  do{                                                                     \
-    for (int i = 0; i < ETHER_ADDR_LEN; i++)                              \
-      printf("%x%s", address[i], ((i+1 < ETHER_ADDR_LEN) ? ":" : ""));    \
-  }while(0)
-
 // https://stackoverflow.com/a/2409054
 void print_time(struct timeval *time)
 {
@@ -97,14 +91,23 @@ void dump_frame(const u_char *frame, unsigned int size)
     line_buffer[i % LINE_LENGTH] = frame[i];
 
     char line[9] = "";
-    if (i % LINE_LENGTH == 0)  // line is printed every 17. byte, which is start of new line with bytes => prints it before 17.byte (indexing from 1)
+    // line is printed every 17. byte, which is start of new line with bytes =>
+    // prints it before 17.byte (indexing from 1)
+    if (i % LINE_LENGTH == 0)
       sprintf(line, "0x%04X:\t", i);
 
     printf("%s%02x ", line, (frame[i]));
 
-    if ((i+1)%LINE_LENGTH == 0 || i+1 == size)  // (dump line after every 15. byte (because of indexing from 0)) OR (at the end of frame)
-      dump_line(line_buffer, (((size - i) > LINE_LENGTH) || i == LINE_LENGTH) ? LINE_LENGTH : ((i % LINE_LENGTH)+1));
-      // ^ print up to LINE_LENGTH bytes if available otherwise print remaining bytes up to LINE_LENGTH-1|i is indexed from 0^
+    // (dump line after every 15. byte (because of indexing from 0)) OR
+    // (at the end of frame)
+    if ((i+1)%LINE_LENGTH == 0 || i+1 == size)
+      dump_line(line_buffer,
+                (((size - i) > LINE_LENGTH) || i == LINE_LENGTH) ?
+                                            LINE_LENGTH :
+                                        ((i % LINE_LENGTH)+1)
+                );
+      // ^ print up to LINE_LENGTH bytes if available otherwise dump
+      // remaining bytes up to LINE_LENGTH-1;i is indexed from 0^
   }
 }
 

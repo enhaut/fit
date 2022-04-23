@@ -15,6 +15,12 @@
 #ifndef IPK2_PACKET_PROCESSORS_H
 #define IPK2_PACKET_PROCESSORS_H
 
+#define PRINT_MAC(address)                                                \
+  do{                                                                     \
+    for (int i = 0; i < ETHER_ADDR_LEN; i++)                              \
+      printf("%x%s", address[i], ((i+1 < ETHER_ADDR_LEN) ? ":" : ""));    \
+  }while(0)
+
 #define CONVERT_ADDR(af, src, dst, len)       \
   do{                                         \
     if (!inet_ntop(af, &(src), dst, len))     \
