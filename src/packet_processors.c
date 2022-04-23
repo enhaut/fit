@@ -13,7 +13,9 @@
 #include <net/ethernet.h>
 #include <time.h>
 
+#include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 
 #define PRINT_MAC(address)                                                \
@@ -38,11 +40,24 @@ void print_time(struct timeval *time)
   printf("%s.%ld+01:00", date, time->tv_usec);
 }
 
+void process_TCP_segment(void *packet)
+{
+  struct tcphdr *segment = (struct tcphdr *)packet;
+  printf("src port: %d\n", ntohs(segment->th_sport));
+  printf("dst port: %d\n", ntohs(segment->th_dport));
+}
+
 void process_IP_packet(const u_char *packet)
 {
   struct ip *ip_packet = (struct ip *)(packet + 14);
   printf("src IP: %s\n", inet_ntoa(ip_packet->ip_src));
   printf("dst IP: %s\n", inet_ntoa(ip_packet->ip_dst));
+
+  switch (ip_packet->ip_p)
+  {
+    case IPPROTO_TCP:
+      process_TCP_segment((void *)(ip_packet) + ip_packet->ip_hl*4);
+  }
 }
 
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
@@ -67,7 +82,10 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
       printf("IPv6\n");
       break;
     case ETHERTYPE_ARP:
+    case ETHERTYPE_REVARP:
       printf("ARP\n");
+      break;
+    case ETHERTYPE_VLAN:  // TODO
       break;
     }
 }
