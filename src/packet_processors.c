@@ -10,13 +10,12 @@
  */
 
 #include "packet_processors.h"
+#include "segment_processors.h"
 #include <net/ethernet.h>
-#include <time.h>
 
+#include <time.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <netinet/tcp.h>
-
 
 #define PRINT_MAC(address)                                                \
   do{                                                                     \
@@ -53,11 +52,12 @@ void process_IP_packet(const u_char *packet)
   printf("src IP: %s\n", inet_ntoa(ip_packet->ip_src));
   printf("dst IP: %s\n", inet_ntoa(ip_packet->ip_dst));
 
+  void *segment_start = (void *)(ip_packet) + ip_packet->ip_hl*4;
   switch (ip_packet->ip_p)
   {
     case IPPROTO_TCP:
-      process_TCP_segment((void *)(ip_packet) + ip_packet->ip_hl*4);
-  }
+      process_TCP_segment(segment_start);
+    }
 }
 
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
