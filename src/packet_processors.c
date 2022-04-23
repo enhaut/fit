@@ -13,6 +13,8 @@
 #include <net/ethernet.h>
 #include <time.h>
 
+#include <netinet/ip.h>
+
 
 #define PRINT_MAC(address)                                                \
   do{                                                                     \
@@ -36,6 +38,13 @@ void print_time(struct timeval *time)
   printf("%s.%ld+01:00", date, time->tv_usec);
 }
 
+void process_IP_packet(const u_char *packet)
+{
+  struct ip *ip_packet = (struct ip *)(packet + 14);
+  printf("src IP: %s\n", inet_ntoa(ip_packet->ip_src));
+  printf("dst IP: %s\n", inet_ntoa(ip_packet->ip_dst));
+}
+
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
   struct ether_header *eth_header = (struct ether_header *) packet;
@@ -52,7 +61,7 @@ void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_c
   switch (ntohs(eth_header->ether_type))
   {
     case ETHERTYPE_IP:
-      printf("IP\n");
+      process_IP_packet(packet);
       break;
     case ETHERTYPE_IPV6:
       printf("IPv6\n");
