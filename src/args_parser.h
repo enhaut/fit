@@ -3,7 +3,7 @@
  *
  * @file args_parser.h
  *
- * @brief
+ * @brief Header file of module responsible for parsing arguments.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -29,6 +29,7 @@ typedef struct {
   int L3;
   unsigned long long to_sniff;
 }sniffer_options_t;
+// ^ pahole goes brrr
 
 #define L3_RANGE 1000
 #define ICMP_BIT (1+L3_RANGE)

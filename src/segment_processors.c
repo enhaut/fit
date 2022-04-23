@@ -3,7 +3,7 @@
  *
  * @file segment_processors.c
  *
- * @brief
+ * @brief Module responsible for processing segments.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *

@@ -3,7 +3,7 @@
  *
  * @file packet_processors.c
  *
- * @brief
+ * @brief Module responsible for processing packets.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -72,6 +72,13 @@ void process_ARP_packet(const u_char *packet)
   printf("opcode: %d\n", arp_packet->ar_op);
 }
 
+/**
+ * @brief Function tries to print bytes as a characters.
+ * If character is not printable, it replaces it by '.' character.
+ *
+ * @param line array containing characters of line to print
+ * @param chars # of chars to print
+ */
 void dump_line(const u_char *line, unsigned int chars)
 {
   printf("\t");
@@ -81,6 +88,12 @@ void dump_line(const u_char *line, unsigned int chars)
   printf("\n");
 }
 
+/**
+ * @brief Function hexdumps ethernet frame content.
+ *
+ * @param frame raw bytes of frame
+ * @param size size of frame in bytes
+ */
 void dump_frame(const u_char *frame, unsigned int size)
 {
   printf("\n");
@@ -89,6 +102,7 @@ void dump_frame(const u_char *frame, unsigned int size)
   for (unsigned int i = 0; i < size; i++)
   {
     line_buffer[i % LINE_LENGTH] = frame[i];
+    // ^ store bytes to dump it at the end of line
 
     char line[9] = "";
     // line is printed every 17. byte, which is start of new line with bytes =>
@@ -111,6 +125,14 @@ void dump_frame(const u_char *frame, unsigned int size)
   }
 }
 
+/***
+ * @brief Entrypoint function for processing ethernet frame.
+ * It calls processing function at higher layers.
+ *
+ * @param args
+ * @param header eth frame header
+ * @param packet whole frame
+ */
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
   struct ether_header *eth_header = (struct ether_header *) packet;

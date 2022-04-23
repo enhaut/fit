@@ -15,12 +15,20 @@
 #ifndef IPK2_PACKET_PROCESSORS_H
 #define IPK2_PACKET_PROCESSORS_H
 
+/**
+ * @brief The idea is inspired by
+ * http://yuba.stanford.edu/~casado/pcap/section2.html.
+ */
 #define PRINT_MAC(address)                                                \
   do{                                                                     \
     for (int i = 0; i < ETHER_ADDR_LEN; i++)                              \
       printf("%x%s", address[i], ((i+1 < ETHER_ADDR_LEN) ? ":" : ""));    \
   }while(0)
 
+/**
+ * @brief Macro that converts number representation of IP address
+ * to human-readable address.
+ */
 #define CONVERT_ADDR(af, src, dst, len)       \
   do{                                         \
     if (!inet_ntop(af, &(src), dst, len))     \

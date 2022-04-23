@@ -24,6 +24,15 @@ void graceful_exit()
   exit(0);
 }
 
+/**
+ * @brief Entrypoint of sniffer.
+ * The main idea of sniffer and what is actually going on is borrowed from
+ * https://www.devdungeon.com/content/using-libpcap-c by "NanoDev".
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char *argv[])
 {
   DEBUG("Hi", NULL);

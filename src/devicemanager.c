@@ -3,7 +3,7 @@
  *
  * @file devicemanager.c
  *
- * @brief
+ * @brief Module responsible for devices stuff.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -19,6 +19,12 @@
 pcap_if_t * devices_ptr = NULL;
 char error_buffer[PCAP_ERRBUF_SIZE] = {0};
 
+/**
+ * @brief Allocates memory for `pcap_if_t` struct, which is DL of
+ * available devices.
+ *
+ * @return ptr to first device
+ */
 pcap_if_t * getDevices()
 {
   pcap_if_t *dev_ptr = (pcap_if_t *)malloc(sizeof(pcap_if_t));
@@ -32,6 +38,15 @@ pcap_if_t * getDevices()
   return dev_ptr;
 }
 
+/***
+ * @brief Recursively walks through DL of devices and
+ * prints its name one by one.
+ * Only "active" devices are printed. As assignment does not specify
+ * what "active" device mean, I've chose not disconnected AND
+ * connected devices to print.
+ *
+ * @param device ptr to first device
+ */
 void print_device(pcap_if_t *device)
 {
 
@@ -47,6 +62,10 @@ void print_device(pcap_if_t *device)
   // ^ tested at server with 24 devices, if it fails at your machine, adjust stack size. see `man ulimit`
 }
 
+/***
+ * @brief Sets device's ptr with same name as @param:name to `device_ptr`.
+ * @param name
+ */
 void select_device(char *name)
 {
   while (devices_ptr)
@@ -60,6 +79,13 @@ void select_device(char *name)
     devices_ptr = NULL;
 }
 
+/**
+ * @brief Returns pointer to function which is responsible
+ * for parsing received frame.
+ *
+ * @param handler
+ * @return
+ */
 handler_func_t get_handler_function(pcap_t *handler)
 {
   switch (pcap_datalink(handler))
@@ -71,6 +97,12 @@ handler_func_t get_handler_function(pcap_t *handler)
   }
 }
 
+/***
+ * @brief Generates and sets BPF (https://biot.com/capstats/bpf.html) rules
+ * to `rules_str` array.
+ *
+ * @param rules_str
+ */
 void set_rules(char *rules_str)
 {
   int pos = 0;
@@ -97,6 +129,13 @@ void set_rules(char *rules_str)
     ADD_RULE(rules_str, " and ", "port %d", snifferOptions->port);
 }
 
+/**
+ * @brief Sets filter to opened handler.
+ * see https://www.tcpdump.org/manpages/pcap-filter.7.html .
+ *
+ * @param handler
+ * @return
+ */
 int set_filter(pcap_t *handler)
 {
   char rules[MAX_RULES_LENGTH] = {0};
@@ -104,6 +143,7 @@ int set_filter(pcap_t *handler)
   DEBUG("BPF: %s", rules);
 
   struct bpf_program bpf;
+  // packets are not filtered using any mask, so pcap_compile does not need it
   if (pcap_compile(handler, &bpf, rules, BPF_OPTIMIZATION, PCAP_NETMASK_UNKNOWN))
     return EXIT_FAILURE;
 
@@ -113,6 +153,15 @@ int set_filter(pcap_t *handler)
   return EXIT_SUCCESS;
 }
 
+/***
+ * @brief Main function of capturing. It setups everything needed and
+ * starts capturing the packets.
+ *
+ * As I mentioned (also source) in docs of `main()` function, the main idea
+ * is not mine.
+ *
+ * Also, it cannot be, it could, if I'd developed the wheel once again.
+ */
 void capture()
 {
   select_device(snifferOptions->inter);
