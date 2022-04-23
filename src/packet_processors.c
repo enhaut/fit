@@ -39,18 +39,17 @@ void print_time(struct timeval *time)
   printf("%s.%ld+01:00", date, time->tv_usec);
 }
 
-void process_TCP_segment(void *packet)
-{
-  struct tcphdr *segment = (struct tcphdr *)packet;
-  printf("src port: %d\n", ntohs(segment->th_sport));
-  printf("dst port: %d\n", ntohs(segment->th_dport));
-}
-
 void process_IP_packet(const u_char *packet)
 {
-  struct ip *ip_packet = (struct ip *)(packet + 14);
-  printf("src IP: %s\n", inet_ntoa(ip_packet->ip_src));
-  printf("dst IP: %s\n", inet_ntoa(ip_packet->ip_dst));
+  struct ip *ip_packet = (struct ip *)(packet);
+  char src[INET_ADDRSTRLEN] = "";
+  char dst[INET_ADDRSTRLEN] = "";
+
+  CONVERT_ADDR(AF_INET, ip_packet->ip_src, src, INET_ADDRSTRLEN);
+  CONVERT_ADDR(AF_INET, ip_packet->ip_dst, dst, INET_ADDRSTRLEN);
+
+  printf("src IP: %s\n", src);
+  printf("dst IP: %s\n", dst);
 
   process_segment(ip_packet);
 }
