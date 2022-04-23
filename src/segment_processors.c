@@ -21,6 +21,7 @@ void process_TCP_segment(void *packet)
   struct tcphdr *segment = (struct tcphdr *)packet;
   printf("src port: %d\n", ntohs(segment->th_sport));
   printf("dst port: %d\n", ntohs(segment->th_dport));
+  printf("syn: %d, ack: %d\n", segment->syn, segment->ack);
 }
 void process_UDP_segment(void *packet)
 {
@@ -50,4 +51,15 @@ void process_ICMP_segment(void *packet)
     case ICMP_ADDRESSREPLY:   printf("ADDRESS_MASK_REPLY"); break;
     }
     printf("(%d)\n", segment->type);
+}
+
+void process_segment(struct ip *ip_packet)
+{
+  void *segment_start = (void *)(ip_packet) + ip_packet->ip_hl*4;
+  if (ip_packet->ip_p == IPPROTO_TCP)
+    process_TCP_segment(segment_start);
+  else if(ip_packet->ip_p == IPPROTO_UDP)
+    process_UDP_segment(segment_start);
+  else if (ip_packet->ip_p == IPPROTO_ICMP)
+    process_ICMP_segment(segment_start);
 }

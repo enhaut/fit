@@ -52,16 +52,7 @@ void process_IP_packet(const u_char *packet)
   printf("src IP: %s\n", inet_ntoa(ip_packet->ip_src));
   printf("dst IP: %s\n", inet_ntoa(ip_packet->ip_dst));
 
-  void *segment_start = (void *)(ip_packet) + ip_packet->ip_hl*4;
-  switch (ip_packet->ip_p)
-  {
-    case IPPROTO_TCP:
-      process_TCP_segment(segment_start);
-    case IPPROTO_UDP:
-      process_UDP_segment(segment_start);
-    case IPPROTO_ICMP:
-      process_ICMP_segment(segment_start);
-    }
+  process_segment(ip_packet);
 }
 
 void process_eth_frame(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
