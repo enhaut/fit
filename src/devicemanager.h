@@ -26,7 +26,7 @@
 
 #define DEBUG(fmt, ...) \
   do {                                        \
-    fprintf(stderr, fmt "\n", __VA_ARGS__);   \
+    break;fprintf(stderr, fmt "\n", __VA_ARGS__);   \
   } while (0)
 
 /**
