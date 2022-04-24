@@ -97,6 +97,13 @@ void set_port(sniffer_options_t *options)
      ? (bool) (optarg = argv[optind++]) \
      : (optarg != NULL))
 
+void print_usage()
+{
+  fprintf(stderr, "Usage:\n"
+                  "\t./ipk-sniffer [-i | -i interface | --interface interface] {-p port} {[--tcp|-t] [--udp|-u] [--arp] [--icmp] } {-n num}\n");
+  exit(1);  // nothing is allocated
+}
+
 /**
  * @brief Function process arguments of program.
  * There are 2 types of arguments. Long and short both are parsed
@@ -108,17 +115,14 @@ void set_port(sniffer_options_t *options)
 sniffer_options_t *process_args(int argc, char *argv[])
 {
   if (argc == 1)
-  {
-    fprintf(stderr, "Usage:\n"
-                    "\t./ipk-sniffer [-i | -i interface | --interface interface] {-p port} {[--tcp|-t] [--udp|-u] [--arp] [--icmp] } {-n num}\n");
-    exit(1);  // nothing is allocated
-  }
+    print_usage();
 
   sniffer_options_t *options = get_options_struct();
 
   static struct option long_options[] =
       {
           {"interface",  optional_argument, NULL, 'i'},
+          {"help",  optional_argument, NULL, 'h'},
           {"port",  required_argument, NULL, 'p'},
           {"tcp",  no_argument, NULL, TCP_BIT},
           {"udp",  no_argument, NULL, UDP_BIT},
@@ -129,10 +133,13 @@ sniffer_options_t *process_args(int argc, char *argv[])
 
   options->inter = argv[0];  // argv[0] is always present, it could be used to check if required argument -i was used
   int c, option_index;
-  while ((c = getopt_long(argc, argv, "p:i::tun:", long_options, &option_index)) != -1)
+  while ((c = getopt_long(argc, argv, "p:i::tun:h", long_options, &option_index)) != -1)
   {
     switch (c)
     {
+      case 'h':
+        print_usage();
+        break;
       case 'p':
         set_port(options);
         break;
