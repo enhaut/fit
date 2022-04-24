@@ -22,7 +22,7 @@
 #define PRINT_MAC(address)                                                \
   do{                                                                     \
     for (int i = 0; i < ETHER_ADDR_LEN; i++)                              \
-      printf("%x%s", address[i], ((i+1 < ETHER_ADDR_LEN) ? ":" : ""));    \
+      printf("%02x%s", address[i], ((i+1 < ETHER_ADDR_LEN) ? ":" : ""));    \
   }while(0)
 
 /**
