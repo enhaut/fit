@@ -1,0 +1,159 @@
+%%% attributes specified in assignment
+\documentclass[11pt, a4paper]{article}
+\usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
+\usepackage{times} %% font times
+%%%
+
+%%% my attributes
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[hidelinks, draft=false]{hyperref}  % hide borders around links
+\bibliographystyle{siam}
+%%%
+
+% https://tex.stackexchange.com/a/89319
+\usepackage{minted}
+
+
+\begin{document}
+	\begin{titlepage}
+		\begin{center}
+				\Huge{\textsc{Brno University of Technology}}\\
+				\huge{\textsc{Faculty of Information technology}}
+			\\
+			\vspace{
+			    \stretch{0.382}
+			}
+			\LARGE{IPK\,--\,Computer Communications and Networks}\\
+			\Huge{ZETA: Packet sniffer}
+			\vspace{
+			    \stretch{0.618}
+			}			
+		\end{center}
+    	{\Large \today \hfill Samuel Dobroň (xdobro23)}
+	\end{titlepage}
+
+    \tableofcontents
+    \newpage
+    
+    \section{Literature}
+        This project requires lots of networking knowledge. Definitely I should mentioned, that I had no clue how frames, packets or segments are parsed.
+        They have structures that matches real order of bits transported by physical layer. For example structure of \texttt{IPv6} packet header \cite{ipv6hdr}:
+        \begin{minted}{C}
+struct ip6_hdr
+  {
+    union
+      {
+	struct ip6_hdrctl
+	  {
+	    uint32_t ip6_un1_flow;   /* 4 bits version, 8 bits TC,
+					20 bits flow-ID */
+	    uint16_t ip6_un1_plen;   /* payload length */
+	    uint8_t  ip6_un1_nxt;    /* next header */
+	    uint8_t  ip6_un1_hlim;   /* hop limit */
+	  } ip6_un1;
+	uint8_t ip6_un2_vfc;       /* 4 bits version, top 4 bits tclass */
+      } ip6_ctlun;
+    struct in6_addr ip6_src;      /* source address */
+    struct in6_addr ip6_dst;      /* destination address */
+  };
+        \end{minted}
+        To implement everything required I had to remind myself order of bites in packets and frames.
+        Implementation is inspired by article available here \cite{usingpcap}. If something wasn't clear, I've also used \texttt{ICMP}\cite{icmp}, \texttt{ICMPv6}\cite{icmpv6}, \texttt{(R)ARP}\cite{arp} documentations.
+    	
+    \section{Implementation}
+        The whole packet sniffer is implemented using \texttt{C} programming language. It is supported almost by all the *nix system if it provides \texttt{linux/if\_arp.h} header file\footnote{Latest version is located for example here: \url{https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/if_arp.h}}. If not, it also should be pretty easy to complie sniffer without it, because it uses just \texttt{arphdr} structure from mentioned file.
+        
+        \subsection{Parsing program arguments}
+            Entrypoint of parsing program arguments is \texttt{process\_args()} function, which returns a pointer to \linebreak\texttt{sniffer\_options\_t} structure.
+            \subsubsection{\texttt{sniffer\_options\_t} structure}
+                \texttt{sniffer\_options\_t} is responsible for ``holding'' the sniffer options.
+                Especially 2 members of this structure are interesting -- \texttt{L4} and \texttt{L3} whose holds information what packets or frames would be captured by sniffer.
+                Bitmasking\cite{masking} is used to store these information. It provides ability to add support of filtering another protocols, not mentioned in assignment, much faster than it would require if just some \texttt{bool} variable was used. 
+                
+                Currently, at trasport layer \texttt{TCP}\cite{tcprfc} and \texttt{UDP}\cite{udprfc} are supported.
+                If only \texttt{--tcp|-t} argument was used, \texttt{L4} member of structure would store $1_{(10)}$ in case also \texttt{--udp | -u} was provided, \texttt{L4} would contain $3_{(10)}$. That means, first bit of \texttt{L4} integer represents \texttt{TCP} and second bit is there for \texttt{UDP}.
+                
+                \textit{Bitmasking is commonly used in Kernel.}
+            \subsubsection{\texttt{getopt\_long}}
+                For parsing long (\texttt{--tcp}, \texttt{--icmp}, \dots) arguments  is used \texttt{getopt\_long()} function provided by \texttt{unistd.h} header file.
+                The main idea of parsing arguments using this function is taken from \cite{die}.
+        
+        \subsection{Filtering}
+            Filtration of captured packets is performed by \texttt{set\_filter()} function. Well, not actually, this function just sets the filter based on provided arguments.
+            Function \texttt{set\_rules()} is responsible for generating \texttt{BPF} filter rules, whose are later compiled using \texttt{pcap\_compile()} function. There is a interesting macro \texttt{ADD\_RULE} which uses \texttt{sprintf()} function to add rules to string containing all the rules. After the compilation of rules to \texttt{BPF} rules, filter is set using the \texttt{pcap\_setfilter()} funciton.
+            
+            There are some limitations, it does not make sense to filter \texttt{ICMP} or \texttt{(R)ARP} frames at some port because these protocol does not use ports at all. That means, combination of \texttt{--port} and \texttt{--arp} or \texttt{--icmp} are not allowed, in that case, sniffer exits with error code $1$.
+            
+        \subsection{Capturing packets}
+            Also for capturing the packets or frames \texttt{pcap}'s function is used. There are some steps needed to be taken by sniffer:
+            \begin{enumerate}
+                \item Select the device -- performed by \texttt{select\_device()} function. The interface performed in program arguments is selected if exists, if not, program ends with exit code $1$. Implementation is straightforward, \texttt{pcap\_findalldevs()} function is used to get linked list of available devices then, by comparing the name of devices with provided \texttt{-i} argument is selected corresponding device.
+                \item Open a handler -- Handler is opened by \texttt{pcap\_open\_live()} function.
+                \item Set \texttt{BPF} filter
+                \item Start capturing -- Firstly, we need to get function, which would be ``processor'' for incoming frames or packets. There is a function \texttt{get\_handler\_function()} that returns pointer to handling function. It is implemented in this way, because \texttt{get\_handler\_function()} can be extended of another handling function for another types of devices pretty easily. 
+                \begin{itemize}
+                    \item Also there is some limitation caused by \texttt{pcap\_loop()}. It has an parameter \texttt{cnt}\cite{pcaploop} which sets how many packets or frames are captured and then the function returns $0$ or some error code. The problem is, parameters \texttt{cnt} is type of \texttt{int} but \texttt{-n} argument has no maximum limitation. So the limitation is set by maximum value of \texttt{integer} on your system.
+                \end{itemize}
+            \end{enumerate}
+    \section{Testing}
+        Sniffer was developed at Red Hat Enterprise Linux 8.5\footnote{Available at \url{https://developers.redhat.com/products/rhel/download}}.
+        During development I was using \texttt{nc}\footnote{More about it at: \url{https://linux.die.net/man/1/nc}} and \texttt{tcpdump} tools.
+        \subsection{UDP packet capture}
+            To test if capturing of \texttt{UDP} packets works I've started a \texttt{nc} server with following command:
+            \begin{minted}{shell-session}
+$ nc -u -l 50
+            \end{minted}
+            Packet sniffer was started as:
+            \begin{minted}{shell-session}
+$ ./ipk-sniffer -i eno1 --port 50 --udp
+            \end{minted}
+            To have something to compare results with, I've used \texttt{tcpdump}\footnote{More about \texttt{tcpdump} at: \url{https://www.tcpdump.org/}}:
+            \begin{minted}{shell-session}
+$ tcpdump -i eno1 udp port 50 -XX
+            \end{minted}
+            It captured:
+            \begin{minted}{shell-session}
+dropped privs to tcpdump
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eno1, link-type EN10MB (Ethernet), capture size 262144 bytes
+
+08:04:28.425794 IP 10.0.0.1.61270 > XXXX: UDP, length 6
+        0x0000:  70b5 e8ef c0e4 204e 7144 7801 0800 4500  p......NqDx...E.
+        0x0010:  0022 43c2 0000 3011 f242 0a28 c00f 0a13  ."C...0..B.(....
+        0x0020:  807c ef56 0032 000e 77a6 6865 6c6c 6f0a  .|.V.2..w.hello.
+        0x0030:  0000 0000 0000 0000 534d c5ce            ........SM..
+            \end{minted}
+            Then, to have something to capture I've wrote simple \texttt{hello} to \texttt{/dev/udp/10.0.0.1/50} with following command:
+            \begin{minted}{shell-session}
+$ echo -n "hello" > /dev/udp/10.0.0.1/50
+            \end{minted}
+            
+            And here is output of packet sniffer:
+            \begin{minted}{shell-session}
+timestamp: 2022-04-24T08:04:28.763121+01:00
+src MAC: 20:4e:71:ff:ff:ff
+dst MAC: 70:b5:e8:ff:ff:ff
+frame length: 60 bytes
+src IP: 10.0.0.15
+dst IP: 10.0.0.1
+src port: 64043
+dst port: 50
+
+0x0000: 45 00 00 22 43 c2 00 00 30 11 f2 42 0a 28 c0 0f  E.."C...0..B.(..
+0x0010: 0a 13 80 7c ef 56 00 32 00 0e 77 a6 68 65 6c 6c  ...|.V.2..w.hell
+0x0020: 6f 0a 00 00 00 00 00 00 00 00 53 4d c5 ce 00 00  o.........SM....
+0x0030: 00 00 00 00 00 00 00 00 00 00 00 00  ............
+            \end{minted}
+            \textit{Last part of MAC addresses was replaced by \texttt{ff}, similar for IP addresses.}\linebreak
+            We can see little difference between \texttt{tcmpdump} and mine packet sniffer. It seems like \texttt{tcmpdump} prints some header but i couldn't found out what is going on. According to \texttt{pcap\_loop} documentation \cite{pcaploop} I am printing whole frame, strange.
+        \subsection{Capturing another types of packets or frames}
+            Testing basic functionality of packet sniffer -- capturing the packets or frames (\texttt{TCP}, \texttt{ICMP} and \texttt{(R)ARP}) and also \texttt{IPv6} was tested in the same way as for \texttt{UDP}.
+        
+    \section{Extensions}
+        No extensions are supported, but program is written to easily add new functionality. For example \texttt{IPv6} extension headers would require just implement moving pointer of segment behind extension headers.
+    
+    \newpage
+    \bibliography{references}
+
+\end{document}
