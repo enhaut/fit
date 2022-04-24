@@ -77,7 +77,7 @@ void select_device(char *name)
     devices_ptr = devices_ptr->next;
   }
 
-  if (strcmp(devices_ptr->name, name))
+  if (devices_ptr && strcmp(devices_ptr->name, name))
     devices_ptr = NULL;
 }
 
@@ -145,8 +145,10 @@ int set_filter(pcap_t *handler)
   DEBUG("BPF: %s", rules);
 
   struct bpf_program bpf;
+  uint32_t mask, src;
+  pcap_lookupnet("eno1", &src, &mask, error_buffer);
   // packets are not filtered using any mask, so pcap_compile does not need it
-  if (pcap_compile(handler, &bpf, rules, BPF_OPTIMIZATION, PCAP_NETMASK_UNKNOWN))
+  if (pcap_compile(handler, &bpf, rules, BPF_OPTIMIZATION, mask))
     return EXIT_FAILURE;
 
   if (pcap_setfilter(handler, &bpf))
@@ -170,7 +172,7 @@ void capture()
   if (!devices_ptr)
     ERROR_RETURN("Invalid device name!");
 
-  handler = pcap_open_live(devices_ptr->name, BUFSIZ, 1, READING_TIMEOUT, error_buffer);
+  handler = pcap_open_live(devices_ptr->name, BUFSIZ, PROMISC, READING_TIMEOUT, error_buffer);
   if (!handler)
     ERROR_RETURN("Could not open handler!");
 
