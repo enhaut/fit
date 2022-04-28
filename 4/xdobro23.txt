@@ -21,7 +21,7 @@ a vysledek zapiste ve formatu stejnem jako vyse, tj. ve tvaru matice
 s cisly zaokrouhlenymi na tri desetinna mista!
 
 Reseni: 
-  0.002  0.068  0.007 -0.190 -0.009
-  rew=1  0.176  0.035 rew=-1 -0.380
-  0.640  0.097 -0.124 -0.360 -0.124
-  0.183  0.038 -0.002 -0.041 -0.022
+0.002 0.068 0.007 -0.190 -0.009
+rew=1 0.176 0.035 rew=-1 -0.380
+0.640 0.097 -0.124 -0.360 -0.124
+0.183 0.038 -0.002 -0.041 -0.022
