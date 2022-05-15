@@ -1,0 +1,56 @@
+#!/usr/bin/env stap
+
+
+global target_process, run_times
+
+probe begin
+{
+	target_process = @1
+	println("Watching process: ", target_process)
+	//run_times[0][0][0] = 1
+}
+
+/**
+ * @brief Handles clone()/fork()/vfork() syscalls
+ *
+ **/
+probe nd_syscall.clone
+{
+	if(isinstr(execname(), target_process))
+		printf("PID %d called clone syscall\n", pid())
+
+}
+
+/**
+ * @brief
+ *
+ **/
+probe kernel.function("do_execve")
+{
+	println("PID ", pid(), " executed execve syscall for pathname: ", kernel_string($filename->name))
+}
+
+probe scheduler.cpu_on
+{
+	if (isinstr(execname(), target_process))
+	{
+		run_times[cpu(), pid(), "start"] = gettimeofday_us()
+		run_times[cpu(), pid(), "state"] = 1
+		run_times[cpu(), pid(), "duration"] = 0
+	}
+}
+
+
+probe scheduler.cpu_on
+{
+	if (isinstr(execname(), target_process))
+	{
+		run_times[cpu(), pid(), "duration"] = gettimeofday_us() - run_times[cpu(), pid(), "start"]
+		run_times[cpu(), pid(), "state"] = 0
+	}
+}
+
+probe end
+{
+	println("Bye...")
+}
