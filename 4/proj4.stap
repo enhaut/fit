@@ -2,12 +2,16 @@
 
 
 global target_process, run_times
+global times, hrtimes, names
 
+/**
+ * @brief SystemTap enter probe.
+ *
+ **/
 probe begin
 {
 	target_process = @1
 	println("Watching process: ", target_process)
-	//run_times[0][0][0] = 1
 }
 
 /**
@@ -22,7 +26,7 @@ probe nd_syscall.clone
 }
 
 /**
- * @brief
+ * @brief Handles execve() syscalls
  *
  **/
 probe kernel.function("do_execve")
@@ -30,27 +34,158 @@ probe kernel.function("do_execve")
 	println("PID ", pid(), " executed execve syscall for pathname: ", kernel_string($filename->name))
 }
 
+/**
+ * @brief Handles scheduling process to cpu
+ *
+ **/
 probe scheduler.cpu_on
 {
 	if (isinstr(execname(), target_process))
 	{
 		run_times[cpu(), pid(), "start"] = gettimeofday_us()
 		run_times[cpu(), pid(), "state"] = 1
-		run_times[cpu(), pid(), "duration"] = 0
+		
+		names[cpu(), pid()] = execname()
+		if (!run_times[cpu(), pid(), "initialized"])
+		{
+			times[cpu(), pid()] = 0
+			hrtimes[cpu(), pid()] = 0
+			run_times[cpu(), pid(), "initialized"] = 1
+		}
 	}
 }
 
+/**
+ * @brief Function saves process execution time
+ *
+ **/
+function save_timee(cpuid, taskid)
+{
+	times[cpuid, taskid] += gettimeofday_us() - run_times[cpuid, taskid, "start"]
+}
 
-probe scheduler.cpu_on
+/**
+ * @brief Handles removing process from cpu
+ *
+ **/
+probe scheduler.cpu_off
 {
 	if (isinstr(execname(), target_process))
 	{
-		run_times[cpu(), pid(), "duration"] = gettimeofday_us() - run_times[cpu(), pid(), "start"]
+		save_timee(cpu(), pid())
 		run_times[cpu(), pid(), "state"] = 0
+		run_times[cpu(), pid(), "start"] = 0
 	}
 }
 
+/**
+ * @brief Probe is attached to `hrtimer_interrput` function. It saves
+ * time of `hrtimer_interrupt` function call to be able to calculate
+ * execution time. 
+ * Execution time of process should exclude execution time of interrupts
+ * handler exection time, so process's exec time needs to be saved.
+ *
+ **/
+probe kernel.function("hrtimer_interrupt@kernel/time/hrtimer.c")
+{
+	if ([cpu(), pid()] in hrtimes)
+	{
+		save_timee(cpu(), pid())
+		run_times[cpu(), pid(), "hr_start"] = gettimeofday_us()
+	}
+}
+
+/**
+ * @brief Probe is attached to the end of `hrtimer_interrupt` function.
+ * It saves the execution time of interrupt handler then it sets new
+ * start time of process.
+ *
+ **/
+probe kernel.function("hrtimer_interrupt@kernel/time/hrtimer.c").return
+{
+	if ([cpu(), pid()] in hrtimes)
+	{
+		hrtimes[cpu(), pid()] += gettimeofday_us() - run_times[cpu(), pid(), "hr_start"]
+		run_times[cpu(), pid(), "start"] = gettimeofday_us()
+	}
+}
+
+/**
+ * @brief Returns relative execution time of process.
+ * SystemTap does not support floats so calculation is not
+ * as accurate as it could be.
+ *
+ **/
+function calculate_time:long(cpuid, taskpid)
+{
+	duration = times[cpuid, taskpid]
+
+	interval = 5 * 1000000
+	return (100*duration)/interval
+}
+
+/**
+ * @brief Function resets execution an hr interrupts timers.
+ * This needs to be done to measure execution time of process
+ * in last 5 seconds.
+ *
+ **/
+function reset_timers(cpuid, taskpid)
+{
+	times[cpuid, taskpid] = 0
+	hrtimes[cpuid, taskpid] = 0
+}
+
+/**
+ * @brief Prints summary.
+ *
+ **/
+function summary()
+{
+	println("\n================================================")
+	println("Scheduling stats:")
+	println("CPU\tPID\trun\thrtimer\t\tcomm")
+
+	last_cpu = -1
+	foreach([cpuid, taskpid, key] in run_times+)
+	{
+		if (key == "start")
+		{
+			if (cpuid == last_cpu)
+				printf(" \t")
+			else
+			{
+				printf("%ld\t", cpuid)
+				last_cpu = cpuid
+			}
+			state = run_times[cpuid, taskpid, "state"]
+			if (state == 1)
+				save_timee(cpuid, taskpid)
+			
+			printf("%d\t%3d\t%7d us\t%s\n", taskpid, calculate_time(cpuid, taskpid), hrtimes[cpuid, taskpid], names[cpuid, taskpid])
+			reset_timers(cpuid, taskpid)
+		}
+	}
+	println("================================================")
+}
+
+/**
+ * @brief Probe used to trigger printing 
+ * summary every 5 seconds.
+ *
+ **/
+probe timer.ms(5000)
+{
+	summary()
+}
+
+/**
+ * @brief Probe triggered at the end of SystemTap
+ * script. 
+ *
+ **/
 probe end
 {
+	summary()
 	println("Bye...")
 }
