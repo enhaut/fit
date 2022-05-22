@@ -31,7 +31,8 @@ probe nd_syscall.clone
  **/
 probe kernel.function("do_execve")
 {
-	println("PID ", pid(), " executed execve syscall for pathname: ", kernel_string($filename->name))
+	if (isinstr(execname(), target_process))
+		println("PID ", pid(), " executed execve syscall for pathname: ", kernel_string($filename->name))
 }
 
 /**
