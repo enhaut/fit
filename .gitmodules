@@ -10,3 +10,6 @@
 [submodule "3semester/ITU/project"]
 	path = 3semester/ITU/project
 	url = git@github.com:enhaut/fit-itu-project.git
+[submodule "4semester/ICP"]
+	path = 4semester/ICP
+	url = git@github.com:guritchi/ICP-project.git
