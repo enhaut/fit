@@ -22,7 +22,6 @@ probe nd_syscall.clone
 {
 	if(isinstr(execname(), target_process))
 		printf("PID %d called clone syscall\n", pid())
-
 }
 
 /**
