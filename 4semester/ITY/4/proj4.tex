@@ -1,0 +1,78 @@
+%%% attributes specified in assignment
+\documentclass[11pt, a4paper]{article}
+\usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
+\usepackage{times} %% font times
+%%%
+
+%%% my attributes
+\usepackage[utf8]{inputenc}
+\usepackage[czech, slovak]{babel}
+\usepackage[hidelinks, draft=false]{hyperref}  % hide borders around links
+\bibliographystyle{czechiso}
+%%%
+
+
+\begin{document}
+	\begin{titlepage}
+		\begin{center}
+				\Huge{\textsc{Vysoké učení technické v~Brně}}\\
+				\huge{\textsc{Fakulta informačních technologií}}
+			\\
+			\vspace{
+			    \stretch{0.382}
+			}
+			\LARGE{Typografie a publikování\,--\,4. projekt}\\
+			\Huge{Kontajnerizácia}
+			\vspace{
+			    \stretch{0.618}
+			}			
+		\end{center}
+    	{\Large \today \hfill Samuel Dobroň}
+	\end{titlepage}
+
+\section{Kontajnerizácia}
+    Ako sa spomína v~\cite{Clancy:2021:WhatAreContainers}, kontajnerizácia programov je akousi analógiou na kontajnerizáciu tovarov. V~informatike kontajnerizáciou rozumie
+    \uv{zabalenie} nejakej aplikácie a všetkých jej závislostí do kontajnera, ktorý je
+    voľne prenositeľný a nezávyslý\footnote{Istým problémom sú ale kontajnere, vyžadujúce externé zariadenia napríklad sieťove či grafické karty, \dots} na systéme, pre ktorý bol vytvorený. 
+
+    Ako sa spomína v~\cite{Pahl:2015:PaaS} kontajnerizácia má pre svoju interoperabilitu obrovský potenciál v~PaaS\footnote{Platform-as-a-Service} cloudoch.
+
+	\subsection{Benefity kontajnerov}
+	Hlavnými benefitmi kontajnerov sú:
+	\begin{itemize}
+	    \item prenositeľnosť\,--\,najväčšou výhodou kontajnerov je ich takmer neobmedzená prenositeľnosť,
+	    \item izolácia\,--\,tak ako lodné kontajnere, aj tie v~informatike sú striktne oddelené, aby sa neovplyvňovali,
+	    \item veľkosť\,--\,keďže samotný kontajner neobsahuje okrem aplikácie a jej závislostí takmer nič navyše
+	\end{itemize}
+	
+\section{Kontajnere verzus virtuálne stroje}
+    V~\cite{AspernasNensen:2016:COntainersPerformance} sa autor zameral na meranie výkonu \texttt{MySQL} databáze na základe \texttt{HTTP} požiadaviek.
+    Ako sa dá predpokladať, výkon virtualizovaných strojov je v~priemere nižší. Je to hlavne kvôli tomu, že nad virtualizovaným hardvérom musí fungovať ďalšia vrstva\,-\,hypervisor\footnote{Program, ktorý sa stará o~menežovanie virtuálych strojov na stroji fyzickom.}.
+    
+    Ďalším problémom, spôsobujúcim nižší výkon je aj nutnosť behu dvoch operačných systémov. Jeden pre systém, na ktorom bežia samotné virtualizované stroje a ďalší vo vnútri samotných virtualizovaných strojov.
+    Naopak kontajnere, žiadne takéto vrstvy nepotrebujú. Fungujú bez hypervisora, bez ďalšieho operačného systému a využívajú služby už bežiaceho kernelu.
+    
+    Kontajnerizácia preniká aj do oblasti vysoko náročných výpočtov, kde vznikol Socker \cite{Azab:2017:HPCContainers}, ktorý plánuje a spúšťa výpočty vo vnútri kontajnerov.
+   
+\section{Kontajnerizačné nástroje}
+    Samotná kontajnerizácia využíva služby kernelu, populárne kontajnerizačné
+    nástroje sú teda len akýmsi viac uživateľsky privetivejším \uv{rozhraním}.
+    
+    Ak zoradíme kontajnerizačné nástroje podľa veľkosti užívateľskej základne, výhercom by sa stal Docker a hneď za ním Podman.
+    \subsection{Docker}
+        Docker je v~súčasnosti najpoužívanejším kontajnerizačným nástrojom. Za jeho popularitou stojí hlavne jeho jednoduchosť, ktorá je čiastočne spôsobená aj spôsobom návrhu samotného Dockera. Bol navrhnutý a vyvinutý modulárne, jednotlivé moduly sú vymenované v~\cite{Alonso:2017:Containerization}.
+        
+        Vytvoriť Docker kontajner je možné v~3 krokoch popísaných v~\cite{Nigel:2018:DDD}. Ako sa popisuje v~\cite{Ellis:2016:DockerSwarm}, vytvorenie klastra pomocou \texttt{Docker Swarm} nie je také zložité ako by sa mohlo zdať. Je potrebných len pár hodín času a aspoň 2 fyzické stroje.
+    \subsection{Podman}
+        Podman je druhým najpoužívanejším nástrojom na menežovanie kontajnerov. Tak isto ako Docker, podporuje 2 režimy behu kontajnerov. Ak kontajnere nepotrebujú root oprávnenia, je vhodným zvykom ich spúšťať v~tzv. \texttt{rootless} mode, v~ktorom majú užšie oprávnenia. \texttt{Rootfull} a \texttt{rootless} režimy behu kontajnerov bližšie popisujú autori Podmanu v~\cite{RH:2019:LessVsFull}.
+
+\section{Kubernetes}
+    Kubernetes je otvorená platforma, ktorá automatizuje proces vytvárania a nasadzovania kontajnerov. Jeho použitím odpadá používateľovi povinnosť manuálnej konfigurácie. Tak ako sa spomína v~\cite{Kube:2022:WhatIsKube}, je to platforma vytvorená pre nasadzovanie aplikácií, ktoré potrebujú rýchle skalovanie a sú často menené.
+    
+    Kontajnere sa združujú do tzv. \texttt{pods}, čo je skupina kontajnerov, ktorá je alebo bude nasadená. Kontajnere v~pode medzi sebou zdieľajú diskové a sieťové zdroje a nastavenia ich behu. Dá sa teda povedať, že pod je akousi jednotkou s~jednotným prostredím pre všetky kontajnere, ktoré obsahuje. Viac o~\texttt{pods} a \texttt{nodes} v~\cite{Docker:2020:Kube}.
+
+\newpage
+\renewcommand{\refname}{Literatúra}
+\bibliography{proj4}
+
+\end{document}

@@ -1,0 +1,10 @@
+Obecné pokyny
+
+    Odevzdávají se pouze zdrojové soubory potřebné pro vytvoření výsledného dokumentu (Makefile, *.tex, atd.). U některých projektů může být zdrojových souborů více (*.bib, *.bst, obrázky, atd.). Hlavní dokument nazvěte projN.tex, kde N bude číslo projektu. Nefunkční nebo chybějící Makefile bude bodově penalizován.
+    Neodevzdávejte výsledný postscript ani PDF, soubory z překladu, či smetí typu __MACOSX adresář.
+    Všechny soubory potřebné pro sestavení výsledného dokumentu zabalte do archivu pomocí programů zip nebo tar+gzip. Archiv pojmenujte podle vzoru xloginXX-fit.{zip|tar.gz} a odevzdejte do IS FIT. Velikost odevzdaného souboru může být maximálnì 50 000 B (pokud není uvedeno jinak).
+    Pro nalezení správného symbolu můžete použít Detexify.
+    Pro zvýraznění podtečení je nápomocen parametr 'draft' třídy 'documentclass'. Zdrojový soubor odevzdávejte bez tohoto nastavení!
+    Dotazy k zadání (neprozrazující vaše řešení) směřujte primárně na diskusní fórum předmětu k N. projektu. Dotazy vyžadující ukázku vašeho řešení směřujte přímo na konkrétního opravujícího. 
+
+

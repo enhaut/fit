@@ -1,0 +1,45 @@
+Obecné informace k projektu
+---------------------------
+
+- Nesnažte se za každou cenu dosáhnout naprosto totožného vzhledu jako u vzorového dokumentu.
+  Je lepší použít správné konstrukce LaTeXu s mírně odlišným vzhledem, než používat triky
+  vedoucí k "dokonalé" kopii vzoru (např. vkládání umělých horizontálních nebo vertikálních
+  mezer).
+- I samotný dokument, který máte vysázet, obsahuje užitečné informace ke správnému vypracování
+  projektu. Text dokumentu si proto pozorně přečtěte!
+- Příkazy použité při vysázení dokumentu byly, až na pár výjimek, uvedeny na přednáškách z ITY.
+  Některé dříve neuvedené příkazy jsou zmíněny v textu dokumentu. Při vysázení dokumentu však
+  byly použity i dříve neuvedené příkazy, které by však nemělo být příliš náročné dohledat
+  (i to patří k praktickému používání LaTeXu).
+- Pozor si dejte zejména na použití správných příkazů k vysázení výčtů, sekcí a poznámek pod
+  čarou. Dále si dejte pozor na správné vysázení adres webových stránek, emailu a odkazů na
+  sekce (v poslední sekci dokumentu). Všechny adresy a odkazy v dokumentu jsou klikací a při
+  přejetí kurzorem myši dojde k jejich zvýraznění.
+- U odkazů na sekce si dejte pozor na správný překlad projektu; v případě nesprávného překladu
+  může dojít k tomu, že místo odkazů se v dokumentu objeví pouze symboly "??".
+
+
+Základní informace o parametrech dokumentu
+------------------------------------------
+
+- rozměry stránky: A4
+- rozměry textové oblasti: 18x24.5cm
+- mezera vlevo: 1.5cm
+- mezera nahoře: 2cm
+- font: standardní 10pt
+- kódování zdrojového textu (volitelné): utf8
+- kódování fontu: T1
+- sazba na dva sloupce: parametr 'twocolumn' dokumentové třídy 'article'
+
+
+Informace k překladu dokumentu
+------------------------------
+
+Vzorový dokument byl vysázen LaTeXem těmito nástroji:
+
+- latex
+- dvips -t a4
+- ps2pdf
+  
+Při použití pdflatexu je výsledný soubor vizuálně totožný, ale je dvakrát větší.
+

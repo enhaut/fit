@@ -1,0 +1,11 @@
+Vytvořte v LaTeXu smysluplnou prezentaci v rozsahu 6 až 12 slajdů na téma řadicí algoritmy. Vyberte si jeden řadicí algoritmus a ten v prezentaci vysvětlete. V prezentaci se očekává:
+
+    úvodní a motivační slajd,
+    vysvětlení hlavní myšlenky algoritmu,
+    vhodně zvolené ilustrační obrázky a
+    pseudokód algoritmu včetně zdůvodnění jeho složitosti. 
+
+Dále se očekává využití odrážek, overlay a číslování slajdů. Hodnotit se bude rovněž informační přínos jednotlivých slajdů. Styl prezentace není předepsán, ale značně doporučuji použít třídu beamer 
+a rovněž doporučuji se vyhnout třídě prosper. Překlad proběhne pomocí Vašeho makefilu na stroji Merlin. Nepřeložitelné projekty budou hodnoceny 0 body. Maximální velikost odevzdaného souboru je 1 
+MB.
+

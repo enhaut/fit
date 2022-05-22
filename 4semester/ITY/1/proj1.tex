@@ -1,0 +1,119 @@
+%%% attributes specified in assignment
+\documentclass[twocolumn, 10pt, a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[left=1.5cm, top=2cm, text={18cm, 24.5cm}]{geometry}
+%%%
+
+%%% my attributes
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage[draft=false, hidelinks]{hyperref} % draft=false removes draft warning during compilation
+\usepackage{xcolor}
+\usepackage{bm}
+
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}  %% https://tex.stackexchange.com/a/401751
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\orange}[1]{\textcolor{orange}{#1}}
+%%%
+
+\title{
+    \begin{center}
+    \begin{LARGE}
+        Typografie a publikování\,--\,1. projekt
+    \end{LARGE}
+    \end{center}
+    \author{
+        Samuel Dobroň \\ 
+        \href{mailto:xdobro23@stud.fit.vutbr.cz}{xdobro23@stud.fit.vutbr.cz}
+    }
+    \date{} % set empty string as date to remove date at all
+}
+
+
+\begin{document}
+\maketitle
+\section{Hladká sazba}
+    Hladká sazba používá jeden stupeň, druh a řez písma.
+    Sází se na stránku s~pevně stanovenou šířkou.
+    Skládá se z~odstavců. Odstavec končí východovou řádkou.
+    Věty nesmějí začínat číslicí.
+    
+    Zvýraznění barvou, podtržením, ani změnou písma se v~odstavcích nepoužívá.
+    Hladká sazba je určena především pro delší texty, jako je beletrie.
+    Porušení konzistence sazby působí v~textu rušivě a unavuje čtenářův zrak.
+
+\section{Smíšená sazba}
+\label{section:2}
+    Smíšená sazba má o~něco volnější pravidla.
+    Klasická hladká sazba se doplňuje o~další řezy písma pro zvýraznění důležitých pojmů.
+    Existuje \uv{pravidlo}:
+    
+    \begin{quotation}
+        Čím více \textit{druhů}, \textbf{řezů}, {\huge velikostí}, \mbox{\blue{barev}} písma a jiných \red{\textsc{efektů}} \underline{použijeme}, tím \orange{pro\-fe\-sio\-nál\-ně\-ji} bude {\fontfamily{pzc}\selectfont \Large{dokument}} vypadat. {\tiny Čtenář} tím bude vždy \textbf{\Huge nadšen!}
+    \end{quotation}
+    
+    \textsc{Tímto pravidlem se \underline{nikdy} nesmíte řídit.}
+    Příliš časté zvýrazňování textových elementů a změny {\tiny velikosti} písma jsou známkou \textbf{amatérismu} autora a působí \texttt{velmi rušivě}.
+    Dobře navržený dokument nemá obsahovat více než 4 řezy či druhy písma.
+    Dobře navržený dokument je decentní, \underline{ne chaotický}.
+    
+    Důležitým znakem správně vysázeného dokumentu je konzistence\,--\,například \textbf{tučný řez} písma bude vyhrazen pouze pro klíčová slova, \textit{kurzíva} pouze pro doposud neznámé pojmy a nebude se to míchat.
+    Kurzíva nepůsobí tak rušivě a používá se častěji.
+    V~\LaTeX{u} ji sázíme raději příkazem \verb|\emph{text}| než \verb|\textit{text}|.
+    
+    Smíšená sazba se nejčastěji používá pro sazbu vědeckých článků a technických zpráv.
+    U~delších dokumentů vědeckého či technického charakteru je zvykem vysvětlit význam různých typů zvýraznění v~úvodní kapitole.
+
+\section{Další rady:}
+\label{section:3}
+    \begin{itemize}
+        \item{
+            Nadpis nesmí končit dvojtečkou a nesmí obsahovat odkazy na obrázky, citace, poznámky pod čarou, \dots
+        }
+        \item{
+            Nadpisy, číslování a odkazy na číslované elementy musí být sázeny příkazy k~tomu určenými. Číslo\-vání sekcí tohoto dokumentu je zajištěno příkazem \verb|\section|.
+        }
+        \item{
+            Poznámky pod čarou\footnote{
+                    Příliš mnoho poznámek pod čarou čtenáře zbytečně rozptyluje.
+                }
+            používejte opravdu střídmě. (Šetřete i s~textem v~závorkách.)
+        }
+        \item{
+            Bezchybným pravopisem a sazbou dáváme najevo úctu ke čtenáři. Odbytý text s~chybami bude čtenář právem považovat za nedůvěryhodný.
+        }
+        \item{
+            Výčet ani obrázek nesmí začínat hned pod nadpisem a nesmí tvořit celou kapitolu.
+        }
+        \item{
+            Nepoužívejte velké množství malých obrázků. Zvažte, zda je nelze seskupit.
+        }
+    \end{itemize}
+
+\section{České odlišnosti}
+    Česká sazba se oproti okolnímu světu v~některých aspektech mírně liší.
+    Jednou z~odlišností je sazba uvozovek.
+    Uvozovky se v~češtině používají převážně pro zobrazení přímé řeči, zvýraznění přezdívek a ironie.
+    V~češtině se používají uvozovky typu \uv{9966} místo anglických ``uvozovek''.
+    Lze je sázet připravenými příkazy nebo při použití UTF-8 kódování i přímo.
+    
+    Ve smíšené sazbě se řez uvozovek řídí řezem prvního uvozovaného slova.
+    Pokud je uvozována celá věta, sází se koncová tečka před uvozovku, pokud se uvozuje slovo nebo část věty, sází se tečka za uvozovku.
+    
+    Druhou odlišností je pravidlo pro sázení konců řádků.
+    V~české sazbě do bloku by řádek neměl končit osamocenou jednopísmennou předložkou nebo spojkou.
+    Spojkou \uv{a} končit může pouze při sazbě do šířky 25 liter.
+    Abychom \LaTeX{u} zabránili v~sázení osamocených předložek, spojujeme je s~následujícím slovem \textit{nezlomitelnou mezerou}.
+    Tu sázíme pomocí znaku \textasciitilde (vlnka, tilda).
+    Pro systematické do\-plnění vlnek slouží volně šiřitelný program \textit{vlna} od pana Olšáka\footnote{Viz \url{http://petr.olsak.net/ftp/olsak/vlna/}}, který si můžete v~rámci projektu vyzkoušet.
+    
+    Balíček \texttt{fontenc} slouží ke korektnímu kódovaní znaků s~diakritikou, aby bylo možno v~textu vyhledávat a kopírovat z~něj.
+
+
+\section{Závěr}
+    Tento dokument schválně obsahuje několik typografických prohřešků.
+    Sekce \ref{section:2} a \ref{section:3} obsahují typografické chyby.
+    V~kontextu celého textu je jistě snadno najdete.
+    Je dobré znát možnosti \LaTeX{u}, ale je také nutné vědět, kdy je nepoužít.
+
+\end{document}
