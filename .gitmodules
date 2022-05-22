@@ -4,3 +4,6 @@
 [submodule "2semester/IVS/Kapusta"]
 	path = 2semester/IVS/Kapusta
 	url = git@github.com:IamEld3st/Kapusta.git
+[submodule "3semester/IFJ"]
+	path = 3semester/IFJ
+	url = git@github.com:IamEld3st/IFJ_projekt.git
