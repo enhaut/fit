@@ -1,0 +1,142 @@
+                                                      <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html>
+<head>
+  <title> ITU ajax </title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-2" />
+  <style type="text/css">
+  div, input { margin: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="chatArea" style="height: 300px; border: solid #aaa 1px; overflow:auto;"></div> 
+
+<form id="newMessageForm" onsubmit="return uploadData()">
+  <input type="text" id="newMessageString">
+  <input type="submit" value="send">
+</form>
+
+<div id="status" style="border: solid #aaa 1px; ">&nbsp;</div> 
+
+
+<script type="text/javascript">
+var url = "http://pckiss.fit.vutbr.cz/itu/api.php";
+var READY_STATE_FINISHED = 4;
+var STATUS_OK = 200;
+var login = "xdobro23";
+
+var loaded_messages = [];
+
+/***
+  * XMLHttpRequest object constructor (for compatibility with various browsers)
+  */
+
+function createXmlHttpRequestObject() 
+{
+    var request;
+  
+    try
+    {
+        request = new XMLHttpRequest(); // should work on all browsers except IE6 or older
+    } 
+    catch (e) 
+    { 
+        try 
+        {
+            request = new ActiveXObject("Microsoft.XMLHttp"); // browser is IE6 or older
+        }
+        catch (e) 
+        {
+            // ignore error
+        }
+    }
+  
+    if (!request) 
+    {
+        alert("Error creating the XMLHttpRequest object.");
+    } 
+    else 
+    {
+        return request;
+    }
+}
+
+function uploadData()
+{
+    //document.getElementById("status").innerHTML = "uploadData()";
+
+    try 
+    {
+        var req = createXmlHttpRequestObject(); // stores XMLHttpRequestObject
+	message = document.getElementById("newMessageString").value;
+	
+	req.open("POST", url, true);
+	req.onreadystatechange = function()
+	{
+		if (req.readyState == READY_STATE_FINISHED && req.status == STATUS_OK)
+		{
+			document.getElementById("newMessageForm").reset();
+			downloadData();
+		}
+	}
+
+	data = "user=" + login + "&data=" + message;
+	req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	req.send(data);
+        
+    } 
+    catch (e) 
+    {
+        alert(e.toString());
+    }
+
+    return false; // to avoid default form submit behavior 
+}
+
+function parseMessages(messages_json)
+{
+	var messages = document.getElementById("chatArea");
+
+	for (var i = 0; i < messages_json.length; i++)
+	{
+		if (loaded_messages.includes(messages_json[i]["id"]))
+			continue;
+		
+		messages.innerHTML += "<p>" + messages_json[i]["login"] + " (" + messages_json[i]["dts"] + ")" + ": " + messages_json[i]["cnt"] + "</p>";
+		loaded_messages.push(messages_json[i]["id"]);
+	}
+	messages.scrollTop = messages.scrollHeight;
+}
+
+function downloadData() 
+{
+	var req = createXmlHttpRequestObject();
+	req.open("GET", url, true);
+	
+	req.onreadystatechange = function()
+	{
+		if (req.readyState == READY_STATE_FINISHED && req.status == STATUS_OK)
+		{
+			document.getElementById("status").innerHTML = req.responseText;
+			parseMessages(JSON.parse(req.responseText));
+		}
+	}
+	
+	req.send(null);
+}
+
+function getMessages()
+{
+	console.log("Getting new messages");
+	downloadData();
+	setTimeout(getMessages, 3000);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+	getMessages();
+});
+
+</script>
+
+</html>
