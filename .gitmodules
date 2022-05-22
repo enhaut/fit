@@ -7,3 +7,6 @@
 [submodule "3semester/IFJ"]
 	path = 3semester/IFJ
 	url = git@github.com:IamEld3st/IFJ_projekt.git
+[submodule "3semester/ITU/project"]
+	path = 3semester/ITU/project
+	url = git@github.com:enhaut/fit-itu-project.git
