@@ -1,0 +1,3 @@
+[submodule "4semester/IDS"]
+	path = 4semester/IDS
+	url = git@github.com:enhaut/ids.git
