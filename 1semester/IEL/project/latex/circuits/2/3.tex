@@ -1,0 +1,16 @@
+\begin{center}
+\begin{circuitikz}[]
+\draw
+  to[resistor, l=$R_2$] ++(0, 2)
+  to[resistor, l=$R_1$] ++(0, 2)
+  to[short, *-*] ++(1, 0)
+  to[resistor, l=$R_{45}$] ++(0, -2)
+  to[resistor, l=$R_6$] ++(0, -2)
+  to[short, *-*] ++(-1, 0)
+  (0.5, 0) to[short] ++(0, -0.5)
+  node[ocirc, label=right:$B$]{}
+  (0.5, 4) to[short] ++(0, 0.5)
+  node[ocirc, label=right:$A$]{}
+  (0, 2) to[short, *-*] ++(1, 0)
+;\end{circuitikz}
+\end{center}

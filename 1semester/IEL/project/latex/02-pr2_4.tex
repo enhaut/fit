@@ -1,0 +1,21 @@
+\begin{figure}[!ht]
+\begin{center}
+    Pomocou Kirchhoffoveho zákona vypočítame napätie náhradného zdroja:
+    \input{circuits/2/6.tex}
+    Budeme potrebovať aj napätia $U_{R1}$ a $U_{R2}$:
+    \[
+        U_{R1} = U * \frac{R1}{R_1 + R_{45}} = 
+        150 * \frac{200}{200 + 750} = \frac{600}{19} = 31,5789 V
+    \]
+    \[
+        U_{R2} = U * \frac{R_2}{R_6 + R_2} = 
+        150 * \frac{200}{400 + 200} = 50 V
+    \]
+    Samotná smyčka:
+    \[
+        U_{R1} + U_e - U_{R2} = 0
+        U_e = -U_{R1} + U_{R2}
+        U_e = -\frac{600}{19} + 50 = \frac{350}{19} = 18,4211 V
+    \]
+\end{center}
+\end{figure} 

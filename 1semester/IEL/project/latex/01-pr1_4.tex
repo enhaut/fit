@@ -1,0 +1,25 @@
+\begin{figure}[!ht]
+\begin{center}
+    \input{circuits/1/8.tex}
+    Vypočítame celkový prúd $I$ prechádzajúci obvodom:
+    \[
+        I = \frac{U_{ekv}}{R_{ekv}} = 
+        \frac{190}{\frac{252383900}{324653}} = 
+        \frac{6168407}{25238390} = 0.2444 A
+    \]
+    S vypočítanym prúdom už môžeme Ohmovým zákonom dopočítať úbytky napätia na odporoch $R_A$, $R_{B7C6}$ a $R_8$:
+    \[
+        U_{RA} = R_A * I = \frac{548250}{2371} * \frac{6168407}{25238390} = 
+        \frac{338182913775}{5984022269} = 56,5143 V
+    \]
+    \[
+        U_{RB7C6} = R_{B7C6} * I = \frac{227973153900}{769752263} * \frac{6168407}{25238390} = 
+        \frac{433148992410}{5984022269} = 72,3843 V
+    \]
+    \[
+        U_{R8} = R_8 * I = 250 * \frac{6168407}{25238390} = 
+        \frac{154210175}{2523839} = 61,1014 V
+    \]
+\end{center}
+\end{figure}
+

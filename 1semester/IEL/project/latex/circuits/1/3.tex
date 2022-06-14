@@ -1,0 +1,22 @@
+\begin{center}
+\begin{circuitikz}[]
+\draw
+  (0.5,5) to[short] ++(1.5,0)
+  node[circ, label=$A$]{}
+  (2,5) to[short] ++(0,-2)
+  to[resistor, l_=$R_{234}$, -*] ++(2,0)
+  node[circ, label=below:{$C$}]{}
+  to[resistor, l_=$R_5$] ++(0,2)
+  node[circ, label=$B$]{}
+  to[resistor, l_=$R_1$, *-*] ++(-2,0)
+  (0.5,1) to[resistor, l_=$R_8$] ++(5,0)
+  (4,3) to[resistor, l=$R_6$, -*, i=$I_{R6}$, v_=$U_{R6}$] ++(3,0)
+  to[resistor, l_=$R_7$] ++(0,2)
+  (4,5) to[short] ++(3,0)
+  (7,3) to[short] ++(0,-2)
+  to[short] ++(-1.5,0)
+  (0.5,5) to[short] ++(0,-1)
+  (0.5,1) to[short] ++(0,1)
+  (0.5,4) to[dcvsource, v_>=$U_{12}$] ++(0,-2)
+;\end{circuitikz}
+\end{center}

@@ -1,0 +1,26 @@
+\begin{figure}[!ht]
+\begin{center}
+    \input{circuits/1/5.tex}
+    Zjednodušíme sériovo zapojené $R_B$, $R_7$ a $R_C$, $R_6$ na $R_{B7}$  $R_{C6}$
+    \[
+        R_{B7} = R_B + R_7 = \frac{244800}{2371} + 330 = \frac{1027230}{2371} = \SI{433,24757}{\ohm}
+    \]
+    \[
+        R_{C6} = R_C + R_6 = \frac{322500}{2371} + 800 = \frac{2219300}{2371} = \SI{936,01856}{\ohm}
+    \]
+    \newline
+    \input{circuits/1/6.tex}
+    Pokračujeme zjednodušením paralerneho zapojenia $R_{B7}$ a $R_{C6}$, zjednodušíme ich na $R_{B7C6}$
+    \[
+        R_{B7C6} = \frac{R_{B7} * R_{C6}}{R_{B7} + R_{C6}} = 
+        \frac{\frac{1027230}{2371} * \frac{2219300}{2371}}{\frac{1027230}{2371} + \frac{2219300}{2371}} = 
+        \frac{227973153900}{769752263} = \SI{296,16432}{\ohm}
+    \]
+    \input{circuits/1/7.tex}
+    Zostali nám už len sériovo zapojené odpory $R_A$, $R_{B7C6}$ a $R_8$, zjednodušíme ich na $R_{ekv}$ aby sme zistili celkový odpor:
+    \[
+        R_{ekv} = R_A + R_{B7C6} + R_8 = \frac{548250}{2371} + \frac{227973153900}{769752263} + 250 = 
+        \frac{252383900}{324653} = \SI{777,3959}{\ohm}
+    \]
+\end{center}
+\end{figure}

@@ -1,0 +1,26 @@
+\begin{figure}[!ht]
+\begin{center}
+    \input{circuits/1/9.tex}
+    Keďže rezistory $R_{B7}$ a $R_{C6}$ sú zapojené paralerne je na nich rovnaké napätie, teda:
+    \[
+        U_{RB7} = U_{C6} = U_{RB7C6}
+    \]
+    Vypočítame prúd prechádzajúci odporom $R_{C6}$:
+    \[
+        I_{C6} = \frac{U_{RB7C6}}{R_{C6}} = 
+        \frac{\frac{433148992410}{5984022269}}{\frac{2219300}{2371}} = 
+        \frac{433144899241}{5601155892700} = 0,07733 A
+    \]
+    Kedže $R_C$ a $R_6$ sú zapojene sériovo, bude cez ne prechádzať rovnaký prúd:
+    \[
+        I_{R6} = I_C = I_{C6} = \frac{433144899241}{560115589270} = 0,7733 A
+    \]
+    Z prechádzajúceho prúdu vieme pomocou Ohmového zákona vypočítať napätie na odpore:
+    \[
+        U_{R6} = R_6 * I_{R6} = 
+        800 * \frac{433144899241}{5601155892700} = 
+        \frac{3465159193928}{56011558927} = 61,8651 V
+    \]
+\end{center}
+\end{figure}
+

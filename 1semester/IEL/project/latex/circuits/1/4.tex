@@ -1,0 +1,16 @@
+\begin{center}
+\begin{circuitikz}[]
+\draw
+  (0.5,4) to[resistor, l_=$R_A$, -*] ++(2,0)
+  to[resistor, l=$R_B$, -*] ++(1.5, 1)
+  to[resistor, l_=$R_7$, -*] ++(3, 0)
+  (2.5, 4)to[resistor, l_=$R_C$, -*] ++(1.5, -1)
+  (0.5,1) to[resistor, l_=$R_8$] ++(5,0)
+  (4,3) to[resistor, l=$R_6$, -*, i=$I_{R6}$, v_=$U_{R6}$] ++(3,0)
+  (7,5) to[short] ++(0,-4)
+  to[short] ++(-1.5,0)
+  (0.5,3) to[short] ++(0,1)
+  (0.5,1) to[short] ++(0,1)
+  (0.5,3) to[dcvsource, v_>=$U_{12}$] ++(0,-1)
+;\end{circuitikz}
+\end{center}

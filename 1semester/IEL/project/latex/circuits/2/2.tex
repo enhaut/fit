@@ -1,0 +1,18 @@
+\begin{center}
+\begin{circuitikz}[]
+\draw
+  to[dcvsource, v<=$U$] ++(0, 3)
+  to[short, -*] ++(1, 0)
+  (1, 2) to[short, *-*] ++(0, 2)
+  to[resistor, l=$R_1$] ++(2, 0)
+  node[circ, label=$A$]{}
+  to[resistor, l=$R_{45}$, -*] ++(2, 0)
+  to[short,-*] ++(0, -2)
+  to[resistor, l=$R_6$] ++(-2, 0)
+  node[circ, label=below:{$B$}]{}
+  to [open, v<=$U_e$] ++(0, 2)
+  (3, 2) to[resistor, l=$R_2$] ++(-2, 0)
+  (0, 0) to[short] ++(5, 0)
+  to[short] ++(0, 2)
+;\end{circuitikz}
+\end{center}

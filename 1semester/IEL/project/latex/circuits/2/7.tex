@@ -1,0 +1,11 @@
+\begin{center}
+\begin{circuitikz}[]
+\draw
+  to[dcvsource, v<=$U_e$] ++(0, 2)
+  to[resistor, l=$R_i$] ++(2, 0)
+  node[ocirc, label=$A$]{}
+  to[resistor, l_=$R_3$, i_>=$I_{R3}$, v^>=$U_{R3}$] ++(0, -2)
+  node[ocirc, label=below:{$B$}]{}
+  to[short] ++(-2, 0)
+;\end{circuitikz}
+\end{center}

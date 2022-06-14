@@ -1,0 +1,21 @@
+\begin{figure}[!ht]
+\begin{center}
+    \input{circuits/2/3.tex}
+    Odpory $R_1$, $R_{45}$ a $R_2$, $R_6$ sú po dvojiciach zapojené paralerne a táto dvojica je zapojená sériovo, vypočítame celkový odpor:
+    \[
+        R_{145} = \frac{R1 * R_{45}}{R1 + R_{45}} = 
+        \frac{200 * 750}{200 + 750} = \frac{3000}{19} = \SI{157,8947}{\ohm}
+    \]
+    \[
+        R_{26} = \frac{R2 * R_6}{R2 + R_6} = 
+        \frac{200 * 400}{200 + 400} = \frac{400}{3} = \SI{133,333}{\ohm}
+    \]
+    \input{circuits/2/4.tex}
+    Odpory máme zapojené sériovo a celkový odpor je teda ich súčet:
+    \input{circuits/2/5.tex}
+    \[
+        R_i = R_{145} + R_{26} = 
+        \frac{3000}{19} + \frac{400}{3} = \frac{16600}{57} = \SI{291,2281}{\ohm}
+    \]
+\end{center}
+\end{figure} 
