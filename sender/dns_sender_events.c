@@ -1,5 +1,5 @@
 #include "dns_sender_events.h"
-#include<stdio.h>
+#include <stdio.h>
 #include <arpa/inet.h>
 
 #define NETADDR_STRLEN (INET6_ADDRSTRLEN > INET_ADDRSTRLEN ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN)
