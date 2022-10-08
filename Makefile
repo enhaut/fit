@@ -8,10 +8,10 @@ LDFLAGS=
 
 .PHONY: clean all
 
-all: sender
+all: sender receiver
 
 clean:
-	rm sender/*.o receiver/*.o dns_* sender/receiver 2> /dev/null || true
+	rm {receiv,send}er/*.{o,txt} dns_* 2> /dev/null || true
 
 -include receiver/dependencies.txt
 receiver/dependencies.txt:
@@ -22,4 +22,7 @@ sender/dependencies.txt:
 	$(CC) $(CFLAGS) -MM sender/*.c > $@
 
 sender: sender/dns_sender_events.o sender/sender.o sender/args_parser.o
+	$(CC) $(CFLAGS) $^ -o dns_$@
+
+receiver: receiver/dns_receiver_events.o receiver/receiver.o receiver/args_parser.o
 	$(CC) $(CFLAGS) $^ -o dns_$@
