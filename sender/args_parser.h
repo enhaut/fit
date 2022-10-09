@@ -17,8 +17,8 @@
 
 typedef struct {
   char ip[46];
-  char sneaky_domain[256];
-  char dest_filepath[4096];  // TODO: use + check whether PATH_MAX is same on both ends
+  char *sneaky_domain;
+  char *dest_filepath;  // TODO: use + check whether PATH_MAX is same on both ends
   FILE *input;
 }sender_config;
 

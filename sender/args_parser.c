@@ -55,18 +55,15 @@ sender_config process_args(int args, char *argv[])
   {
     if (COMPARE_STR(argv[i], "-u"))
     {
-      // TODO: process -u parameter without space between
       if ((i + 1) >= args)
         ERROR_RETURN("Invalid -u value\n", cfg);
 
       strcpy(cfg.ip, argv[++i]);
     }else{
-      if (cfg.sneaky_domain[0] == '\0')
-        strcpy(cfg.sneaky_domain, argv[i]);
-      else if (cfg.dest_filepath[0] == '\0')
-        strcpy(cfg.dest_filepath, argv[i]);
-      else if (!cfg.input)
-        printf("FILE: %s\n", argv[i]);
+      if (!cfg.sneaky_domain)
+        cfg.sneaky_domain = argv[i];
+      else if (!cfg.dest_filepath)
+        cfg.dest_filepath = argv[i];
     }
   }
   cfg.input = input_file(args, argv);
