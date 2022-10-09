@@ -1,15 +1,16 @@
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "args_parser.h"
+#include "connections.h"
+
 
 int main(int args, char *argv[])
 {
+  // signal(SIGINT, sig_handler);  // TODO
+
   receiver_config cfg = process_args(args, argv);
   if (!cfg.dest_filepath)
     return EXIT_FAILURE;
 
-  printf("%s\n%saaa\n", cfg.sneaky_domain, cfg.dest_filepath);
-
-  return EXIT_SUCCESS;
+  return listen_for_queries(&cfg);
 }
