@@ -11,6 +11,7 @@
 
 #include "args_parser.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define COMPARE_STR(a, b) (strcmp(a, b) == 0)
 int defined_u_param(int argc, char *argv[])
@@ -37,6 +38,38 @@ FILE *input_file(int argc, char *argv[])
     ptr = stdin;
 
   return ptr;
+}
+
+__attribute__((unused)) void *get_default_dns_server(sender_config *cfg)
+{
+  if (cfg->ip[0])  // -u has been used
+    return NULL;
+
+  FILE *resolv = fopen("/etc/resolv.conf", "r");
+  if (!resolv)
+    ERROR_RETURN("Could not read /etc/resolv.conf, use -u instead\n", NULL);
+
+  char *line;
+  size_t _;
+  char line_prefix[] = "nameserver ";
+  size_t prefix_len = strlen(line_prefix);
+
+  while ((getline(&line, &_, resolv)) != EOF && !cfg->ip[0])
+  {
+    if ((strncmp(line, line_prefix, prefix_len) == 0))
+      strncpy(cfg->ip, &line[prefix_len], strlen(&line[prefix_len]) - 1);
+  }
+
+  free(line);
+  fclose(resolv);
+
+  if (!cfg->ip[0]) {
+    printf("Could not get DNS server IP, use -u instead\n");
+    if (cfg->input != stdin)
+      fclose(cfg->input);
+    cfg->input = NULL;  // mark config as invalid
+  }
+  return NULL;
 }
 
 sender_config process_args(int args, char *argv[])
@@ -67,6 +100,7 @@ sender_config process_args(int args, char *argv[])
     }
   }
   cfg.input = input_file(args, argv);
+  get_default_dns_server(&cfg);
   return cfg;
 }
 
