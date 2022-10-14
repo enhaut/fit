@@ -16,6 +16,8 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 
 
 int tcp_socket = -1;
@@ -93,11 +95,42 @@ void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
     fprintf(stderr, "Could not accept connection\n");
     return;
   }
+  printf("accepted\n");
+  close(connection);
+}
+
+char *retype_parts(char *raw, header *hdr, question *q)
+{
+  ssize_t hdr_len = sizeof(header);
+  if (!memcpy(hdr, raw, hdr_len))
+    return NULL;
+
+  char *domain = &raw[hdr_len];
+  size_t domain_length = strlen(domain);
+
+  if (!memcpy(q, &raw[hdr_len + domain_length + 1], sizeof(question)))
+    return NULL;
+
+  return domain;
 }
 
 void process_udp_query(struct sockaddr_in6 *client, int *addrlen)
 {
   printf("UDP\n");
+
+  char buffer[90] = {0};
+  size_t received = recvfrom(udp_socket, buffer, 90, 0, ( struct sockaddr *) client, addrlen);
+  if (received <= sizeof(header))
+  {
+    fprintf(stderr, "packet is smaller than head\n");
+    return;
+  }
+
+  header hdr;
+  question q;
+
+  char *domain = retype_parts(buffer, &hdr, &q);
+  printf("id: %04x; type: %d: %s\n", ntohs(hdr.id), htons(q.qtype), domain);
 }
 
 int listen_for_queries(receiver_config *cfg)
