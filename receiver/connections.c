@@ -10,6 +10,7 @@
  */
 
 #include "connections.h"
+#include "../common/dns.h"
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -111,18 +112,20 @@ char *retype_parts(char *raw, header *hdr, question *q)
   if (!memcpy(q, &raw[hdr_len + domain_length + 1], sizeof(question)))
     return NULL;
 
+  hdr->id = htons(hdr->id);
+
   return domain;
 }
 
-void process_udp_query(struct sockaddr_in6 *client, int *addrlen)
+void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_domain)
 {
   printf("UDP\n");
 
-  char buffer[90] = {0};
-  size_t received = recvfrom(udp_socket, buffer, 90, 0, ( struct sockaddr *) client, addrlen);
-  if (received <= sizeof(header))
+  char buffer[PACKET_BUFFER_SIZE] = {0};
+  size_t received = recvfrom(udp_socket, buffer, PACKET_BUFFER_SIZE, 0, ( struct sockaddr *) client, addrlen);
+  if (received <= (sizeof(header) + 4))  // 4 as minimal domain len: "a.sk\0"
   {
-    fprintf(stderr, "packet is smaller than head\n");
+    fprintf(stderr, "Packet is smaller than sizeof(head) + minimal domain len\n");
     return;
   }
 
@@ -131,6 +134,11 @@ void process_udp_query(struct sockaddr_in6 *client, int *addrlen)
 
   char *domain = retype_parts(buffer, &hdr, &q);
   printf("id: %04x; type: %d: %s\n", ntohs(hdr.id), htons(q.qtype), domain);
+
+  if (is_transfer_request(domain, sneaky_domain))
+    request_protocol_switch(client, domain, &hdr);
+  else
+    resolve(buffer, received, client, udp_socket);
 }
 
 int listen_for_queries(receiver_config *cfg)
@@ -160,7 +168,7 @@ int listen_for_queries(receiver_config *cfg)
     if (FD_ISSET(tcp_socket, &fds))
       process_tcp_query(&client, &addrlen);
     else if(FD_ISSET(udp_socket, &fds))
-      process_udp_query(&client, &addrlen);
+      process_udp_query(&client, &addrlen, cfg->sneaky_domain);
   }
   return EXIT_SUCCESS;
 }
