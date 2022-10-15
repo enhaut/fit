@@ -16,6 +16,80 @@
 
 #include "dns.h"
 
+int is_converted(char *domain)
+{
+  int counter = 0;
+
+  int label_len = domain[0];
+  if (isalnum(label_len))
+    return 0;
+
+  char *c;
+  for (c = &(domain[1]); *c; ++c)
+  {
+    if (isalnum(*c))
+      counter++;
+    else
+    {
+      if (label_len != counter)
+        return 0;
+      label_len = *c;
+      counter = 0;
+    }
+  }
+  return 1;
+}
+
+uint32_t convert_to_dns_format(char *dest, char *domain)
+{
+  size_t len = strlen(domain);
+
+  int converted = is_converted(domain);
+
+  memcpy(&(dest[converted ? 0 : 1]), domain, len);
+  dest[++len] = '\0';
+  if (converted)
+    return len;
+
+  char *block_len = dest;
+  *block_len = 0;
+
+  for (size_t i = 1; i < len; i++)
+  {
+    if (dest[i] == '.' || dest[i] == '/')
+    {
+      block_len = &(dest[i]);
+      *block_len = 0;
+    } else
+      (*block_len)++;
+  }
+  return len + 1;  // +1 for first label length
+}
+
+int prepare_packet(char *dest, uint32_t *len, char *domain, uint16_t id, uint8_t tc, uint16_t qtype, uint16_t qr)
+{
+  header header = {0};
+  header.id = htons(id);
+  header.rd = 1;
+  header.tc = tc;
+  header.qr = qr;
+
+  header.qdcount = htons(1);
+  *len = sizeof(header);
+  memcpy(dest, &header, *len);
+
+  *len += convert_to_dns_format(dest + *len, domain);
+
+  question question;
+  question.qtype = htons(qtype);
+  question.qclass = htons(1);
+
+  memcpy(dest + *len, &question, sizeof(question));
+  *len += sizeof(question);
+
+  return 0;
+}
+
 int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest, int *s, int port)
 {
   int sock;

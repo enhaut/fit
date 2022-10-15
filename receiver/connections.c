@@ -97,6 +97,7 @@ void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
     return;
   }
   printf("accepted\n");
+  sleep(15);
   close(connection);
 }
 
