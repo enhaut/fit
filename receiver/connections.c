@@ -100,21 +100,13 @@ void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
   close(connection);
 }
 
-char *retype_parts(char *raw, header *hdr, question *q)
+void request_protocol_switch(struct sockaddr_in6 *client, char *domain, header *hdr)
 {
-  ssize_t hdr_len = sizeof(header);
-  if (!memcpy(hdr, raw, hdr_len))
-    return NULL;
+  char packet[PACKET_BUFFER_SIZE] = {0};
+  int response_len;
 
-  char *domain = &raw[hdr_len];
-  size_t domain_length = strlen(domain);
-
-  if (!memcpy(q, &raw[hdr_len + domain_length + 1], sizeof(question)))
-    return NULL;
-
-  hdr->id = htons(hdr->id);
-
-  return domain;
+  prepare_packet(packet, &response_len, domain, hdr->id, 1, 1, 1);
+  sendto(udp_socket, packet, response_len, 0, (struct sockaddr *)client, sizeof(*client));
 }
 
 void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_domain)

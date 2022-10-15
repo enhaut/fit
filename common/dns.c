@@ -46,6 +46,23 @@ int is_transfer_request(char *domain, char *sneaky_domain)  // TODO
   return 0;
 }
 
+char *retype_parts(char *raw, header *hdr, question *q)
+{
+  ssize_t hdr_len = sizeof(header);
+  if (!memcpy(hdr, raw, hdr_len))
+    return NULL;
+
+  char *domain = &raw[hdr_len];
+  size_t domain_length = strlen(domain);
+
+  if (!memcpy(q, &raw[hdr_len + domain_length + 1], sizeof(question)))
+    return NULL;
+
+  hdr->id = htons(hdr->id);
+
+  return domain;
+}
+
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock)
 {
   int proxy_sock, sent;

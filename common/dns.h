@@ -48,6 +48,7 @@ int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest
 int is_transfer_request(char *domain, char *sneaky_domain);
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock);
 int prepare_packet(char *dest, uint32_t *len, char *domain, uint16_t id, uint8_t tc, uint16_t qtype, uint16_t qr);
+char *retype_parts(char *raw, header *hdr, question *q);
 
 
 #define DNS_LABEL_MAX_LENGTH (63)
