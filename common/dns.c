@@ -112,7 +112,7 @@ int receive_dns_packet(int sock, char *buffer)
     int total = 0, read;
     READ(buffer, sizeof(header));
 
-    while ((total + 1) < PACKET_BUFFER_SIZE)  // TODO might overflow
+    while ((total + 1) < PACKET_BUFFER_SIZE)
     {
         READ(&(buffer[total]), 1);
 

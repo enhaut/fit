@@ -12,6 +12,7 @@
 #include "connections.h"
 #include "../common/dns.h"
 #include "../common/base64.h"
+#include "../common/communication.h"
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -25,51 +26,6 @@
 int tcp_socket = -1;
 int udp_socket = -1;
 
-#define ERROR_EXIT(msg, ret) do{printf(msg); return ret;}while(0)
-
-
-
-
-void prepare_address(struct sockaddr_in6 *address)
-{
-  address->sin6_family = AF_INET6;
-  address->sin6_addr = in6addr_any;
-  address->sin6_port = htons(DNS_PORT);
-}
-
-/**
- * Method creates AF_INET6 socket and sets default options
- * such as SO_REUSEADDR, dual stack support and timeouts.
- *
- * @param address IPv6 address to listen on
- * @param type SOCK_STREAM for TCP, SOCK_DGRAM for UDP
- * @return file descriptor of socket; -1 on error
- */
-int socket_factory(struct sockaddr_in6 *address, int type)
-{
-  int generic_socket, t = 1, f = 0;
-
-  if ((generic_socket = socket(AF_INET6, type, 0)) <= 0)
-    ERROR_EXIT("socket()", -1);
-
-  if (setsockopt(generic_socket, SOL_SOCKET, SO_REUSEADDR , &t, sizeof(t)))
-    ERROR_EXIT("setsockopt()", -1);
-
-  // Disable IPv6 only => accept both 4 and 6
-  if (setsockopt(generic_socket, IPPROTO_IPV6, IPV6_V6ONLY, &f, sizeof(f)))
-    ERROR_EXIT("ipv6()", -1);
-
-  if (bind(generic_socket, (struct sockaddr *)address, sizeof(*address)) < 0)
-    ERROR_EXIT("bind()", -1);
-
-  return generic_socket;
-}
-
-/**
- * Function starts TCP dual stack server.
- * @param address address struct to listen on
- * @return fd of new socket; -1 on error
- */
 int start_tcp(struct sockaddr_in6 *address)
 {
   if ((tcp_socket = socket_factory(address, SOCK_STREAM)) == -1)
@@ -106,7 +62,7 @@ int start_udp(struct sockaddr_in6 *address)
  */
 int start_both(struct sockaddr_in6 *address)
 {
-  prepare_address(address);
+  PREPARE_ADDRESS_PTR(address, in6addr_any, DNS_PORT);
 
   tcp_socket = start_tcp(address);
   udp_socket = start_udp(address);
