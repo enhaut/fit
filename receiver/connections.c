@@ -26,6 +26,9 @@ int udp_socket = -1;
 
 #define ERROR_EXIT(msg, ret) do{printf(msg); return ret;}while(0)
 
+
+
+
 void prepare_address(struct sockaddr_in6 *address)
 {
   address->sin6_family = AF_INET6;
@@ -86,6 +89,35 @@ int start_both(struct sockaddr_in6 *address)
   return max_socket;
 }
 
+void download_file(int sock)
+{
+  char buffer[PACKET_BUFFER_SIZE + 1] = {0};
+  /*size_t received = recvfrom(udp_socket, buffer, PACKET_BUFFER_SIZE, 0, ( struct sockaddr *) client, addrlen);
+  if (received <= (sizeof(header) + 4))  // 4 as minimal domain len: "a.sk\0"
+  {
+    fprintf(stderr, "Packet is smaller than sizeof(head) + minimal domain len\n");
+    return;
+  }*/
+  int received_len;
+
+  header hdr;
+  question q;
+  FILE *copy = fopen("copy", "wb+");
+
+  int total = 0;
+  while ((received_len = recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT)) > 0)
+  {
+    hexDump("chunk", buffer, received_len, 16);
+    total += received_len;
+    //printf("%d\n", received_len);
+    //printf("%s", buffer);
+    //printf("id: %04x; type: %d: %s\n", ntohs(hdr.id), htons(q.qtype), domain);
+    fwrite(buffer, 1, strlen(buffer), copy);
+  }
+  printf("\n%d\n", total);
+  fclose(copy);
+}
+
 void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
 {
   printf("TCP\n");
@@ -97,7 +129,7 @@ void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
     return;
   }
   printf("accepted\n");
-  sleep(15);
+  download_file(connection);
   close(connection);
 }
 

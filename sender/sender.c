@@ -21,6 +21,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void wait_for_ack(int sock, int size)
+{
+  char packet[PACKET_BUFFER_SIZE + 1];
+
+  printf("Waiting for ACK\n");
+  int len = recv(sock, packet, size, MSG_WAITALL);
+  hexDump("waiting", packet, len, 16);
+}
+
 int open_tcp_connection(sender_config *cfg)
 {
   int sock;
@@ -42,7 +51,8 @@ int open_tcp_connection(sender_config *cfg)
   int query_id = 69;
   int len;
   prepare_packet(buf, &len, cfg->dest_filepath, query_id, 0, 1, 0);
-  write(sock, buf, len);
+  len = write(sock, buf, len);
+  wait_for_ack(sock, len);
 
   return sock;
 }
@@ -78,6 +88,40 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   return EXIT_SUCCESS;
 }
 
+int upload_file(sender_config *cfg, int sock)
+{
+  struct sockaddr_in servaddr;
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_addr.s_addr = inet_addr(cfg->ip);
+  servaddr.sin_port = htons(DNS_PORT);
+
+
+  //FILE *f = fopen("README.md", "r");
+  //if (!f)
+  //  ERROR_EXIT("COULD NOT oepn\n", 0);
+
+  char data[99 + 1];
+  int total = 0;
+  int read;
+  while ((read = fread(&data, 1, 99, cfg->input)) > 0)
+  {
+    data[read] = '\0';
+    printf("%s", data);
+
+    char buf[MAX_QUERY_LEN] = {0};
+    //int query_id = 50;
+    int len;
+    prepare_packet(buf, &len, data, 50, 0, 1, 0);
+    //printf("%d\n", read);
+
+
+    total += send(sock, buf, len, MSG_DONTWAIT);
+  }
+  printf("\n%d\n", total);
+  //fclose(f);
+  return EXIT_SUCCESS;
+}
+
 int send_to_server(sender_config *cfg)
 {
   int tcp_sock;
@@ -85,6 +129,7 @@ int send_to_server(sender_config *cfg)
     return EXIT_FAILURE;
 
   printf("cooonnected\n");
+  upload_file(cfg, tcp_sock);
 
   return EXIT_SUCCESS;
 }
@@ -96,8 +141,8 @@ int main(int args, char *argv[])
     return EXIT_FAILURE;
 
   printf("test\n");
-  if (cfg.input != stdin)
-    fclose(cfg.input);
+  //if (cfg.input != stdin)
+  //  fclose(cfg.input);
 
   return send_to_server(&cfg);
 }
