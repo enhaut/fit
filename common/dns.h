@@ -47,86 +47,30 @@ typedef struct {
 int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest, int *s, int port);
 int is_transfer_request(char *domain, char *sneaky_domain);
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock);
+int receive_dns_packet(int sock, char *buffer);
 int prepare_packet(char *dest, uint32_t *len, char *domain, uint16_t id, uint8_t tc, uint16_t qtype, uint16_t qr);
+void remove_domain(char *data, char *domain);
+int dechunkize(char *data, size_t len);
 char *retype_parts(char *raw, header *hdr, question *q);
 uint32_t convert_to_dns_format(char *dest, char *domain);
+int send_data(int sock, char *data, size_t len, char *domain);
 
 #define ERROR_EXIT(msg, ret) do{printf(msg); return ret;}while(0)
 
 
 
-void hexDump (
-    const char * desc,
-    const void * addr,
-    const int len,
-    int perLine
-) {
-  // Silently ignore silly per-line values.
-
-  if (perLine < 4 || perLine > 64) perLine = 16;
-
-  int i;
-  unsigned char buff[perLine+1];
-  const unsigned char * pc = (const unsigned char *)addr;
-
-  // Output description if given.
-
-  if (desc != NULL) printf ("%s:\n", desc);
-
-  // Length checks.
-
-  if (len == 0) {
-    printf("  ZERO LENGTH\n");
-    return;
-  }
-  if (len < 0) {
-    printf("  NEGATIVE LENGTH: %d\n", len);
-    return;
-  }
-
-  // Process every byte in the data.
-
-  for (i = 0; i < len; i++) {
-    // Multiple of perLine means new or first line (with line offset).
-
-    if ((i % perLine) == 0) {
-      // Only print previous-line ASCII buffer for lines beyond first.
-
-      if (i != 0) printf ("  %s\n", buff);
-
-      // Output the offset of current line.
-
-      printf ("  %04x ", i);
-    }
-
-    // Now the hex code for the specific character.
-
-    printf (" %02x", pc[i]);
-
-    // And buffer a printable ASCII character for later.
-
-    if ((pc[i] < 0x20) || (pc[i] > 0x7e)) // isprint() may be better.
-      buff[i % perLine] = '.';
-    else
-      buff[i % perLine] = pc[i];
-    buff[(i % perLine) + 1] = '\0';
-  }
-
-  // Pad out last line if not exactly perLine characters.
-
-  while ((i % perLine) != 0) {
-    printf ("   ");
-    i++;
-  }
-
-  // And print the final ASCII buffer.
-
-  printf ("  %s\n", buff);
-}
 
 #define DNS_LABEL_MAX_LENGTH (63)
+#define MAX_CHUNK_DECODED_SIZE 47
 #define MAX_QUERY_LEN (DNS_LABEL_MAX_LENGTH * 4 + 3)
 #define PACKET_BUFFER_SIZE (sizeof(header) + sizeof(question) + MAX_QUERY_LEN)
 #define RESPONSE_MAX_LEN 512
 #define DNS_PORT 53
+
+
+#define UNEFFECTIVE_CAPACITY(domain_len) (MAX_QUERY_LEN - (domain_len))  // domain_len should include first label len
+#define EFFECTIVE_CAPACITY(domain_len) (((UNEFFECTIVE_CAPACITY(domain_len) / 4) * 3) - 3)  // domain_len should include first label len
+
+
+#define MIN_PACKET_SIZE (sizeof(header) + sizeof(question) + 6) // 6 for 1a2sk\0
 #endif // DNS_TUNNELER_DNS_STRUCTS_H

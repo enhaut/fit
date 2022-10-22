@@ -11,6 +11,7 @@
 
 #include "connections.h"
 #include "../common/dns.h"
+#include "../common/base64.h"
 
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -88,37 +89,82 @@ int start_both(struct sockaddr_in6 *address)
 
   return max_socket;
 }
-
-void download_file(int sock)
+int send_ack(int sock, header *hdr, char *data, question *q)
 {
-  char buffer[PACKET_BUFFER_SIZE + 1] = {0};
-  /*size_t received = recvfrom(udp_socket, buffer, PACKET_BUFFER_SIZE, 0, ( struct sockaddr *) client, addrlen);
-  if (received <= (sizeof(header) + 4))  // 4 as minimal domain len: "a.sk\0"
-  {
-    fprintf(stderr, "Packet is smaller than sizeof(head) + minimal domain len\n");
-    return;
-  }*/
-  int received_len;
+  hdr->tc = 1;
+  hdr->qr = 1;
+  int len = write(sock, hdr, sizeof(header));
+  len += write(sock, data, strlen(data) + 1);
+  len += write(sock, q, sizeof(question));
 
-  header hdr;
-  question q;
-  FILE *copy = fopen("copy", "wb+");
-
-  int total = 0;
-  while ((received_len = recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT)) > 0)
-  {
-    hexDump("chunk", buffer, received_len, 16);
-    total += received_len;
-    //printf("%d\n", received_len);
-    //printf("%s", buffer);
-    //printf("id: %04x; type: %d: %s\n", ntohs(hdr.id), htons(q.qtype), domain);
-    fwrite(buffer, 1, strlen(buffer), copy);
-  }
-  printf("\n%d\n", total);
-  fclose(copy);
+  return len;
 }
 
-void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
+FILE *output(receiver_config *cfg, int sock)
+{
+  printf("waiting for filename packet\n");
+  char buffer[PACKET_BUFFER_SIZE + 1] = {0};
+  size_t len = 0;
+  header hdr = {0};
+  question q = {0};
+
+  char domain[MAX_QUERY_LEN];
+  convert_to_dns_format(domain, cfg->sneaky_domain);
+
+  while (!strnstr(&(buffer[sizeof(header)]), domain, len))  // TODO
+    len += recv(sock, &(buffer[len]), PACKET_BUFFER_SIZE - len, MSG_DONTWAIT);
+
+  char *file = retype_parts(buffer, &hdr, &q);
+
+  while(recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT) > 0)
+      ;
+
+  send_ack(sock, &hdr, file, &q);
+
+  remove_domain(file, cfg->sneaky_domain);
+  printf("got filename packet: %s\n", file);
+
+  FILE *f = fopen(++file, "wb+");  // ++ to move ptr behind label len
+
+  return f;
+}
+
+int download_file(receiver_config *cfg, int sock)
+{
+  char buffer[PACKET_BUFFER_SIZE + 1];
+  header hdr = {0};
+  question q = {0};
+  int total = 0, decoded_len;
+
+  FILE *f = output(cfg, sock);
+  if (!f)
+      ERROR_EXIT("Could not open destination file\n", -1);
+
+  while (1)
+  {
+    if (receive_dns_packet(sock, buffer) == -1)
+        break;
+
+    char *data = retype_parts(buffer, &hdr, &q);
+    send_ack(sock, &hdr, data, &q);
+
+    remove_domain(data++, cfg->sneaky_domain);
+   // decoded_len = dechunkize(data, strlen(data));
+
+    char *decoded = base64_decode(data, strlen(data), &decoded_len);
+    if (!decoded || decoded_len <= 0) {
+        printf("EROR\n");
+        break;
+    }
+
+    fwrite(decoded, 1, decoded_len, f);
+  }
+  fclose(f);
+
+  return total;
+}
+
+void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *addrlen)
 {
   printf("TCP\n");
   int connection;
@@ -129,7 +175,7 @@ void process_tcp_query(struct sockaddr_in6 *client, int *addrlen)
     return;
   }
   printf("accepted\n");
-  download_file(connection);
+  download_file(cfg, connection);
   close(connection);
 }
 
@@ -191,7 +237,7 @@ int listen_for_queries(receiver_config *cfg)
       continue;  // timeout passed
 
     if (FD_ISSET(tcp_socket, &fds))
-      process_tcp_query(&client, &addrlen);
+      process_tcp_query(cfg, &client, &addrlen);
     else if(FD_ISSET(udp_socket, &fds))
       process_udp_query(&client, &addrlen, cfg->sneaky_domain);
   }

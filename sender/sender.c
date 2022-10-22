@@ -13,6 +13,7 @@
 #include "dns_sender_events.h"
 #include "args_parser.h"
 #include "../common/dns.h"
+#include "../common/base64.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -25,14 +26,23 @@ void wait_for_ack(int sock, int size)
 {
   char packet[PACKET_BUFFER_SIZE + 1];
 
-  printf("Waiting for ACK\n");
-  int len = recv(sock, packet, size, MSG_WAITALL);
-  hexDump("waiting", packet, len, 16);
+  printf("Waiting for ACK: %d\n", size);
+  int len, total = 0;
+  while (size > 0)
+  {
+    len = recv(sock, &(packet[total]), size, 0);
+    if (len <= 0)
+        continue;  // TODO: really?
+    total += len;
+    size -= len;
+  }
+  printf("got ack\n");
+  // ^^ needed to block it in this way, because recv is non-blocking on my mac
 }
 
 int open_tcp_connection(sender_config *cfg)
 {
-  int sock;
+  int sock, len;
   struct sockaddr_in servaddr;
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -47,11 +57,7 @@ int open_tcp_connection(sender_config *cfg)
   if (connect(sock, (struct sockaddr *)&servaddr, sizeof(servaddr)))
     ERROR_EXIT("Could not connect to server\n", 0);
 
-  char buf[MAX_QUERY_LEN] = {0};
-  int query_id = 69;
-  int len;
-  prepare_packet(buf, &len, cfg->dest_filepath, query_id, 0, 1, 0);
-  len = write(sock, buf, len);
+  len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain);
   wait_for_ack(sock, len);
 
   return sock;
@@ -90,35 +96,29 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
 
 int upload_file(sender_config *cfg, int sock)
 {
-  struct sockaddr_in servaddr;
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = inet_addr(cfg->ip);
-  servaddr.sin_port = htons(DNS_PORT);
+  size_t domain_len = strlen(cfg->sneaky_domain) + 2;  // 1 for label len and 1 for terminating 0
+  char data[EFFECTIVE_CAPACITY(domain_len)];
+  char buff[MAX_QUERY_LEN];
+  int total = 0, read, sent;
 
-
-  //FILE *f = fopen("README.md", "r");
-  //if (!f)
-  //  ERROR_EXIT("COULD NOT oepn\n", 0);
-
-  char data[99 + 1];
-  int total = 0;
-  int read;
-  while ((read = fread(&data, 1, 99, cfg->input)) > 0)
+  while ((read = fread(&data, 1, EFFECTIVE_CAPACITY(domain_len), cfg->input)) > 0)
   {
     data[read] = '\0';
-    printf("%s", data);
 
-    char buf[MAX_QUERY_LEN] = {0};
-    //int query_id = 50;
-    int len;
-    prepare_packet(buf, &len, data, 50, 0, 1, 0);
-    //printf("%d\n", read);
+    char *encoded = base64_encode(data, read, &read);
 
+    strncpy(buff, encoded, read);
+    buff[read] = '\0';
+    sent = send_data(sock, buff, read, cfg->sneaky_domain);
+    free(encoded);
 
-    total += send(sock, buf, len, MSG_DONTWAIT);
+    total += sent;
+
+    wait_for_ack(sock, sent);
   }
+  close(sock);
+
   printf("\n%d\n", total);
-  //fclose(f);
   return EXIT_SUCCESS;
 }
 
