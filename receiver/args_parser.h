@@ -3,7 +3,7 @@
  *
  * @file args_parser.h
  *
- * @brief
+ * @brief Header of arguments parsing module.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *

@@ -3,7 +3,7 @@
  *
  * @file connections.h
  *
- * @brief
+ * @brief Header of module that implements handling connections.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *

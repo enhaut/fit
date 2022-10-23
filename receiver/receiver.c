@@ -3,7 +3,13 @@
 #include "args_parser.h"
 #include "connections.h"
 
-
+/**
+ * Entry point of application
+ *
+ * @param args
+ * @param argv
+ * @return
+ */
 int main(int args, char *argv[])
 {
   // signal(SIGINT, sig_handler);  // TODO

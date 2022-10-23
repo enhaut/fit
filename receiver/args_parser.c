@@ -3,7 +3,7 @@
  *
  * @file args_parser.c
  *
- * @brief
+ * @brief Module implements argument parsing
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -12,7 +12,13 @@
 #include "args_parser.h"
 #include <string.h>
 
-
+/**
+ * Simple function that parses arguments.
+ *
+ * @param args number of arguments
+ * @param argv arguments
+ * @return receiver config structure
+ */
 receiver_config process_args(int args, char *argv[])
 {
   receiver_config cfg = {0};

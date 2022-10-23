@@ -3,7 +3,7 @@
  *
  * @file connections.c
  *
- * @brief
+ * @brief Connections handling module.
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -37,6 +37,14 @@ void prepare_address(struct sockaddr_in6 *address)
   address->sin6_port = htons(DNS_PORT);
 }
 
+/**
+ * Method creates AF_INET6 socket and sets default options
+ * such as SO_REUSEADDR, dual stack support and timeouts.
+ *
+ * @param address IPv6 address to listen on
+ * @param type SOCK_STREAM for TCP, SOCK_DGRAM for UDP
+ * @return file descriptor of socket; -1 on error
+ */
 int socket_factory(struct sockaddr_in6 *address, int type)
 {
   int generic_socket, t = 1, f = 0;
@@ -57,6 +65,11 @@ int socket_factory(struct sockaddr_in6 *address, int type)
   return generic_socket;
 }
 
+/**
+ * Function starts TCP dual stack server.
+ * @param address address struct to listen on
+ * @return fd of new socket; -1 on error
+ */
 int start_tcp(struct sockaddr_in6 *address)
 {
   if ((tcp_socket = socket_factory(address, SOCK_STREAM)) == -1)
@@ -68,6 +81,11 @@ int start_tcp(struct sockaddr_in6 *address)
   return tcp_socket;
 }
 
+/**
+ * Function starts UDP dual stack server.
+ * @param address address struct to listen on
+ * @return fd of new socket; -1 on error
+ */
 int start_udp(struct sockaddr_in6 *address)
 {
   if ((udp_socket = socket_factory(address, SOCK_DGRAM)) == -1)
@@ -76,6 +94,16 @@ int start_udp(struct sockaddr_in6 *address)
   return udp_socket;
 }
 
+/**
+ * Starts both TCP and UDP server running on same port and address.
+ * Afterwards prepares variable `max_socket` with bigger fd.
+ * Function sets global variables `tcp_socket` and `udp_socket` to
+ * corresponding FD. Caller is responsible of closing socket after
+ * usage.
+ *
+ * @param address address structure to listen on
+ * @return returns FD of max socket; -1 on error (on error function closes remaining opened FDs)
+ */
 int start_both(struct sockaddr_in6 *address)
 {
   prepare_address(address);
@@ -89,6 +117,18 @@ int start_both(struct sockaddr_in6 *address)
 
   return max_socket;
 }
+
+/**
+ * This is some kind of "proxy" it just sets truncated flag to 1 and
+ * forwards packet back to the sender as a acknowledge it has been delivered
+ * and receiver is waiting for next chunk.
+ *
+ * @param sock sock to be used
+ * @param hdr header of DNS packet
+ * @param data data
+ * @param q question structure
+ * @return length of written data to the socket
+ */
 int send_ack(int sock, header *hdr, char *data, question *q)
 {
   hdr->tc = 1;
@@ -100,6 +140,14 @@ int send_ack(int sock, header *hdr, char *data, question *q)
   return len;
 }
 
+/**
+ * Function is BLOCKING, it waits for first packet with file name.
+ * Then it tries to open file if opening fails, NULL is returned.
+ *
+ * @param cfg receiver config
+ * @param sock sock to read data from
+ * @return fd of file to write in; NULL on error
+ */
 FILE *output(receiver_config *cfg, int sock)
 {
   printf("waiting for filename packet\n");
@@ -111,12 +159,12 @@ FILE *output(receiver_config *cfg, int sock)
   char domain[MAX_QUERY_LEN];
   convert_to_dns_format(domain, cfg->sneaky_domain);
 
-  while (!strnstr(&(buffer[sizeof(header)]), domain, len))  // TODO
+  while (!strnstr(&(buffer[sizeof(header)]), domain, len))  // receiving until domain name
     len += recv(sock, &(buffer[len]), PACKET_BUFFER_SIZE - len, MSG_DONTWAIT);
 
   char *file = retype_parts(buffer, &hdr, &q);
 
-  while(recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT) > 0)
+  while(recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT) > 0)  // receive the rest of query
       ;
 
   send_ack(sock, &hdr, file, &q);
@@ -129,6 +177,14 @@ FILE *output(receiver_config *cfg, int sock)
   return f;
 }
 
+/**
+ * Function downloads file from socket sent via DNS query packets.
+ * It also handles first initialization packet with file name.
+ *
+ * @param cfg receiver config
+ * @param sock socket to download data from
+ * @return siz of downloaded data; -1 on error
+ */
 int download_file(receiver_config *cfg, int sock)
 {
   char buffer[PACKET_BUFFER_SIZE + 1];
@@ -138,12 +194,11 @@ int download_file(receiver_config *cfg, int sock)
 
   FILE *f = output(cfg, sock);
   if (!f)
-      ERROR_EXIT("Could not open destination file\n", -1);
+    ERROR_EXIT("Could not open destination file\n", -1);
 
-  while (1)
-  {
+  while (1) {
     if (receive_dns_packet(sock, buffer) == -1)
-        break;
+        break;  // file has been downloaded
 
     char *data = retype_parts(buffer, &hdr, &q);
     send_ack(sock, &hdr, data, &q);
@@ -164,6 +219,13 @@ int download_file(receiver_config *cfg, int sock)
   return total;
 }
 
+/**
+ * Function processes TCP packet
+ *
+ * @param cfg receiver config
+ * @param client structure of client
+ * @param addrlen length of address
+ */
 void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *addrlen)
 {
   printf("TCP\n");
@@ -179,6 +241,14 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
   close(connection);
 }
 
+/**
+ * Function sends UDP reply with truncated flag set to 1 which means
+ * client should switch to TCP connection.
+ *
+ * @param client client address
+ * @param domain sneaky domain
+ * @param hdr header structure from DNS query
+ */
 void request_protocol_switch(struct sockaddr_in6 *client, char *domain, header *hdr)
 {
   char packet[PACKET_BUFFER_SIZE] = {0};
@@ -188,6 +258,14 @@ void request_protocol_switch(struct sockaddr_in6 *client, char *domain, header *
   sendto(udp_socket, packet, response_len, 0, (struct sockaddr *)client, sizeof(*client));
 }
 
+/**
+ * Function processes UDP packet. It acts as DNS proxy if domain
+ * from request does not correspond to sneaky domain.
+ *
+ * @param client client address
+ * @param addrlen length of client address
+ * @param sneaky_domain domain that is should be used for file transfer
+ */
 void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_domain)
 {
   printf("UDP\n");
@@ -208,10 +286,17 @@ void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_d
 
   if (is_transfer_request(domain, sneaky_domain))
     request_protocol_switch(client, domain, &hdr);
-  else
+  else  // dns proxy
     resolve(buffer, received, client, udp_socket);
 }
 
+/**
+ * Function checks for incoming packets both on TCP and UDP sockets
+ * using select(7) function whether there is something to handle.
+ *
+ * @param cfg receiver config
+ * @return 1 on error; otherwise should run endlessly
+ */
 int listen_for_queries(receiver_config *cfg)
 {
   struct sockaddr_in6 address, client;
