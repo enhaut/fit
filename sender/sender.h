@@ -9,7 +9,6 @@
  *
  */
 
-//#include <linux/limits.h>
 
 #ifndef DNS_TUNNELER_SENDER_H
 #define DNS_TUNNELER_SENDER_H

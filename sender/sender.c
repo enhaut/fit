@@ -3,7 +3,7 @@
  *
  * @file sender.c
  *
- * @brief
+ * @brief Module implements sender
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -22,6 +22,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/**
+ * Function is BLOCKING until it receives `size` bytes.
+ *
+ * @param sock sock to read from
+ * @param size size of data to receive
+ */
 void wait_for_ack(int sock, int size)
 {
   char packet[PACKET_BUFFER_SIZE + 1];
@@ -40,6 +46,13 @@ void wait_for_ack(int sock, int size)
   // ^^ needed to block it in this way, because recv is non-blocking on my mac
 }
 
+/**
+ * Functions establishes TCP connection with DNS server.
+ * It also sends initialization packet with filename.
+ *
+ * @param cfg sender config
+ * @return fd of socket
+ */
 int open_tcp_connection(sender_config *cfg)
 {
   int sock, len;
@@ -63,6 +76,15 @@ int open_tcp_connection(sender_config *cfg)
   return sock;
 }
 
+/**
+ * Function initializes "sneaky" connection to DNS server.
+ * At first it sends valid DNS query, waits for reply that has
+ * truncated flag set on 1, it proceeds with opening TCP connection.
+ *
+ * @param cfg sender config
+ * @param tcp_sock ptr to TCP socket FD
+ * @return ERROR_SUCCESS/ERROR_FAILURE
+ */
 int do_dns_handshake(sender_config *cfg, int *tcp_sock)
 {
   char buf[RESPONSE_MAX_LEN] = {0};  // TODO: is it really MAX_Q_LEN? what about starting label len?
@@ -75,7 +97,9 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   int sock;
   size_t addr_len = sizeof(dest);
   send_udp4(buf, len, addr, &dest, &sock,  DNS_PORT);
+  // send valid query with sneaky domain to server
 
+  //wait for response
   int received = recvfrom(sock, buf, RESPONSE_MAX_LEN, 0, (struct sockaddr *)&dest, &addr_len);
   if (received <= 0)
     ERROR_EXIT("Could not get response from UDP server\n", EXIT_FAILURE);
@@ -86,7 +110,7 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   char dns_domain[MAX_QUERY_LEN];
   convert_to_dns_format(dns_domain, cfg->sneaky_domain);
   if (hdr.id != query_id || !hdr.tc || !hdr.qr || strcmp(domain, dns_domain))
-    ERROR_EXIT("Response from DND is invalid\n", EXIT_FAILURE);
+    ERROR_EXIT("Response from DNS is invalid\n", EXIT_FAILURE);
 
   if ((*tcp_sock = open_tcp_connection(cfg)) == 0)
     ERROR_EXIT("Could not open TCP connection\n", EXIT_FAILURE);
@@ -94,6 +118,13 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   return EXIT_SUCCESS;
 }
 
+/**
+ * Function uploads file to the server using DNS messages.
+ *
+ * @param cfg sender config
+ * @param sock opened TCP socket
+ * @return EXIT_SUCCESS/EXIT_FAILURE
+ */
 int upload_file(sender_config *cfg, int sock)
 {
   size_t domain_len = strlen(cfg->sneaky_domain) + 2;  // 1 for label len and 1 for terminating 0
@@ -103,7 +134,7 @@ int upload_file(sender_config *cfg, int sock)
 
   while ((read = fread(&data, 1, EFFECTIVE_CAPACITY(domain_len), cfg->input)) > 0)
   {
-    data[read] = '\0';
+    data[read] = '\0';  // fread does not set \0
 
     char *encoded = base64_encode(data, read, &read);
 
@@ -122,6 +153,12 @@ int upload_file(sender_config *cfg, int sock)
   return EXIT_SUCCESS;
 }
 
+/**
+ * Function sends the file to the server
+ *
+ * @param cfg sender config
+ * @return ERROR_FAILURE/EXIT_SUCCESS
+ */
 int send_to_server(sender_config *cfg)
 {
   int tcp_sock;
@@ -134,6 +171,12 @@ int send_to_server(sender_config *cfg)
   return EXIT_SUCCESS;
 }
 
+/**
+ * Entry point to the sender program
+ * @param args
+ * @param argv
+ * @return
+ */
 int main(int args, char *argv[])
 {
   sender_config cfg = process_args(args, argv);

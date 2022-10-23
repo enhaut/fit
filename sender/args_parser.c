@@ -3,7 +3,7 @@
  *
  * @file args_parser.c
  *
- * @brief
+ * @brief Argument processor module
  *
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
@@ -14,6 +14,13 @@
 #include <stdlib.h>
 
 #define COMPARE_STR(a, b) (strcmp(a, b) == 0)
+/**
+ * Checks whether there is -u argument in arguments
+ *
+ * @param argc number of args
+ * @param argv arguments
+ * @return 1 if so; 0 otherwise
+ */
 int defined_u_param(int argc, char *argv[])
 {
   for (int i = 0; i < argc; i++)
@@ -24,6 +31,13 @@ int defined_u_param(int argc, char *argv[])
 }
 
 #define ERROR_RETURN(msg, ret) do{printf(msg); return ret;}while(0)
+/**
+ * Opens input file or sets ptr to stdin if there no any.
+ *
+ * @param argc number of arguments
+ * @param argv arguments
+ * @return ptr to input file
+ */
 FILE *input_file(int argc, char *argv[])
 {
   FILE *ptr = NULL;
@@ -40,6 +54,14 @@ FILE *input_file(int argc, char *argv[])
   return ptr;
 }
 
+/**
+ * Returns default DNS server from /etc/resolv.conf file.
+ * If there is some problem, it closes cfg.input file to
+ * indicate it.
+ *
+ * @param cfg sender config
+ * @return
+ */
 __attribute__((unused)) void *get_default_dns_server(sender_config *cfg)
 {
   if (cfg->ip[0])  // -u has been used
@@ -51,7 +73,7 @@ __attribute__((unused)) void *get_default_dns_server(sender_config *cfg)
 
   char *line;
   size_t _;
-  char line_prefix[] = "nameserver ";
+  char line_prefix[] = "nameserver ";  // line with dns srvs starts with this
   size_t prefix_len = strlen(line_prefix);
 
   while ((getline(&line, &_, resolv)) != EOF && !cfg->ip[0])
@@ -72,6 +94,13 @@ __attribute__((unused)) void *get_default_dns_server(sender_config *cfg)
   return NULL;
 }
 
+/**
+ * Function parses arguments.
+ *
+ * @param args number of arguments
+ * @param argv arguments
+ * @return sender_config structure
+ */
 sender_config process_args(int args, char *argv[])
 {
   sender_config cfg = {0};
