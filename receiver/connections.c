@@ -112,8 +112,20 @@ int start_both(struct sockaddr_in6 *address)
   udp_socket = start_udp(address);
 
   int max_socket = tcp_socket;
+  int min_socket = udp_socket;
+  // ^^^ used to -1 (a.k.a error during socket init) detection
+
   if (udp_socket > tcp_socket)
-    max_socket = udp_socket;
+  {
+      max_socket = udp_socket;
+      min_socket = tcp_socket;
+  }
+
+  if (min_socket == -1)
+  {
+      close(max_socket);
+      return -1;
+  }
 
   return max_socket;
 }
@@ -177,6 +189,7 @@ FILE *output(receiver_config *cfg, int sock)
   return f;
 }
 
+#define CLOSE_FDS_RET(f, ret) do{fclose(f); return ret;}while(0)
 /**
  * Function downloads file from socket sent via DNS query packets.
  * It also handles first initialization packet with file name.
@@ -203,21 +216,19 @@ int download_file(receiver_config *cfg, int sock)
     char *data = retype_parts(buffer, &hdr, &q);
     send_ack(sock, &hdr, data, &q);
 
-    remove_domain(data++, cfg->sneaky_domain);
-   // decoded_len = dechunkize(data, strlen(data));
+    remove_domain(data, cfg->sneaky_domain);
+    decoded_len = dechunkize(data, strlen(data));
 
     char *decoded = base64_decode(data, strlen(data), &decoded_len);
-    if (!decoded || decoded_len <= 0) {
-        printf("EROR\n");
-        break;
-    }
+    if (!decoded || decoded_len <= 0)
+        CLOSE_FDS_RET(f, -1);
 
     fwrite(decoded, 1, decoded_len, f);
   }
-  fclose(f);
-
-  return total;
+  printf("DONE\n");
+  CLOSE_FDS_RET(f, total);
 }
+#undef CLOSE_FDS
 
 /**
  * Function processes TCP packet
@@ -302,6 +313,8 @@ int listen_for_queries(receiver_config *cfg)
   struct sockaddr_in6 address, client;
   int addrlen = sizeof(client), max_socket, ret;
   max_socket = start_both(&address);
+  if (max_socket == -1)
+      return 1;
 
   printf("Listening on %d (both TCP and UDP)\n", DNS_PORT);
 
