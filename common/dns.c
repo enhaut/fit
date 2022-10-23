@@ -135,7 +135,18 @@ int chunkize(char *data, size_t len)
             new_len++;
         }
     }
+    data[new_len] = '\0';
     return new_len;
+}
+
+int is_last_data_label(char *data)
+{
+    int remaining_len = (int)strlen((data + 1));
+
+    if (data[0] == remaining_len && !strchr(&(data[1]), DNS_LABEL_MAX_LENGTH))
+        return 1;
+
+    return 0;
 }
 
 int dechunkize(char *data, size_t len)
@@ -146,12 +157,18 @@ int dechunkize(char *data, size_t len)
 
     while(*pos)  // in case of invalid packet could overflow
     {
-        if (!isalnum(*pos) || *pos != '+' || *pos != '=' || *pos != '-')
+        char *next = pos + 1;
+        int label_len = *pos;
+
+        if (label_len == DNS_LABEL_MAX_LENGTH || is_last_data_label(pos))
         {
+            if ((pos + label_len) < end)
+                next = pos + label_len;
+
             memmove(pos, &(pos[1]), end - pos);
             new_len++;
         }
-        pos++;
+        pos = next;
     }
     return new_len;
 }
@@ -159,7 +176,7 @@ int dechunkize(char *data, size_t len)
 int send_data(int sock, char *data, size_t len, char *domain)
 {
     char packet[PACKET_BUFFER_SIZE];
-    //len = chunkize(data, len);
+    len = chunkize(data, len);
 
     strcpy(&(data[len++]), ".");
     strcpy(&(data[len]), domain);

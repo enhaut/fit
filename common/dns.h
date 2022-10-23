@@ -61,7 +61,6 @@ int send_data(int sock, char *data, size_t len, char *domain);
 
 
 #define DNS_LABEL_MAX_LENGTH (63)
-#define MAX_CHUNK_DECODED_SIZE 47
 #define MAX_QUERY_LEN (DNS_LABEL_MAX_LENGTH * 4 + 3)
 #define PACKET_BUFFER_SIZE (sizeof(header) + sizeof(question) + MAX_QUERY_LEN)
 #define RESPONSE_MAX_LEN 512
