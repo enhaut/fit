@@ -28,7 +28,7 @@ int udp_socket = -1;
 
 int start_tcp(struct sockaddr_in6 *address)
 {
-  if ((tcp_socket = socket_factory(address, SOCK_STREAM)) == -1)
+  if ((tcp_socket = socket_factory(address, SOCK_STREAM, 1)) == -1)
     return -1;
 
   if (listen(tcp_socket, MAX_CONN) < 0)
@@ -44,7 +44,7 @@ int start_tcp(struct sockaddr_in6 *address)
  */
 int start_udp(struct sockaddr_in6 *address)
 {
-  if ((udp_socket = socket_factory(address, SOCK_DGRAM)) == -1)
+  if ((udp_socket = socket_factory(address, SOCK_DGRAM, 1)) == -1)
     return -1;
 
   return udp_socket;

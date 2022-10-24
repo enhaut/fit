@@ -14,6 +14,8 @@
 #include "args_parser.h"
 #include "../common/dns.h"
 #include "../common/base64.h"
+#include "../common/communication.h"
+#include "errno.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -56,18 +58,18 @@ void wait_for_ack(int sock, int size)
 int open_tcp_connection(sender_config *cfg)
 {
   int sock, len;
-  struct sockaddr_in servaddr;
+  struct in6_addr x;
+  inet_pton(AF_INET6, "::1", &x);
+  PREPARE_ADDRESS(addr, x, DNS_PORT);
 
-  sock = socket(AF_INET, SOCK_STREAM, 0);
+  sock = socket_factory(&addr, SOCK_STREAM, 0);
   if (sock < 0)
     ERROR_EXIT("Could not create TCP socket to server\n", 0);
   else
     printf("Socket successfully created..\n");
 
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = inet_addr(cfg->ip);
-  servaddr.sin_port = htons(DNS_PORT);
-  if (connect(sock, (struct sockaddr *)&servaddr, sizeof(servaddr)))
+
+  if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)))
     ERROR_EXIT("Could not connect to server\n", 0);
 
   len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain);
@@ -88,19 +90,22 @@ int open_tcp_connection(sender_config *cfg)
 int do_dns_handshake(sender_config *cfg, int *tcp_sock)
 {
   char buf[RESPONSE_MAX_LEN] = {0};  // TODO: is it really MAX_Q_LEN? what about starting label len?
-  size_t len;
+  size_t len, addrlen;
   int query_id = 420;
   prepare_packet(buf, &len, cfg->sneaky_domain, query_id, 0, 1, 0);
 
-  struct sockaddr_in dest;
-  char *addr = cfg->ip;
-  int sock;
-  size_t addr_len = sizeof(dest);
-  send_udp4(buf, len, addr, &dest, &sock,  DNS_PORT);
+  struct in6_addr x;
+  inet_pton(AF_INET6, "::1", &x);
+  PREPARE_ADDRESS(address, x, DNS_PORT);
+  addrlen = sizeof(address);
+
+  int sock = socket_factory(&address, SOCK_DGRAM, 0);
+  len = sendto(sock, (char *)buf, len, 0, (struct sockaddr *)&address, addrlen);
   // send valid query with sneaky domain to server
 
+
   //wait for response
-  int received = recvfrom(sock, buf, RESPONSE_MAX_LEN, 0, (struct sockaddr *)&dest, &addr_len);
+  int received = recvfrom(sock, buf, len, 0, (struct sockaddr *)&address, &addrlen);
   if (received <= 0)
     ERROR_EXIT("Could not get response from UDP server\n", EXIT_FAILURE);
 

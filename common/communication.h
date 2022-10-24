@@ -17,7 +17,7 @@
 #define DNS_TUNNELER_COMMUNICATION_H
 
 #define ERROR_EXIT(msg, ret) do{printf(msg); return ret;}while(0)
-int socket_factory(struct sockaddr_in6 *address, int type);
+int socket_factory(struct sockaddr_in6 *address, int type, int server);
 
 
 #define PREPARE_ADDRESS(name, ip, port)   \

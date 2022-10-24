@@ -21,7 +21,7 @@ receiver/dependencies.txt:
 sender/dependencies.txt:
 	$(CC) $(CFLAGS) -MM sender/*.c > $@
 
-sender: sender/dns_sender_events.o sender/sender.o sender/args_parser.o common/dns.o common/base64.o
+sender: sender/dns_sender_events.o sender/sender.o sender/args_parser.o common/dns.o common/base64.o common/communication.o
 	$(CC) $(CFLAGS) $^ -o dns_sender
 
 receiver: receiver/dns_receiver_events.o receiver/receiver.o receiver/args_parser.o receiver/connections.o common/dns.o common/base64.o common/communication.o
