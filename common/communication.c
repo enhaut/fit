@@ -33,3 +33,18 @@ int socket_factory(struct sockaddr_in6 *address, int type, int server)
 
   return generic_socket;
 }
+
+int process_ip(char *ip, struct in6_addr *dest)
+{
+    struct in_addr in;
+    if (inet_pton(AF_INET, ip, &in)){
+        dest->s6_addr[12] = ((uint8_t *)&in.s_addr)[0];
+        dest->s6_addr[13] = ((uint8_t *)&in.s_addr)[1];
+        dest->s6_addr[14] = ((uint8_t *)&in.s_addr)[2];
+        dest->s6_addr[15] = ((uint8_t *)&in.s_addr)[3];
+        return 4;
+    }else if (inet_pton(AF_INET6, ip, dest))
+        return 6;
+
+    return 0;
+}

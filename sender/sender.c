@@ -15,10 +15,8 @@
 #include "../common/dns.h"
 #include "../common/base64.h"
 #include "../common/communication.h"
-#include "errno.h"
 
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h> // read(), write(), close()
 #include <string.h>
 #include <stdlib.h>
@@ -58,9 +56,7 @@ void wait_for_ack(int sock, int size)
 int open_tcp_connection(sender_config *cfg)
 {
   int sock, len;
-  struct in6_addr x;
-  inet_pton(AF_INET6, "::1", &x);
-  PREPARE_ADDRESS(addr, x, DNS_PORT);
+  PREPARE_ADDRESS(addr, cfg->ip, DNS_PORT);
 
   sock = socket_factory(&addr, SOCK_STREAM, 0);
   if (sock < 0)
@@ -94,9 +90,8 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   int query_id = 420;
   prepare_packet(buf, &len, cfg->sneaky_domain, query_id, 0, 1, 0);
 
-  struct in6_addr x;
-  inet_pton(AF_INET6, "::1", &x);
-  PREPARE_ADDRESS(address, x, DNS_PORT);
+  PREPARE_ADDRESS(address, cfg->ip, DNS_PORT);
+
   addrlen = sizeof(address);
 
   int sock = socket_factory(&address, SOCK_DGRAM, 0);

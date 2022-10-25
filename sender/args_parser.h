@@ -13,10 +13,11 @@
 #define DNS_TUNNELER_ARGS_PARSER_H
 
 #include <stdio.h>
+#include <arpa/inet.h>
 
 
 typedef struct {
-  char ip[46];
+  char ip[INET6_ADDRSTRLEN];
   char *sneaky_domain;
   char *dest_filepath;  // TODO: use + check whether PATH_MAX is same on both ends
   FILE *input;
