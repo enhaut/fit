@@ -138,7 +138,7 @@ int upload_file(sender_config *cfg, int sock)
 
     char *encoded = base64_encode(data, read, &read);
 
-    strncpy(buff, encoded, read);
+    strncpy(buff, encoded, read);  // TODO: could be removed?
     buff[read] = '\0';
     sent = send_data(sock, buff, read, cfg->sneaky_domain);
     free(encoded);

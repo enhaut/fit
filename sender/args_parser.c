@@ -44,7 +44,7 @@ FILE *input_file(int argc, char *argv[])
 
   if (argc == 6 || argc == 4)
   {
-    ptr = fopen(argv[argc-1], "r");
+    ptr = fopen(argv[argc-1], "rb");
     if (!ptr)
       ERROR_RETURN("Could not open file!\n", ptr);
     printf("opened\n");

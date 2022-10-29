@@ -10,6 +10,7 @@
  */
 
 #include "connections.h"
+#include "dns_receiver_events.h"
 #include "../common/dns.h"
 #include "../common/base64.h"
 #include "../common/communication.h"
@@ -205,7 +206,7 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
   }
   printf("accepted\n");
   download_file(cfg, connection);
-  close(connection);
+  //close(connection);
 }
 
 /**
@@ -290,8 +291,10 @@ int listen_for_queries(receiver_config *cfg)
     else if (ret == 0)
       continue;  // timeout passed
 
-    if (FD_ISSET(tcp_socket, &fds))
-      process_tcp_query(cfg, &client, &addrlen);
+    if (FD_ISSET(tcp_socket, &fds)) {
+        process_tcp_query(cfg, &client, &addrlen);
+        printf("donw\n");
+    }
     else if(FD_ISSET(udp_socket, &fds))
       process_udp_query(&client, &addrlen, cfg->sneaky_domain);
   }

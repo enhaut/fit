@@ -35,5 +35,15 @@ int process_ip(char *ip, struct in6_addr *dest);
     (addr)->sin6_port = htons((port))
 
 
+#define SOCKADDR6_TO_IP(sockaddr) \
+    int ipv4 = IN6_IS_ADDR_V4MAPPED(&((sockaddr)->sin6_addr)); \
+    struct in_addr ipv4_addr;     \
+    struct in6_addr *ipv6_addr;             \
+    if (ipv4) \
+    {                             \
+         memcpy(&ipv4_addr, (sockaddr)->s6_addr[12], sizeof(uint32_t));\
+                                  \
+    }else                          \
+        ipv6_addr = &((sockaddr)->sin6_addr)
 
 #endif // DNS_TUNNELER_COMMUNICATION_H
