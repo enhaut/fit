@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 IZV cast1 projektu
-Autor: 
+Autor: Samuel Dobroň
 
 Detailni zadani projektu je v samostatnem projektu e-learningu.
 Nezapomente na to, ze python soubory maji dane formatovani.
