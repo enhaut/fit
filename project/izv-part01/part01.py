@@ -69,8 +69,43 @@ def generate_graph(
         fig.savefig(save_path, bbox_inches="tight")
 
 
-def generate_sinus(show_figure: bool=False, save_path: str | None=None):
-    pass
+def plot_func(fig, t, func, thresholds=None):
+    fig.set_ylim(-0.8, 0.9)
+    fig.yaxis.set_ticks(np.arange(-0.8, 0.9, 0.4))
+    fig.set_xlabel("t")
+    fig.margins(0, 0)
+    if not isinstance(thresholds, np.ndarray):
+        fig.plot(t, func, color="blue")
+    else:
+        positive = func > thresholds
+        tcopy = t.copy()
+        funccopy = func.copy()
+        tcopy[~positive] = np.nan
+        funccopy[~positive] = np.nan
+
+        fig.plot(tcopy, funccopy, color="green")
+        t[positive] = np.nan
+        func[positive] = np.nan
+        fig.plot(t, func, color="red")
+
+
+def generate_sinus(show_figure: bool = False, save_path: str | None = None):
+
+    t = np.linspace(0, 100, 10000)
+    f1 = np.double(0.5) * np.sin(np.pi * t * np.double(1 / 50))
+    f2 = np.double(0.25) * np.sin(np.pi * t)
+
+    fig = plt.figure(figsize=(8, 12))
+    a1, a2, a3 = fig.subplots(nrows=3)
+
+    plot_func(a1, t, f1)
+    plot_func(a2, t, f2)
+    plot_func(a3, t, f1 + f2, f1)
+
+    if show_figure:
+        plt.show()
+    elif save_path:
+        fig.savefig(save_path, bbox_inches="tight")
 
 
 def download_data(url="https://ehw.fit.vutbr.cz/izv/temp.html"):
