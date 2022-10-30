@@ -146,5 +146,28 @@ def download_data(url="https://ehw.fit.vutbr.cz/izv/temp.html"):
         )
     return parsed
 
+
+def filter_data(table, key, value):
+    return list(
+        filter(
+            lambda x: x[key] == value,
+            table
+        )
+    )
+
+
 def get_avg_temp(data, year=None, month=None) -> float:
-    pass
+    if year is not None:
+        data = filter_data(data, "year", year)
+
+    if month is not None:
+        data = filter_data(data, "month", month)
+
+    sum_temp = np.float64(0)
+    len_temp = np.uint32(0)
+
+    for row in data:
+        sum_temp += np.sum(row["temp"])
+        len_temp += row["temp"].size  # 1d array
+
+    return sum_temp / len_temp
