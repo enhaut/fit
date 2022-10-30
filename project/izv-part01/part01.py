@@ -108,8 +108,40 @@ def generate_sinus(show_figure: bool = False, save_path: str | None = None):
         fig.savefig(save_path, bbox_inches="tight")
 
 
+def to_int(val):
+    try:
+        return int(val.text)
+    except ValueError:
+        return 0
+
+
+def to_float(val):
+    try:
+        return np.float64(val.text.replace(",", "."))
+    except (ValueError, AttributeError):
+        return np.nan
+
+
 def download_data(url="https://ehw.fit.vutbr.cz/izv/temp.html"):
-    pass
+    try:
+        request = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        print(f"Could not get page: {e}")
+        return []
+
+    soup = BeautifulSoup(request.content, "html.parser")
+    rows = soup.select("table > tr")
+    parsed = []
+
+    for row in rows:
+        cols = row.select("td > p")
+        parsed.append(
+            {
+                "year": to_int(cols[0]),
+                "month": to_int(cols[1]),
+                "temp": np.fromiter(map(to_float, cols[2:]), dtype=np.float64)
+            }
+        )
 
 
 def get_avg_temp(data, year=None, month=None) -> float:
