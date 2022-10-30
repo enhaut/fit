@@ -67,6 +67,7 @@ def generate_graph(
         plt.show()
     elif save_path:
         fig.savefig(save_path, bbox_inches="tight")
+    plt.close(fig)
 
 
 def plot_func(fig, t, func, thresholds=None):
@@ -106,6 +107,7 @@ def generate_sinus(show_figure: bool = False, save_path: str | None = None):
         plt.show()
     elif save_path:
         fig.savefig(save_path, bbox_inches="tight")
+    plt.close(fig)
 
 
 def to_int(val):
