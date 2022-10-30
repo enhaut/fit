@@ -144,7 +144,7 @@ def download_data(url="https://ehw.fit.vutbr.cz/izv/temp.html"):
                 "temp": np.fromiter(map(to_float, cols[2:]), dtype=np.float64)
             }
         )
-
+    return parsed
 
 def get_avg_temp(data, year=None, month=None) -> float:
     pass
