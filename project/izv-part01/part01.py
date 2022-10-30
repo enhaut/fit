@@ -18,7 +18,15 @@ from typing import List
 
 
 def integrate(x: np.array, y: np.array) -> float:
-    pass
+    return np.sum(
+        (
+                x[1:] - x[:-1]
+        ) * (
+                (
+                        y[:-1] + y[1:]
+                )/2
+        )
+    )
 
 
 def generate_graph(a: List[float], show_figure: bool = False, save_path: str | None=None):
