@@ -296,6 +296,14 @@ void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_d
 int listen_for_queries(receiver_config *cfg)
 {
   struct sockaddr_in6 address, client;
+  memset(&address, 0, sizeof(struct sockaddr_in6));
+  memset(&client, 0, sizeof(struct sockaddr_in6));
+  struct in6_addr raw_addr = IN6ADDR_ANY_INIT;
+
+  address.sin6_family = AF_INET6;
+  address.sin6_addr = raw_addr;
+  address.sin6_port = htons(DNS_PORT);
+
   int addrlen = sizeof(client), max_socket, ret;
   max_socket = start_both(&address);
   if (max_socket == -1)

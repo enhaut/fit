@@ -31,6 +31,7 @@ int process_ip(char *ip, struct in6_addr *dest);
     struct in6_addr raw_addr = IN6ADDR_V4MAPPED_INIT;   /*inet_pton replaces it in case of ipv6*/   \
     int v6 = process_ip((ip), &raw_addr);                                                           \
     struct sockaddr_in6 (name);                                                                     \
+    memset(&(name), 0, sizeof(struct sockaddr_in6));                                                \
     (name).sin6_family = AF_INET6;                                                                  \
     (name).sin6_addr = (raw_addr);                                                                  \
     (name).sin6_port = htons((port))
