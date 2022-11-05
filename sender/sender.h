@@ -13,6 +13,7 @@
 #ifndef DNS_TUNNELER_SENDER_H
 #define DNS_TUNNELER_SENDER_H
 
+#define MEASURE 0
 int main(int args, char *argv[]);
 
 #endif // DNS_TUNNELER_SENDER_H

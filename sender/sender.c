@@ -128,6 +128,12 @@ int upload_file(sender_config *cfg, int sock)
   char data[EFFECTIVE_CAPACITY(domain_len)];
   char buff[MAX_QUERY_LEN];
   int total = 0, read, sent;
+#if MEASURE
+#include <sys/time.h>
+  struct timeval tv;
+  gettimeofday(&tv,NULL);
+  printf("acked,time\n0,%ld\n", 1000000 * tv.tv_sec + tv.tv_usec);
+#endif
 
   while ((read = fread(&data, 1, EFFECTIVE_CAPACITY(domain_len), cfg->input)) > 0)
   {
@@ -143,6 +149,10 @@ int upload_file(sender_config *cfg, int sock)
     total += sent;
 
     wait_for_ack(sock, sent);
+#if MEASURE
+    gettimeofday(&tv,NULL);
+    printf("%d,%ld\n", read, 1000000 * tv.tv_sec + tv.tv_usec);
+#endif
   }
   close(sock);
 
