@@ -21,6 +21,12 @@
 int socket_factory(struct sockaddr_in6 *address, int type, int server);
 int process_ip(char *ip, struct in6_addr *dest);
 
+#ifndef IN6ADDR_V4MAPPED_INIT
+#define IN6ADDR_V4MAPPED_INIT \
+   {{{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+       0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00 }}}
+#endif
+
 #define PREPARE_ADDRESS(name, ip, port)                                                             \
     struct in6_addr raw_addr = IN6ADDR_V4MAPPED_INIT;   /*inet_pton replaces it in case of ipv6*/   \
     int v6 = process_ip((ip), &raw_addr);                                                           \
