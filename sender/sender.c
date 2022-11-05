@@ -81,7 +81,7 @@ int open_tcp_connection(sender_config *cfg)
 int do_dns_handshake(sender_config *cfg, int *tcp_sock)
 {
   char buf[RESPONSE_MAX_LEN] = {0};  // TODO: is it really MAX_Q_LEN? what about starting label len?
-  size_t len, addrlen;
+  size_t len = 0, addrlen = 0;
   int query_id = 420;
   prepare_packet(buf, &len, cfg->sneaky_domain, query_id, 0, 1, 0);
 
@@ -93,6 +93,8 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   len = sendto(sock, (char *)buf, len, 0, (struct sockaddr *)&address, addrlen);
   // send valid query with sneaky domain to server
 
+  if (len < 0)
+    ERROR_EXIT("Could not perform dns handshake\n", EXIT_FAILURE);
 
   //wait for response
   int received = recvfrom(sock, buf, len, 0, (struct sockaddr *)&address, &addrlen);

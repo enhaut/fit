@@ -190,7 +190,10 @@ int download_file(receiver_config *cfg, int sock)
 
   FILE *f = output(cfg, sock);
   if (!f)
+  {
+    close(sock);
     ERROR_EXIT("Could not open destination file\n", -1);
+  }
 
   while (1) {
     if (receive_dns_packet(sock, buffer) == -1)
@@ -207,6 +210,7 @@ int download_file(receiver_config *cfg, int sock)
         CLOSE_FDS_RET(f, -1);
 
     fwrite(decoded, 1, decoded_len, f);
+    free(decoded);
   }
   CLOSE_FDS_RET(f, total);
 }
@@ -222,8 +226,8 @@ int download_file(receiver_config *cfg, int sock)
 void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *addrlen)
 {
   int connection;
-  if ((connection = accept(tcp_socket, (struct sockaddr *)&client,
-                           (socklen_t *)&addrlen)) < 0)
+  if ((connection = accept(tcp_socket, (struct sockaddr *)client,
+                           (socklen_t *)addrlen)) < 0)
   {
     fprintf(stderr, "Could not accept connection\n");
     return;

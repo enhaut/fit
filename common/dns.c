@@ -265,7 +265,7 @@ int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest
 {
   int sock;
 
-  if (port == 53)
+  if (port == DNS_PORT)
   {
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s)
@@ -361,7 +361,7 @@ void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, 
   socklen_t len = sizeof(me);
 
   // forward request to real dns server
-  sent = send_udp4(raw_query, query_len, "1.1.1.1", &dns_srv, &proxy_sock, 53);
+  sent = send_udp4(raw_query, query_len, "1.1.1.1", &dns_srv, &proxy_sock, DNS_PORT);
   if (sent <= 0)
     return;
 
