@@ -32,7 +32,6 @@ void wait_for_ack(int sock, int size)
 {
   char packet[PACKET_BUFFER_SIZE + 1];
 
-  printf("Waiting for ACK: %d\n", size);
   int len, total = 0;
   while (size > 0)
   {
@@ -42,7 +41,6 @@ void wait_for_ack(int sock, int size)
     total += len;
     size -= len;
   }
-  printf("got ack\n");
   // ^^ needed to block it in this way, because recv is non-blocking on my mac
 }
 
@@ -61,9 +59,6 @@ int open_tcp_connection(sender_config *cfg)
   sock = socket_factory(&addr, SOCK_STREAM, 0);
   if (sock < 0)
     ERROR_EXIT("Could not create TCP socket to server\n", 0);
-  else
-    printf("Socket successfully created..\n");
-
 
   if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)))
     ERROR_EXIT("Could not connect to server\n", 0);
@@ -149,7 +144,6 @@ int upload_file(sender_config *cfg, int sock)
   }
   close(sock);
 
-  printf("\n%d\n", total);
   return EXIT_SUCCESS;
 }
 
@@ -165,7 +159,6 @@ int send_to_server(sender_config *cfg)
   if (do_dns_handshake(cfg, &tcp_sock))
     return EXIT_FAILURE;
 
-  printf("cooonnected\n");
   upload_file(cfg, tcp_sock);
 
   return EXIT_SUCCESS;
@@ -183,7 +176,6 @@ int main(int args, char *argv[])
   if (!cfg.input)
     return EXIT_FAILURE;
 
-  printf("test\n");
   //if (cfg.input != stdin)
   //  fclose(cfg.input);
 

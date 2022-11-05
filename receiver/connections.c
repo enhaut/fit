@@ -147,7 +147,6 @@ int send_ack(int sock, header *hdr, char *data, question *q)
  */
 FILE *output(receiver_config *cfg, int sock)
 {
-  printf("waiting for filename packet\n");
   char buffer[PACKET_BUFFER_SIZE + 1] = {0};
   size_t len = 0;
   header hdr = {0};
@@ -167,7 +166,6 @@ FILE *output(receiver_config *cfg, int sock)
   send_ack(sock, &hdr, file, &q);
 
   remove_domain(file, cfg->sneaky_domain);
-  printf("got filename packet: %s\n", file);
 
   FILE *f = fopen(++file, "wb+");  // ++ to move ptr behind label len
 
@@ -210,7 +208,6 @@ int download_file(receiver_config *cfg, int sock)
 
     fwrite(decoded, 1, decoded_len, f);
   }
-  printf("DONE\n");
   CLOSE_FDS_RET(f, total);
 }
 #undef CLOSE_FDS
@@ -224,7 +221,6 @@ int download_file(receiver_config *cfg, int sock)
  */
 void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *addrlen)
 {
-  printf("TCP\n");
   int connection;
   if ((connection = accept(tcp_socket, (struct sockaddr *)&client,
                            (socklen_t *)&addrlen)) < 0)
@@ -232,7 +228,6 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
     fprintf(stderr, "Could not accept connection\n");
     return;
   }
-  printf("accepted\n");
   download_file(cfg, connection);
   //close(connection);
 }
@@ -264,8 +259,6 @@ void request_protocol_switch(struct sockaddr_in6 *client, char *domain, header *
  */
 void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_domain)
 {
-  printf("UDP\n");
-
   char buffer[PACKET_BUFFER_SIZE] = {0};
   size_t received = recvfrom(udp_socket, buffer, PACKET_BUFFER_SIZE, 0, ( struct sockaddr *) client, addrlen);
   if (received <= (sizeof(header) + 4))  // 4 as minimal domain len: "a.sk\0"
@@ -278,7 +271,6 @@ void process_udp_query(struct sockaddr_in6 *client, int *addrlen, char *sneaky_d
   question q;
 
   char *domain = retype_parts(buffer, &hdr, &q);
-  printf("id: %04x; type: %d: %s\n", ntohs(hdr.id), htons(q.qtype), domain);
 
   if (is_transfer_request(domain, sneaky_domain))
     request_protocol_switch(client, domain, &hdr);
@@ -309,8 +301,6 @@ int listen_for_queries(receiver_config *cfg)
   if (max_socket == -1)
       return 1;
 
-  printf("Listening on %d (both TCP and UDP)\n", DNS_PORT);
-
   while (1) // endless loop for accepting connections endlessly
   {
     fd_set fds;
@@ -327,10 +317,8 @@ int listen_for_queries(receiver_config *cfg)
     else if (ret == 0)
       continue;  // timeout passed
 
-    if (FD_ISSET(tcp_socket, &fds)) {
+    if (FD_ISSET(tcp_socket, &fds))
         process_tcp_query(cfg, &client, &addrlen);
-        printf("donw\n");
-    }
     else if(FD_ISSET(udp_socket, &fds))
       process_udp_query(&client, &addrlen, cfg->sneaky_domain);
   }
