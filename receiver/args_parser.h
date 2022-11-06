@@ -19,7 +19,8 @@
 
 typedef struct {
   char *sneaky_domain;
-  char *dest_filepath;  // TODO: use + check whether PATH_MAX is same on both ends
+  char *dest_filepath;  // path to the directory
+  char *real_path;      // whole path to the file directory+filename
 }receiver_config;
 
 receiver_config process_args(int args, char *argv[]);

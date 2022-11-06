@@ -19,7 +19,7 @@
 typedef struct {
   char ip[INET6_ADDRSTRLEN];
   char *sneaky_domain;
-  char *dest_filepath;  // TODO: use + check whether PATH_MAX is same on both ends
+  char *dest_filepath;
   FILE *input;
 }sender_config;
 

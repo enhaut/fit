@@ -10,6 +10,7 @@
  */
 
 #include "args_parser.h"
+#include "../common/dns.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -127,6 +128,12 @@ sender_config process_args(int args, char *argv[])
       else if (!cfg.dest_filepath)
         cfg.dest_filepath = argv[i];
     }
+  }
+  size_t dom_len = strlen(cfg.sneaky_domain);
+  if ((strlen(cfg.dest_filepath) + dom_len) > MAX_DATA_LEN || dom_len > (MAX_DATA_LEN/2))
+  {
+    printf("Domain name and/or destination filepath is too long\n");
+    return cfg;
   }
   cfg.input = input_file(args, argv);
   get_default_dns_server(&cfg);

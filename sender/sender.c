@@ -67,7 +67,12 @@ int open_tcp_connection(sender_config *cfg)
   if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)))
     ERROR_EXIT("Could not connect to server\n", 0);
 
-  len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain, &last_id, cfg->dest_filepath, NULL);
+  size_t path_len = strlen(cfg->dest_filepath);
+  char data[path_len];
+  strcpy(data, cfg->dest_filepath);
+  data[path_len] = '\0';
+
+  len = send_data(sock, data, path_len, cfg->sneaky_domain, &last_id, cfg->dest_filepath, NULL);
   if (wait_for_ack(sock, len))
     ERROR_EXIT("Connection has been closed\n", 0);
 

@@ -68,7 +68,7 @@ uint32_t convert_to_dns_format(char *dest, char *domain);
 
 #define UNEFFECTIVE_CAPACITY(domain_len) (MAX_QUERY_LEN - (domain_len))  // domain_len should include first label len
 #define EFFECTIVE_CAPACITY(domain_len) (((UNEFFECTIVE_CAPACITY(domain_len) / 4) * 3) - 3)  // domain_len should include first label len
-
+#define MAX_DATA_LEN 180
 
 #define MIN_PACKET_SIZE (sizeof(header) + sizeof(question) + 6) // 6 for 1a2sk\0
 #endif // DNS_TUNNELER_DNS_STRUCTS_H

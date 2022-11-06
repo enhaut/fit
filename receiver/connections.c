@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 
 
 int tcp_socket = -1;
@@ -138,6 +139,28 @@ int send_ack(int sock, header *hdr, char *data, question *q)
   return len;
 }
 
+char *get_filename(receiver_config *cfg, char *file)
+{
+  size_t path_len = strlen(cfg->dest_filepath);
+  size_t file_len = strlen(file);
+  size_t real_path_len = path_len + file_len + 2;
+  char *path = (char *)malloc(real_path_len);  // 1 for \0 and another for /
+
+  if (!path)
+    return NULL;
+
+  strcpy(path, cfg->dest_filepath);
+  if (path[path_len] != '/')
+    strcpy(&(path[path_len++]), "/");
+
+  for (size_t i = path_len, j = 0; i < real_path_len && *(++file) != '\0'; i++)
+    path[path_len + (j++)] = (isalnum(*file))? *file : '/';
+
+  path[path_len + file_len] = '\0';
+
+  return path;
+}
+
 /**
  * Function is BLOCKING, it waits for first packet with file name.
  * Then it tries to open file if opening fails, NULL is returned.
@@ -165,7 +188,15 @@ FILE *output(receiver_config *cfg, int sock)
 
   remove_domain(file, cfg->sneaky_domain);
 
-  FILE *f = fopen(++file, "wb+");  // ++ to move ptr behind label len
+  char *filename = get_filename(cfg, file);
+  if (!filename)
+  {
+    printf("Invalid filename\n");
+    return NULL;
+  }
+  cfg->real_path = filename;
+
+  FILE *f = fopen(filename, "wb+");
   if (!f)
     close(sock);
 
@@ -199,7 +230,7 @@ int download_file(receiver_config *cfg, int sock, struct sockaddr_in6 *client)
   }
 
   while (1) {
-    if (receive_dns_packet(sock, buffer, cfg->dest_filepath) == -1)
+    if (receive_dns_packet(sock, buffer, cfg->real_path) == -1)
         break;  // file has been downloaded
 
     char *data = retype_parts(buffer, &hdr, &q);
@@ -209,9 +240,9 @@ int download_file(receiver_config *cfg, int sock, struct sockaddr_in6 *client)
     decoded_len = dechunkize(data, strlen(data));
 
     if (v6)
-      dns_receiver__on_chunk_received6(&(client->sin6_addr), cfg->dest_filepath, hdr.id, decoded_len);
+      dns_receiver__on_chunk_received6(&(client->sin6_addr), cfg->real_path, hdr.id, decoded_len);
     else
-      dns_receiver__on_chunk_received(raw_v4, cfg->dest_filepath, hdr.id, decoded_len);
+      dns_receiver__on_chunk_received(raw_v4, cfg->real_path, hdr.id, decoded_len);
 
     char *decoded = base64_decode(data, strlen(data), &decoded_len);
     if (!decoded || decoded_len <= 0)
@@ -251,7 +282,7 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
 
   int size = download_file(cfg, connection, client);
   close(connection);
-  dns_receiver__on_transfer_completed(cfg->dest_filepath, size);  // TODO: filepath
+  dns_receiver__on_transfer_completed(cfg->real_path, size);  // TODO: filepath
 }
 
 /**
