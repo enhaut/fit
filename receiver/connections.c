@@ -111,6 +111,14 @@ int send_ack(int sock, header *hdr, char *data, question *q)
   return len;
 }
 
+/**
+ * @brief Function returns joined both local path and filename from remote.
+ * Function allocates space for this string, caller should take care of that.
+ *
+ * @param cfg receiver config, just dest_filepath is used
+ * @param file filename from remote
+ * @return NULL on error, ptr to string with joined path
+ */
 char *get_filename(receiver_config *cfg, char *file)
 {
   size_t path_len = strlen(cfg->dest_filepath);
