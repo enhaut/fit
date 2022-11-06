@@ -169,6 +169,8 @@ FILE *output(receiver_config *cfg, int sock)
   remove_domain(file, cfg->sneaky_domain);
 
   FILE *f = fopen(++file, "wb+");  // ++ to move ptr behind label len
+  if (!f)
+    close(sock);
 
   return f;
 }
@@ -182,22 +184,25 @@ FILE *output(receiver_config *cfg, int sock)
  * @param sock socket to download data from
  * @return siz of downloaded data; -1 on error
  */
-int download_file(receiver_config *cfg, int sock)
+int download_file(receiver_config *cfg, int sock, struct sockaddr_in6 *client)
 {
   char buffer[PACKET_BUFFER_SIZE + 1];
   header hdr = {0};
   question q = {0};
-  int total = 0, decoded_len;
+  int total = 0, decoded_len, v6 = 1;
 
   FILE *f = output(cfg, sock);
   if (!f)
-  {
-    close(sock);
     ERROR_EXIT("Could not open destination file\n", -1);
+
+  struct in_addr *raw_v4;
+  if (IN6_IS_ADDR_V4MAPPED(&(client->sin6_addr))){
+    v6 = 0;
+    raw_v4 = &(client->sin6_addr.s6_addr[12]);
   }
 
   while (1) {
-    if (receive_dns_packet(sock, buffer) == -1)
+    if (receive_dns_packet(sock, buffer, cfg->dest_filepath) == -1)
         break;  // file has been downloaded
 
     char *data = retype_parts(buffer, &hdr, &q);
@@ -206,9 +211,15 @@ int download_file(receiver_config *cfg, int sock)
     remove_domain(data, cfg->sneaky_domain);
     decoded_len = dechunkize(data, strlen(data));
 
+    if (v6)
+      dns_receiver__on_chunk_received6(&(client->sin6_addr), cfg->dest_filepath, hdr.id, decoded_len);
+    else
+      dns_receiver__on_chunk_received(raw_v4, cfg->dest_filepath, hdr.id, decoded_len);
+
     char *decoded = base64_decode(data, strlen(data), &decoded_len);
     if (!decoded || decoded_len <= 0)
         CLOSE_FDS_RET(f, -1);
+    total += decoded_len;
 
     fwrite(decoded, 1, decoded_len, f);
     free(decoded);
@@ -233,8 +244,17 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
     fprintf(stderr, "Could not accept connection\n");
     return;
   }
-  download_file(cfg, connection);
-  //close(connection);
+
+  if (!IN6_IS_ADDR_V4MAPPED(&(client->sin6_addr)))
+    dns_receiver__on_transfer_init6(&(client->sin6_addr));
+  else{
+    SOCKADDR6_TO_4(client->sin6_addr);
+    dns_receiver__on_transfer_init(raw_v4);
+  }
+
+  int size = download_file(cfg, connection, client);
+  close(connection);
+  dns_receiver__on_transfer_completed(cfg->dest_filepath, size);  // TODO: filepath
 }
 
 /**

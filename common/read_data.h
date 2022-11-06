@@ -4,6 +4,8 @@
 // Compiled: gcc 10.2.1
 // 6.11.2022
 
+#include "../receiver/dns_receiver_events.h"
+
 #ifndef DNS_TUNNELER_READ_DATA_H
 #define DNS_TUNNELER_READ_DATA_H
 
@@ -21,7 +23,7 @@
     total += read;                                  \
 }while(0)
 
-int receive_dns_packet(int sock, char *buffer);
+int receive_dns_packet(int sock, char *buffer, char *path);
 
 
 #endif // DNS_TUNNELER_READ_DATA_H
