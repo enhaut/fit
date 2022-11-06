@@ -24,5 +24,5 @@ sender/dependencies.txt:
 sender: sender/dns_sender_events.o sender/sender.o sender/args_parser.o common/dns.o common/base64.o common/communication.o common/send_data.o
 	$(CC) $(CFLAGS) $^ -o dns_sender
 
-receiver: receiver/dns_receiver_events.o receiver/receiver.o receiver/args_parser.o receiver/connections.o common/dns.o common/base64.o common/communication.o
+receiver: receiver/dns_receiver_events.o common/read_data.o receiver/receiver.o receiver/args_parser.o receiver/connections.o common/dns.o common/base64.o common/communication.o
 	$(CC) $(CFLAGS) $^ -o dns_receiver

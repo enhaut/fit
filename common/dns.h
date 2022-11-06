@@ -46,7 +46,6 @@ typedef struct {
 
 int is_transfer_request(char *domain, char *sneaky_domain);
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock);
-int receive_dns_packet(int sock, char *buffer);
 int prepare_packet(char *dest, uint32_t *len, char *domain, uint16_t id, uint8_t tc, uint16_t qtype, uint16_t qr);
 void remove_domain(char *data, char *domain);
 int dechunkize(char *data, size_t len);

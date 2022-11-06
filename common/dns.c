@@ -89,44 +89,6 @@ uint32_t convert_to_dns_format(char *dest, char *domain)
 }
 
 //TODO: timeouts???
-#define READ(bf, size) do{                          \
-    read = recv(sock, bf, size, 0);                 \
-    if (read <= 0)                                  \
-    {                                               \
-        (bf)[0] = '\0';                             \
-        if (read == 0)                              \
-            return -1;  /* connection closed */     \
-        else  /* some kind of error  */             \
-            ERROR_EXIT("Could not get data\n", -1); \
-    }                                               \
-    total += read;                                  \
-}while(0)
-/**
- * Function reads sizeof(header) + sizeof(question) + sizeof domain
- * from provided socket. Domain end is determined by trailing \0.
- *
- * @param sock fd to socket
- * @param buffer destination buffer. Needs to be at least PACKET_BUFFER size long.
- * @return number of read bytes
- */
-int receive_dns_packet(int sock, char *buffer)
-{
-    int total = 0, read;
-    READ(buffer, sizeof(header));
-
-    while ((total + 1) < PACKET_BUFFER_SIZE)
-    {
-        READ(&(buffer[total]), 1);
-
-        if (buffer[total-1] == '\0')
-            break;
-    }
-
-    READ(&(buffer[total]), sizeof(question));
-
-    return total;
-}
-#undef READ
 
 /**
  * Creates DNS query packet
