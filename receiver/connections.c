@@ -156,13 +156,10 @@ FILE *output(receiver_config *cfg, int sock)
   char domain[MAX_QUERY_LEN];
   convert_to_dns_format(domain, cfg->sneaky_domain);
 
-  while (!strnstr(&(buffer[sizeof(header)]), domain, len))  // receiving until domain name
-    len += recv(sock, &(buffer[len]), PACKET_BUFFER_SIZE - len, MSG_DONTWAIT);
+  while(recv(sock, &(buffer[len]), PACKET_BUFFER_SIZE - len, 0) > 0)
+    ;
 
   char *file = retype_parts(buffer, &hdr, &q);
-
-  while(recv(sock, buffer, PACKET_BUFFER_SIZE, MSG_DONTWAIT) > 0)  // receive the rest of query
-      ;
 
   send_ack(sock, &hdr, file, &q);
 
