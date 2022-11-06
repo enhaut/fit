@@ -15,6 +15,7 @@
 #include "../common/dns.h"
 #include "../common/base64.h"
 #include "../common/communication.h"
+#include "../common/send_data.h"
 
 #include <sys/socket.h>
 #include <unistd.h> // read(), write(), close()

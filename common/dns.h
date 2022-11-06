@@ -52,7 +52,6 @@ void remove_domain(char *data, char *domain);
 int dechunkize(char *data, size_t len);
 char *retype_parts(char *raw, header *hdr, question *q);
 uint32_t convert_to_dns_format(char *dest, char *domain);
-int send_data(int sock, char *data, size_t len, char *domain);
 
 #define ERROR_EXIT(msg, ret) do{printf(msg); return ret;}while(0)
 
