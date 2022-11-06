@@ -10,6 +10,7 @@
  */
 
 #include "communication.h"
+#include <sys/time.h>
 
 int socket_factory(struct sockaddr_in6 *address, int type, int server)
 {
@@ -21,9 +22,19 @@ int socket_factory(struct sockaddr_in6 *address, int type, int server)
   if (setsockopt(generic_socket, SOL_SOCKET, SO_REUSEADDR , &t, sizeof(t)))
     ERROR_EXIT("setsockopt()", -1);
 
-    // Disable IPv6 only => accept both 4 and 6
-    if (setsockopt(generic_socket, IPPROTO_IPV6, IPV6_V6ONLY, &f, sizeof(f)))
-        ERROR_EXIT("ipv6()", -1);
+  // Disable IPv6 only => accept both 4 and 6
+  if (setsockopt(generic_socket, IPPROTO_IPV6, IPV6_V6ONLY, &f, sizeof(f)))
+    ERROR_EXIT("ipv6()", -1);
+
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+
+  if (setsockopt (generic_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout) < 0)
+    ERROR_EXIT("setsockopt() receive timeout", -1);
+
+  if (setsockopt (generic_socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout) < 0)
+    ERROR_EXIT("setsockopt() send timeout", -1);
 
   if (!server)
     return generic_socket;
