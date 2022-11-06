@@ -29,7 +29,7 @@
  * @param sock sock to read from
  * @param size size of data to receive
  */
-void wait_for_ack(int sock, int size)
+int wait_for_ack(int sock, int size)
 {
   char packet[PACKET_BUFFER_SIZE + 1];
 
@@ -37,12 +37,15 @@ void wait_for_ack(int sock, int size)
   while (size > 0)
   {
     len = recv(sock, &(packet[total]), size, 0);
-    if (len <= 0)
-        continue;  // TODO: really?
+    if (len < 0)
+        continue;
+    else if (len == 0)
+      return 1;  // connection has been closed
     total += len;
     size -= len;
   }
   // ^^ needed to block it in this way, because recv is non-blocking on my mac
+  return 0;
 }
 
 /**
@@ -65,7 +68,8 @@ int open_tcp_connection(sender_config *cfg)
     ERROR_EXIT("Could not connect to server\n", 0);
 
   len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain, &last_id, cfg->dest_filepath, NULL);
-  wait_for_ack(sock, len);
+  if (wait_for_ack(sock, len))
+    ERROR_EXIT("Connection has been closed\n", 0);
 
   return sock;
 }
@@ -167,7 +171,8 @@ int upload_file(sender_config *cfg, int sock)
 
     total += sent;
 
-    wait_for_ack(sock, sent);
+    if (wait_for_ack(sock, sent))
+      break;  // connection has been closed
 #if MEASURE
     gettimeofday(&tv,NULL);
     printf("%d,%ld\n", read, 1000000 * tv.tv_sec + tv.tv_usec);
