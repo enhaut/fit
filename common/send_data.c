@@ -8,6 +8,7 @@
 #include "dns.h"
 #include <string.h>
 #include "../sender/dns_sender_events.h"
+#include "communication.h"
 
 
 /**
@@ -44,18 +45,37 @@ int chunkize(char *data, size_t len)
  * @param domain sneaky domain
  * @return number of sent bytes
  */
-int send_data(int sock, char *data, size_t len, char *domain)
+int send_data(int sock, char *data, size_t len, char *domain, int *last_id, char *path, char *raw_ip)
 {
   char packet[PACKET_BUFFER_SIZE];
   len = chunkize(data, len);
+  *last_id = 666;
+  //printf("%d\n", *last_id);
 
   strcpy(&(data[len++]), ".");  // add "." behind last chunk of data
   strcpy(&(data[len]), domain);  // add domain
   len += strlen(domain);
   data[len] = '\0';
+  dns_sender__on_chunk_encoded(path, *last_id, data);
 
-  prepare_packet(packet, &len, data, 666, 0, 1, 0);
+  prepare_packet(packet, &len, data, (uint16_t)*last_id, 0, 1, 0);
 
   int sent = send(sock, packet, len, 0);
+
+  if (raw_ip)  // skip chunk_sent call,this method is also used during handshake
+  {
+    // just workaround to get type of ip address as provided
+    // interface does not implement simple way to handle dual-stack
+    // applications. There are lots of this hacky solutions in this tunneler
+    // to provide some parameter to interface.
+    PREPARE_ADDRESS(addr, raw_ip, DNS_PORT);
+    if (ver == AF_INET6)
+      dns_sender__on_chunk_sent6(&raw_addr, path, *last_id, len);
+    else{
+      SOCKADDR6_TO_4(raw_addr);
+      dns_sender__on_chunk_sent(raw_v4, path, *last_id, len);
+    }
+  }
+
   return sent;
 }

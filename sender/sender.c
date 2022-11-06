@@ -54,7 +54,7 @@ void wait_for_ack(int sock, int size)
  */
 int open_tcp_connection(sender_config *cfg)
 {
-  int sock, len;
+  int sock, len, last_id = 0;
   PREPARE_ADDRESS(addr, cfg->ip, DNS_PORT);
 
   sock = socket_factory(&addr, SOCK_STREAM, 0);
@@ -64,7 +64,7 @@ int open_tcp_connection(sender_config *cfg)
   if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)))
     ERROR_EXIT("Could not connect to server\n", 0);
 
-  len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain);
+  len = send_data(sock, cfg->dest_filepath, strlen(cfg->dest_filepath), cfg->sneaky_domain, &last_id, cfg->dest_filepath, NULL);
   wait_for_ack(sock, len);
 
   return sock;
@@ -113,6 +113,13 @@ int do_dns_handshake(sender_config *cfg, int *tcp_sock)
   if ((*tcp_sock = open_tcp_connection(cfg)) == 0)
     ERROR_EXIT("Could not open TCP connection\n", EXIT_FAILURE);
 
+  if (ver == AF_INET6)
+    dns_sender__on_transfer_init6(&raw_addr);
+  else{
+    SOCKADDR6_TO_4(raw_addr);
+    dns_sender__on_transfer_init(raw_v4);
+  }
+
   return EXIT_SUCCESS;
 }
 
@@ -128,7 +135,7 @@ int upload_file(sender_config *cfg, int sock)
   size_t domain_len = strlen(cfg->sneaky_domain) + 2;  // 1 for label len and 1 for terminating 0
   char data[EFFECTIVE_CAPACITY(domain_len)];
   char buff[MAX_QUERY_LEN];
-  int total = 0, read, sent;
+  int total = 0, read, sent, last_id = 0;
 #if MEASURE
 #include <sys/time.h>
   struct timeval tv;
@@ -144,7 +151,7 @@ int upload_file(sender_config *cfg, int sock)
 
     strncpy(buff, encoded, read);  // TODO: could be removed?
     buff[read] = '\0';
-    sent = send_data(sock, buff, read, cfg->sneaky_domain);
+    sent = send_data(sock, buff, read, cfg->sneaky_domain, &last_id, cfg->dest_filepath, cfg->ip);
     free(encoded);
 
     total += sent;
@@ -157,7 +164,7 @@ int upload_file(sender_config *cfg, int sock)
   }
   close(sock);
 
-  return EXIT_SUCCESS;
+  return total;
 }
 
 /**
@@ -172,7 +179,8 @@ int send_to_server(sender_config *cfg)
   if (do_dns_handshake(cfg, &tcp_sock))
     return EXIT_FAILURE;
 
-  upload_file(cfg, tcp_sock);
+  int file_size = upload_file(cfg, tcp_sock);
+  dns_sender__on_transfer_completed(cfg->dest_filepath, file_size);
 
   return EXIT_SUCCESS;
 }

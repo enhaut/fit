@@ -9,7 +9,7 @@
 #ifndef DNS_TUNNELER_SEND_DATA_H
 #define DNS_TUNNELER_SEND_DATA_H
 
-int send_data(int sock, char *data, size_t len, char *domain);
+int send_data(int sock, char *data, size_t len, char *domain, int *last_id, char *path, char *raw_ip);
 
 
 #endif // DNS_TUNNELER_SEND_DATA_H
