@@ -10,12 +10,12 @@
  */
 
 #include "sender.h"
+#include "send_data.h"
 #include "dns_sender_events.h"
 #include "args_parser.h"
 #include "../common/dns.h"
 #include "../common/base64.h"
 #include "../common/communication.h"
-#include "../common/send_data.h"
 
 #include <sys/socket.h>
 #include <unistd.h> // read(), write(), close()

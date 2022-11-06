@@ -9,9 +9,9 @@
 #include <time.h>
 
 #include "../sender/dns_sender_events.h"
-#include "communication.h"
+#include "../common/communication.h"
+#include "../common/dns.h"
 #include "send_data.h"
-#include "dns.h"
 
 /**
  * Creates chunks DNS_LABEL_MAX_LENGTH long that are divided by ".".

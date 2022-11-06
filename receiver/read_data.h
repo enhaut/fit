@@ -4,7 +4,7 @@
 // Compiled: gcc 10.2.1
 // 6.11.2022
 
-#include "../receiver/dns_receiver_events.h"
+#include "dns_receiver_events.h"
 
 #ifndef DNS_TUNNELER_READ_DATA_H
 #define DNS_TUNNELER_READ_DATA_H

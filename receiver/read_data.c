@@ -5,7 +5,7 @@
 // 6.11.2022
 
 #include "read_data.h"
-#include "dns.h"
+#include "../common/dns.h"
 
 /**
  * Function reads sizeof(header) + sizeof(question) + sizeof domain
