@@ -44,7 +44,6 @@ typedef struct {
 }question;
 
 
-int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest, int *s, int port);
 int is_transfer_request(char *domain, char *sneaky_domain);
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock);
 int receive_dns_packet(int sock, char *buffer);
@@ -65,6 +64,8 @@ int send_data(int sock, char *data, size_t len, char *domain);
 #define PACKET_BUFFER_SIZE (sizeof(header) + sizeof(question) + MAX_QUERY_LEN)
 #define RESPONSE_MAX_LEN 512
 #define DNS_PORT 53
+#define PROXIED_DNS "1.1.1.1"
+#define PROXIED_DNS6 "2606:4700:4700::1111"
 
 
 #define UNEFFECTIVE_CAPACITY(domain_len) (MAX_QUERY_LEN - (domain_len))  // domain_len should include first label len

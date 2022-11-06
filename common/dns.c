@@ -16,6 +16,7 @@
 
 #include "dns.h"
 #include "base64.h"
+#include "communication.h"
 
 /**
  * Function checks whether provided string is already in DNS
@@ -261,25 +262,6 @@ int send_data(int sock, char *data, size_t len, char *domain)
     return send(sock, packet, len, 0);
 }
 
-int send_udp4(char *data, size_t len, const char *addr, struct sockaddr_in *dest, int *s, int port)
-{
-  int sock;
-
-  if (port == DNS_PORT)
-  {
-    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (s)
-      *s = sock;
-  } else
-    sock = *s;
-
-  dest->sin_addr.s_addr = inet_addr(addr);
-  dest->sin_family = AF_INET;
-  dest->sin_port = htons(port);
-
-  return sendto(sock, (char *)data, len, 0, (struct sockaddr *)dest, sizeof(*dest));
-}
-
 /**
  * Checks whether packet is trying to send query
  * to sneaky domain.
@@ -355,18 +337,24 @@ char *retype_parts(char *raw, header *hdr, question *q)
 void resolve(char *raw_query, size_t query_len, struct sockaddr_in6 *requester, int udp_sock)
 {
   int proxy_sock, sent;
-  struct sockaddr_in dns_srv, me;
   char buffer[RESPONSE_MAX_LEN];
+  socklen_t len = sizeof(struct sockaddr_in6);
 
-  socklen_t len = sizeof(me);
+  PREPARE_ADDRESS(addr, PROXIED_DNS, 53);
+  proxy_sock = socket_factory(&addr, SOCK_DGRAM, 0);
 
   // forward request to real dns server
-  sent = send_udp4(raw_query, query_len, "1.1.1.1", &dns_srv, &proxy_sock, DNS_PORT);
-  if (sent <= 0)
-    return;
+  sent = sendto(proxy_sock, raw_query, query_len, 0, (struct sockaddr *)&addr, len);
+  if (sent <= 0)  // could not send ipv4 DNS req, try ipv6 instead
+  {
+    PREPARE_ADDRESS(addr6, PROXIED_DNS6, 53);
+    sent = sendto(proxy_sock, raw_query, query_len, 0, (struct sockaddr *)&addr6, len);
+    if (sent <= 0)
+      return;  // could not send ipv6
+  }
 
   // get response from real dns
-  sent = recvfrom(proxy_sock, buffer, RESPONSE_MAX_LEN, 0, ( struct sockaddr *) &me, &len);
+  sent = recvfrom(proxy_sock, buffer, RESPONSE_MAX_LEN, 0, (struct sockaddr *)&addr, &len);
   if (sent <= 0)
     return;
 
