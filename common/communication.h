@@ -29,7 +29,7 @@ int process_ip(char *ip, struct in6_addr *dest);
 
 #define PREPARE_ADDRESS(name, ip, port)                                                             \
     struct in6_addr raw_addr = IN6ADDR_V4MAPPED_INIT;   /*inet_pton replaces it in case of ipv6*/   \
-    int v6 = process_ip((ip), &raw_addr);                                                           \
+    int ver = process_ip((ip), &raw_addr);                                                           \
     struct sockaddr_in6 (name);                                                                     \
     memset(&(name), 0, sizeof(struct sockaddr_in6));                                                \
     (name).sin6_family = AF_INET6;                                                                  \
@@ -52,5 +52,9 @@ int process_ip(char *ip, struct in6_addr *dest);
                                   \
     }else                          \
         ipv6_addr = &((sockaddr)->sin6_addr)
+
+#define SOCKADDR6_TO_4(sockaddr6)   \
+  struct in_addr *raw_v4;           \
+  raw_v4 = &(sockaddr6.s6_addr[12])
 
 #endif // DNS_TUNNELER_COMMUNICATION_H

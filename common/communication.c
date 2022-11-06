@@ -42,9 +42,9 @@ int process_ip(char *ip, struct in6_addr *dest)
         dest->s6_addr[13] = ((uint8_t *)&in.s_addr)[1];
         dest->s6_addr[14] = ((uint8_t *)&in.s_addr)[2];
         dest->s6_addr[15] = ((uint8_t *)&in.s_addr)[3];
-        return 4;
+        return AF_INET;
     }else if (inet_pton(AF_INET6, ip, dest))
-        return 6;
+        return AF_INET6;
 
     return 0;
 }
