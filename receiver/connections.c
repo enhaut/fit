@@ -144,7 +144,7 @@ char *get_filename(receiver_config *cfg, char *file)
   size_t path_len = strlen(cfg->dest_filepath);
   size_t file_len = strlen(file);
   size_t real_path_len = path_len + file_len + 2;
-  char *path = (char *)malloc(real_path_len);  // 1 for \0 and another for /
+  char *path = (char *)calloc(real_path_len, sizeof(char));  // 1 for \0 and another for /
 
   if (!path)
     return NULL;
@@ -282,7 +282,9 @@ void process_tcp_query(receiver_config *cfg, struct sockaddr_in6 *client, int *a
 
   int size = download_file(cfg, connection, client);
   close(connection);
-  dns_receiver__on_transfer_completed(cfg->real_path, size);  // TODO: filepath
+  dns_receiver__on_transfer_completed(cfg->real_path, size);
+  if (cfg->real_path)
+    free(cfg->real_path);
 }
 
 /**
