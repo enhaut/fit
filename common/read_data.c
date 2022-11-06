@@ -15,7 +15,7 @@
  * @param buffer destination buffer. Needs to be at least PACKET_BUFFER size long.
  * @return number of read bytes
  */
-int receive_dns_packet(int sock, char *buffer, char *path)
+int receive_dns_packet(int sock, char *buffer)
 {
   int total = 0, read;
   READ(buffer, sizeof(header));
@@ -29,8 +29,6 @@ int receive_dns_packet(int sock, char *buffer, char *path)
   }
 
   READ(&(buffer[total]), sizeof(question));
-
-  dns_receiver__on_query_parsed(path, buffer);
 
   return total;
 }

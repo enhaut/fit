@@ -230,10 +230,11 @@ int download_file(receiver_config *cfg, int sock, struct sockaddr_in6 *client)
   }
 
   while (1) {
-    if (receive_dns_packet(sock, buffer, cfg->real_path) == -1)
+    if (receive_dns_packet(sock, buffer) == -1)
         break;  // file has been downloaded
 
     char *data = retype_parts(buffer, &hdr, &q);
+    dns_receiver__on_query_parsed(cfg->real_path, data);
     send_ack(sock, &hdr, data, &q);
 
     remove_domain(data, cfg->sneaky_domain);

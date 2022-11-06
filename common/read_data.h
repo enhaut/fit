@@ -23,7 +23,7 @@
     total += read;                                  \
 }while(0)
 
-int receive_dns_packet(int sock, char *buffer, char *path);
+int receive_dns_packet(int sock, char *buffer);
 
 
 #endif // DNS_TUNNELER_READ_DATA_H
