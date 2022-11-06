@@ -202,6 +202,8 @@ int send_to_server(sender_config *cfg)
 
   int file_size = upload_file(cfg, tcp_sock);
   dns_sender__on_transfer_completed(cfg->dest_filepath, file_size);
+  if (cfg->input != stdin)
+    fclose(cfg->input);
 
   return EXIT_SUCCESS;
 }
