@@ -53,34 +53,6 @@ int start_udp(struct sockaddr_in6 *address)
   return udp_socket;
 }
 
-/*
- * Find the first occurrence of find in s, where the search is limited to the
- * first slen characters of s.
- *
- * Taken from https://github.com/lattera/freebsd/blob/master/lib/libc/string/strnstr.c
- * BSD license.
- */
-char *
-strnstr(const char *s, const char *find, size_t slen)
-{
-  char c, sc;
-  size_t len;
-
-  if ((c = *find++) != '\0') {
-    len = strlen(find);
-    do {
-      do {
-        if (slen-- < 1 || (sc = *s++) == '\0')
-          return (NULL);
-      } while (sc != c);
-      if (len > slen)
-        return (NULL);
-    } while (strncmp(s, find, len) != 0);
-    s--;
-  }
-  return ((char *)s);
-}
-
 /**
  * Starts both TCP and UDP server running on same port and address.
  * Afterwards prepares variable `max_socket` with bigger fd.
