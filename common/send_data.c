@@ -4,12 +4,14 @@
 // Compiled: gcc 10.2.1
 // 6.11.2022
 
-#include "send_data.h"
-#include "dns.h"
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
 #include "../sender/dns_sender_events.h"
 #include "communication.h"
-
+#include "send_data.h"
+#include "dns.h"
 
 /**
  * Creates chunks DNS_LABEL_MAX_LENGTH long that are divided by ".".
@@ -36,6 +38,28 @@ int chunkize(char *data, size_t len)
   return new_len;
 }
 
+int counter = 0;  // stores # of generated query IDs
+/**
+* @brief Function generates random query ID.
+*
+* @param last last used query id - used as a prevention to not generate same ID
+                 */
+uint16_t get_data_id(uint16_t last)
+{
+  srand(time(NULL) + counter);
+  int rnd = rand() % UINT16_MAX;
+  counter++;
+
+  if (rnd == last)
+  {
+    if (rnd == UINT16_MAX)
+      rnd--;  // do not overflow
+    else
+      rnd++;
+  }
+  return (uint16_t)rnd;
+}
+
 /**
  * Sends data to provided socket.
  *
@@ -49,7 +73,7 @@ int send_data(int sock, char *data, size_t len, char *domain, int *last_id, char
 {
   char packet[PACKET_BUFFER_SIZE];
   len = chunkize(data, len);
-  *last_id = 666;
+  *last_id = get_data_id(*last_id);
   //printf("%d\n", *last_id);
 
   strcpy(&(data[len++]), ".");  // add "." behind last chunk of data

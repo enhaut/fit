@@ -169,7 +169,7 @@ int upload_file(sender_config *cfg, int sock)
 
     char *encoded = base64_encode(data, read, &read);
 
-    strncpy(buff, encoded, read);  // TODO: could be removed?
+    strncpy(buff, encoded, read);
     buff[read] = '\0';
     sent = send_data(sock, buff, read, cfg->sneaky_domain, &last_id, cfg->dest_filepath, cfg->ip);
     free(encoded);
@@ -217,9 +217,6 @@ int main(int args, char *argv[])
   sender_config cfg = process_args(args, argv);
   if (!cfg.input)
     return EXIT_FAILURE;
-
-  //if (cfg.input != stdin)
-  //  fclose(cfg.input);
 
   return send_to_server(&cfg);
 }

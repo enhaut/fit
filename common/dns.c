@@ -8,8 +8,7 @@
  * @author Samuel Dobroň (xdobro23), FIT BUT
  *
  */
-#include <stdlib.h>
-#include <stdio.h>
+
 #include <sys/socket.h>
 #include <string.h>
 #include <ctype.h>

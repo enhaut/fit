@@ -12,8 +12,6 @@
  */
 int main(int args, char *argv[])
 {
-  // signal(SIGINT, sig_handler);  // TODO
-
   receiver_config cfg = process_args(args, argv);
   if (!cfg.dest_filepath)
     return EXIT_FAILURE;
