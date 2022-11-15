@@ -9,6 +9,9 @@
  *
  */
 
+#define _WITH_GETLINE
+#include <stdio.h>
+#include <ctype.h>
 #include "args_parser.h"
 #include "../common/dns.h"
 #include <string.h>
@@ -72,15 +75,24 @@ __attribute__((unused)) void *get_default_dns_server(sender_config *cfg)
   if (!resolv)
     ERROR_RETURN("Could not read /etc/resolv.conf, use -u instead\n", NULL);
 
-  char *line;
-  size_t _;
-  char line_prefix[] = "nameserver ";  // line with dns srvs starts with this
+  char *line = NULL;
+  size_t _ = 0;
+  char line_prefix[] = "nameserver";  // line with dns srvs starts with this
   size_t prefix_len = strlen(line_prefix);
 
   while ((getline(&line, &_, resolv)) != EOF && !cfg->ip[0])
   {
-    if ((strncmp(line, line_prefix, prefix_len) == 0))
-      strncpy(cfg->ip, &line[prefix_len], strlen(&line[prefix_len]) - 1);
+      if ((strncmp(line, line_prefix, prefix_len) == 0))
+      {
+          char *ip_end = line + strlen(line);
+          char *ip_start = &line[prefix_len];
+
+          for (;ip_start < ip_end; ip_start++){
+              if(!isspace(*ip_start))break;
+          }
+
+          strncpy(cfg->ip, ip_start, strlen(ip_start) - 1);
+      }
   }
 
   free(line);
