@@ -13,7 +13,7 @@ import io
 
 
 # Ukol 1: nacteni dat ze ZIP souboru
-def load_data(filename : str) -> pd.DataFrame:
+def load_data(filename: str) -> pd.DataFrame:
     # tyto konstanty nemente, pomuzou vam pri nacitani
     headers = ["p1", "p36", "p37", "p2a", "weekday(p2a)", "p2b", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13a",
                 "p13b", "p13c", "p14", "p15", "p16", "p17", "p18", "p19", "p20", "p21", "p22", "p23", "p24", "p27", "p28",
@@ -77,13 +77,45 @@ def load_data(filename : str) -> pd.DataFrame:
         encoding="cp1250",
         encoding_errors="ignore",
         sep=";",
-        index_col=0
+        index_col=0,
+        decimal=","
     )
     return df
 
+
+def _get_size(df: pd.DataFrame):
+    size = df.memory_usage(deep=True).sum()
+    return round(size / (10**6), 1)
+
+
 # Ukol 2: zpracovani dat
-def parse_data(df : pd.DataFrame, verbose : bool = False) -> pd.DataFrame:
-    pass
+def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
+    if verbose:
+        print(f"orig_size: {_get_size(df)} MB")
+    df = df[~df.index.duplicated(keep="first")].copy()
+
+    df = df.rename(columns={"p2a": "date"})
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+    to_int_cols = ["l", "n", "weekday(p2a)", "r", "s"]
+    for col in to_int_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce", downcast="integer")
+
+    categorized_cols = ["p36", "weekday(p2a)", "p2b", "p6", "p7", "p8", "p8", "p10", "p11", "p12", "p13a", "p13b",
+                        "p13c", "p15", "p16", "p17", "p18", "p19", "p20", "p21", "p22", "p23", "p24", "p27", "p28",
+                        "p34", "p35", "p39", "p44", "p45a", "p47", "p48a", "p49", "p50a", "p50b", "p50b", "p51", "p52",
+                        "p55a", "p57", "p58", "k", "p", "t", "p5a", "q", "i", "h"]
+    for col in categorized_cols:
+        df[col] = df[col].astype("category")
+
+    to_float_cols = ["s", "r", "g", "f", "e", "d", "b", "a", "p53", "p14", "p9", "p37"]
+    for col in to_float_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce", downcast="float")
+
+    if verbose:
+        print(f"new_size: {_get_size(df)} MB")
+
+    return df
 
 # Ukol 3: počty nehod v jednotlivých regionech podle viditelnosti
 def plot_visibility(df: pd.DataFrame, fig_location: str = None,
@@ -106,7 +138,8 @@ if __name__ == "__main__":
     # funkce.
     df = load_data("data/data.zip")
     df2 = parse_data(df, True)
-    
+    exit()
+
     plot_visibility(df2, "01_visibility.png")
     plot_direction(df2, "02_direction.png", True)
     plot_consequences(df2, "03_consequences.png")
