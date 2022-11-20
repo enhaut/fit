@@ -97,7 +97,7 @@ def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
     df = df.rename(columns={"p2a": "date"})
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-    to_int_cols = ["l", "n", "weekday(p2a)", "r", "s"]
+    to_int_cols = ["l", "n", "weekday(p2a)", "r", "s", "p19"]
     for col in to_int_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce", downcast="integer")
 
@@ -117,10 +117,68 @@ def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
 
     return df
 
+
+def p19_enum_to_str(enum: int):
+    """
+        Function converts enum to weather condition type.
+
+    :param enum: ID of weather condition type
+    :return: string or None if ID is not defined
+    """
+    match enum:
+        case 1:
+            return "Deň - nezhoršená"
+        case 2 | 3:
+            return "Deň - zhoršená"
+        case 4 | 6:
+            return "Noc - nezhoršená"
+        case 5 | 7:
+            return "Noc - zhoršená"
+        case _:
+            return None
+
+
 # Ukol 3: počty nehod v jednotlivých regionech podle viditelnosti
 def plot_visibility(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
-    pass
+    df["p19t"] = [
+        p19_enum_to_str(p19) for p19 in df["p19"]
+    ]  # enum to weather condition type
+
+    regions = df["region"].unique()[:4]
+    region_names = {
+        "PHA": "hl. m. Praha",
+        "STC": "Středočeský kraj",
+        "JHC": "Jihočeský kraj",
+        "PLK": "Plzeňský kraj"
+    }
+
+    fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+    fig.subplots_adjust(hspace=.5)  # bigger space between plot rows
+    fig.suptitle("Počet nehod dle regionu a viditelnosti")
+    axx = [*axes[0], *axes[1]]  # 2d array to 1d
+
+    for i, region in enumerate(regions):
+        region_data = df[df["region"] == region]
+        visibilities = region_data.groupby(["p19t"])
+
+        visibility_names = list(visibilities.size().keys())
+        visibility_values = visibilities.size().values
+
+        bar = sns.barplot(ax=axx[i], x=visibility_names, y=visibility_values)
+        for label in bar.containers:
+            bar.bar_label(label, )  # add # of accidents above weather condition type
+
+        axx[i].set_title(region_names.get(region, region))
+        axx[i].set_xticklabels(visibility_names, rotation=10)
+        axx[i].set_ylim(0, visibility_values.max() * 1.2)
+
+    if fig_location:
+        fig.savefig(fig_location, bbox_inches="tight")
+
+    if show_figure:
+        plt.show()
+
 
 # Ukol4: druh srážky jedoucích vozidel
 def plot_direction(df: pd.DataFrame, fig_location: str = None,
