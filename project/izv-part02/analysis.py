@@ -181,11 +181,72 @@ def plot_visibility(df: pd.DataFrame, fig_location: str = None,
     if show_figure:
         plt.show()
 
+    plt.close(fig)
+
+
+def p7_enum_to_str(enum: int):
+    match enum:
+        case 1:
+            return "Čelná"
+        case 2 | 3:
+            return "Bočná"
+        case 4:
+            return "Zozadu"
+        case _:
+            return None
+
 
 # Ukol4: druh srážky jedoucích vozidel
 def plot_direction(df: pd.DataFrame, fig_location: str = None,
                    show_figure: bool = False):
-    pass
+    region_names = {
+        "PHA": "hl. m. Praha",
+        "STC": "Středočeský kraj",
+        "JHC": "Jihočeský kraj",
+        "PLK": "Plzeňský kraj"
+    }
+
+    df["p7"] = pd.Series(
+        [
+            p7_enum_to_str(p7)
+            for p7 in df["p7"]
+        ],
+        dtype="category",
+        index=df.index
+    )  # convert collision type ID into word
+
+    df["month"] = [
+        date.month for date in df["date"]
+    ]  # create column month with month of accident
+
+    regions_data = df[df["region"].isin(region_names.keys())].groupby(["region"])  # filter for region's rows + group it
+
+    with sns.axes_style("darkgrid"):  # set style
+        fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+    axx = [*axes[0], *axes[1]]  # 2d array to 1d for easier iteration
+
+    fig.subplots_adjust(hspace=.5)  # bigger space between plot rows
+
+    for i, (region, region_data) in enumerate(regions_data):
+        with sns.axes_style("darkgrid"):  # set style
+            sns.countplot(data=region_data, x="month", hue="p7", ax=axx[i])
+            # catplot automatically groups it by ["month", "p7"]
+
+        axx[i].set(title=region_names.get(region, region))
+        axx[i].set_ylabel("Počet nehôd")
+        axx[i].set_xlabel("Mesiac")
+        axx[i].get_legend().remove()  # there is figure-wide legend
+
+    fig.legend(["Bočná",  "Čelná", "Zozadu"], title="Druh zrážky")
+
+    if fig_location:
+        fig.savefig(fig_location, bbox_inches="tight")
+
+    if show_figure:
+        plt.show()
+
+    plt.close(fig)
+
 
 # Ukol 5: Následky v čase
 def plot_consequences(df: pd.DataFrame, fig_location: str = None,
