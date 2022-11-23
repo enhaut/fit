@@ -237,7 +237,7 @@ def plot_direction(df: pd.DataFrame, fig_location: str = None,
         axx[i].set_xlabel("Mesiac")
         axx[i].get_legend().remove()  # there is figure-wide legend
 
-    fig.legend(["Bočná",  "Čelná", "Zozadu"], title="Druh zrážky")
+    fig.legend(["Bočná",  "Čelná", "Zozadu"], title="Druh zrážky", loc="center right")
 
     if fig_location:
         fig.savefig(fig_location, bbox_inches="tight")
