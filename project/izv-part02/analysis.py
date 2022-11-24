@@ -15,6 +15,12 @@ import io
 
 # Ukol 1: nacteni dat ze ZIP souboru
 def load_data(filename: str) -> pd.DataFrame:
+    """
+        Function loads zipped CSV files inside another zip.
+
+    :param filename: name of zip with another zips inside
+    :return: unparsed data frame
+    """
     # tyto konstanty nemente, pomuzou vam pri nacitani
     headers = ["p1", "p36", "p37", "p2a", "weekday(p2a)", "p2b", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13a",
                 "p13b", "p13c", "p14", "p15", "p16", "p17", "p18", "p19", "p20", "p21", "p22", "p23", "p24", "p27", "p28",
@@ -85,12 +91,26 @@ def load_data(filename: str) -> pd.DataFrame:
 
 
 def _get_size(df: pd.DataFrame):
+    """
+        Function returns deep size (including elements size)
+        of data frame.
+
+    :param df: dataframe
+    :return: deep size of dataframe
+    """
     size = df.memory_usage(deep=True).sum()
     return round(size / (10**6), 1)
 
 
 # Ukol 2: zpracovani dat
 def parse_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
+    """
+        Function parses input CSV dataframe.
+
+    :param df: CSV datafile
+    :param verbose: whether debug prints are requested
+    :return: parsed dataframe
+    """
     if verbose:
         print(f"orig_size: {_get_size(df)} MB")
     df = df[~df.index.duplicated(keep="first")].copy()
@@ -144,6 +164,13 @@ def p19_enum_to_str(enum: int):
 # Ukol 3: počty nehod v jednotlivých regionech podle viditelnosti
 def plot_visibility(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
+    """
+        Function plots accident weather condition.
+
+    :param df: parsed dataframe
+    :param fig_location: filepath of plot
+    :param show_figure: whether function shows plot
+    """
     df["p19t"] = [
         p19_enum_to_str(p19) for p19 in df["p19"]
     ]  # enum to weather condition type
@@ -160,6 +187,7 @@ def plot_visibility(df: pd.DataFrame, fig_location: str = None,
     fig.subplots_adjust(hspace=.5)  # bigger space between plot rows
     fig.suptitle("Počet nehod dle regionu a viditelnosti")
     axx = [*axes[0], *axes[1]]  # 2d array to 1d
+    max_y = 0
 
     for i, region in enumerate(regions):
         region_data = df[df["region"] == region]
@@ -174,7 +202,10 @@ def plot_visibility(df: pd.DataFrame, fig_location: str = None,
 
         axx[i].set_title(region_names.get(region, region))
         axx[i].set_xticklabels(visibility_names, rotation=10)
-        axx[i].set_ylim(0, visibility_values.max() * 1.2)
+        max_y = max([max_y, visibility_values.max() * 1.2])
+
+    for ax in axx:
+        ax.set_ylim(0, max_y)  # set same ylim for every subfigure
 
     if fig_location:
         fig.savefig(fig_location, bbox_inches="tight")
@@ -186,6 +217,12 @@ def plot_visibility(df: pd.DataFrame, fig_location: str = None,
 
 
 def p7_enum_to_str(enum: int):
+    """
+        Function converts enum of accident type to its
+        text representation.
+    :param enum: ID of accident type
+    :return: text representation of acc. type
+    """
     match enum:
         case 1:
             return "Čelná"
@@ -200,6 +237,12 @@ def p7_enum_to_str(enum: int):
 # Ukol4: druh srážky jedoucích vozidel
 def plot_direction(df: pd.DataFrame, fig_location: str = None,
                    show_figure: bool = False):
+    """
+        Function plots type of accidents
+    :param df: parsed data frame
+    :param fig_location: filepath of plot
+    :param show_figure: whether function shows plot
+    """
     region_names = {
         "PHA": "hl. m. Praha",
         "STC": "Středočeský kraj",
@@ -220,7 +263,9 @@ def plot_direction(df: pd.DataFrame, fig_location: str = None,
         date.month for date in df["date"]
     ]  # create column month with month of accident
 
-    regions_data = df[df["region"].isin(region_names.keys())].groupby(["region"])  # filter for region's rows + group it
+    regions_data = df[
+        df["region"].isin(region_names.keys())
+    ].groupby(["region"])  # filter for region's rows + group it
 
     with sns.axes_style("darkgrid"):  # set style
         fig, axes = plt.subplots(2, 2, figsize=(12, 6))
@@ -231,7 +276,7 @@ def plot_direction(df: pd.DataFrame, fig_location: str = None,
     for i, (region, region_data) in enumerate(regions_data):
         with sns.axes_style("darkgrid"):  # set style
             sns.countplot(data=region_data, x="month", hue="p7", ax=axx[i])
-            # catplot automatically groups it by ["month", "p7"]
+            # countplot automatically groups it by ["month", "p7"]
 
         axx[i].set(title=region_names.get(region, region))
         axx[i].set_ylabel("Počet nehôd")
