@@ -2,6 +2,7 @@
 # coding=utf-8
 
 from matplotlib import pyplot as plt
+from matplotlib.ticker import LinearLocator
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -248,10 +249,96 @@ def plot_direction(df: pd.DataFrame, fig_location: str = None,
     plt.close(fig)
 
 
+def set_worst_conseq(row):
+    """
+        Function returns text representation of "type" of accident.
+        Count of injuries in accident is meant as a "type" of accident.
+    :param row: dataframe row
+    :return: text representation of accident type
+    """
+    if row["p13a"] > max([row["p13b"], row["p13c"]]):
+        conseq = "Usmrtenie"
+    elif row["p13b"] > max([row["p13a"], row["p13c"]]):
+        conseq = "Tazke zranenia"
+    else:
+        conseq = "Lahke zranenia"
+
+    return conseq
+
+
 # Ukol 5: Následky v čase
 def plot_consequences(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
-    pass
+    """
+        Function plots consequences of accidents in chosen range.
+    :param df: parsed data frame
+    :param fig_location: file name of figure
+    :param show_figure: whether function shows plot
+    """
+    region_names = {
+        "PHA": "hl. m. Praha",
+        "STC": "Středočeský kraj",
+        "JHC": "Jihočeský kraj",
+        "PLK": "Plzeňský kraj"
+    }
+    d_from = np.datetime64("2016-01-01")
+    d_to = np.datetime64("2022-01-01")
+
+    regions_data = df[
+        (df["region"].isin(region_names.keys())) &  # filter for selected regions only
+        ((d_from < df["date"]) & (df["date"] < d_to)) &  # filter accidents within dates
+        ((df["p13a"] > 0) | (df["p13b"] > 0) | (df["p13c"] > 0))  # filter accidents without injuries
+    ]
+
+    regions_data["conseq"] = regions_data.apply(set_worst_conseq, axis=1)  # transform accident type into text form
+
+    con = pd.pivot_table(
+        regions_data,
+        aggfunc="count",
+        index=["region", "date"],
+        columns=["conseq"],  # aggregate consequences
+        fill_value=0,
+        values="p14"  # every row contains it (at my dataset, hopefully on yours also)
+    )
+
+    no_index = con.reset_index()
+    resampled = no_index.groupby("region").resample("M", on="date").sum()
+
+    with sns.axes_style("darkgrid"):  # set style of subplots
+        fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+
+    fig.subplots_adjust(hspace=.5)  # bigger space between plot rows
+    fig.suptitle("Počet nehôd podla regionu a viditelnosti")
+    axx = [*axes[0], *axes[1]]  # 2d array to 1d
+
+    labels = ["01/16", "01/17", "01/18", "01/19", "01/20", "01/21", "01/22"]
+    locator = LinearLocator(numticks=len(labels))  # i know, not the best solution
+
+    for i, (region, data) in enumerate(resampled.groupby("region")):
+        axx[i].margins(x=0)
+        with sns.axes_style("darkgrid"):  # set style of liness
+            p = data.plot(kind="line", ax=axx[i])
+
+        p.get_xaxis().set_major_locator(locator)
+        p.set_xticklabels(labels)
+        p.set_xlabel("Datum")
+        if i % 2 == 0:  # add it to the first plot in row (2 plots in row => %2)
+            p.set_ylabel("Počet nehôd")
+
+        p.get_legend().remove()
+        p.set_title(f"Kraj: {region}")
+
+    fig.legend(["Lahke zranenia", "Tazke zranenia", "Usmrtenie"], title="Nasledky", loc="center right",
+               bbox_to_anchor=(1.07, .5))
+
+    if fig_location:
+        fig.savefig(fig_location, bbox_inches="tight")
+
+    if show_figure:
+        plt.show()
+
+    plt.close(fig)
+
 
 if __name__ == "__main__":
     # zde je ukazka pouziti, tuto cast muzete modifikovat podle libosti
@@ -259,7 +346,6 @@ if __name__ == "__main__":
     # funkce.
     df = load_data("data/data.zip")
     df2 = parse_data(df, True)
-    exit()
 
     plot_visibility(df2, "01_visibility.png")
     plot_direction(df2, "02_direction.png", True)
