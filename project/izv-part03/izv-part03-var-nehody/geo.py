@@ -11,7 +11,14 @@ import numpy as np
 
 def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
     """ Konvertovani dataframe do geopandas.GeoDataFrame se spravnym kodovani"""
-    pass
+    df = df[df['d'].notna() & df['e'].notna()]  # drop rows with invalid lat/lng
+
+    return geopandas.GeoDataFrame(
+        df,
+        geometry=geopandas.points_from_xy(df.d, df.e),
+        crs="EPSG:5514"
+    )
+
 
 def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
              show_figure: bool = False):
