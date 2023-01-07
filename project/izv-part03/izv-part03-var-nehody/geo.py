@@ -17,7 +17,7 @@ def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
         df,
         geometry=geopandas.points_from_xy(df.d, df.e),
         crs="EPSG:5514"
-    )
+    ).to_crs("EPSG:3857")
 
 
 def export(fig, location, show):
@@ -35,7 +35,7 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
     """ Vykresleni grafu s nehodami s alkoholem pro roky 2018-2021 pre Jihomoravsky kraj """
 
     fig, (y1, y2) = plt.subplots(2, 2, figsize=(15, 12))
-    gdf = gdf[(gdf["region"] == "JHM") & (gdf["p11"] >= 3)].to_crs("EPSG:3857")  # vodorovne crs
+    gdf = gdf[(gdf["region"] == "JHM") & (gdf["p11"] >= 3)]  # vodorovne crs
 
     border_vals_adj = 1000  # asd
     xlim = gdf.total_bounds[0] + border_vals_adj, gdf.total_bounds[2] + border_vals_adj
