@@ -11,7 +11,7 @@ import numpy as np
 
 def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
     """ Konvertovani dataframe do geopandas.GeoDataFrame se spravnym kodovani"""
-    df = df[df['d'].notna() & df['e'].notna()]  # drop rows with invalid lat/lng
+    df = df[df['d'].notna() & df['e'].notna() & df["p2a"].notna()]  # drop rows with invalid lat/lng/dates
 
     return geopandas.GeoDataFrame(
         df,
