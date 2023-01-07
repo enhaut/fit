@@ -4,9 +4,9 @@ import pandas as pd
 import geopandas
 import matplotlib.pyplot as plt
 import contextily as ctx
-import sklearn.cluster
-import numpy as np
-# muzete pridat vlastni knihovny
+from sklearn.cluster import KMeans
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 
 
 def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
@@ -71,7 +71,29 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
 def plot_cluster(gdf: geopandas.GeoDataFrame, fig_location: str = None,
                  show_figure: bool = False):
     """ Vykresleni grafu s lokalitou vsech nehod v kraji shlukovanych do clusteru """
-    pass
+    gdf = gdf[((gdf["region"] == "JHM") & (gdf["p36"] > 0) & (gdf["p36"] < 4))].copy()
+    # ^^^ copy() to not change original data
+
+    kmeans = KMeans(n_clusters=20, n_init=10)  # i've chosen KMeans alg, the one I understand the most
+    kmeans.fit(gdf.loc[:, ["d", "e"]])
+
+    gdf["cluster"] = kmeans.predict(gdf.loc[:, ["d", "e"]])
+    gdf4 = gdf.dissolve(by="cluster", aggfunc={"p1": "count"})
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 11))
+    gdf4.plot(ax=ax, column="p1", cmap="viridis", markersize=4)
+    cmappable = ScalarMappable(norm=Normalize(gdf4["p1"].min(), gdf4["p1"].max()), cmap="viridis")
+
+    ctx.add_basemap(ax, source=ctx.providers.Stamen.TonerLite, crs=gdf.crs.to_string())
+    ax.axis("off")
+    ax.set_title("Nehody v jednotlivych oblastiach")
+
+    bar = fig.colorbar(cmappable, location="bottom", shrink=1, pad=0.02, ax=ax)
+    bar.set_label("Pocet nehod")
+
+    fig.tight_layout()
+    export(fig, fig_location, show_figure)
+
 
 if __name__ == "__main__":
     # zde muzete delat libovolne modifikace
