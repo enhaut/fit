@@ -27,6 +27,7 @@ def export(fig, location, show):
     if show:
         plt.show()
 
+    plt.tight_layout()
     plt.close(fig)
 
 
