@@ -10,7 +10,12 @@ from matplotlib.colors import Normalize
 
 
 def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
-    """ Konvertovani dataframe do geopandas.GeoDataFrame se spravnym kodovani"""
+    """
+        Konvertovani dataframe do geopandas.GeoDataFrame se spravnym kodovani
+    :param df: raw frame
+    :return: geopandas frame in EPSG3857
+    """
+
     df = df[df['d'].notna() & df['e'].notna() & df["p2a"].notna()]  # drop rows with invalid lat/lng/dates
 
     return geopandas.GeoDataFrame(
@@ -21,6 +26,13 @@ def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
 
 
 def export(fig, location, show):
+    """
+        Function exports plot
+
+    :param fig: figure to export
+    :param location: export location in case of saving to the disk
+    :param show: True/False
+    """
     if location:
         fig.savefig(location, bbox_inches="tight")
 
@@ -33,12 +45,18 @@ def export(fig, location, show):
 
 def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
              show_figure: bool = False):
-    """ Vykresleni grafu s nehodami s alkoholem pro roky 2018-2021 pre Jihomoravsky kraj """
+    """
+        Vykresleni grafu s nehodami s alkoholem pro roky 2018-2021 pre Jihomoravsky kraj
+
+    :param gdf: processed geopandas frame
+    :param fig_location: path for figure file
+    :param show_figure: True/False
+    """
 
     fig, (y1, y2) = plt.subplots(2, 2, figsize=(15, 12))
     gdf = gdf[(gdf["region"] == "JHM") & (gdf["p11"] >= 3)]  # vodorovne crs
 
-    border_vals_adj = 1000  # asd
+    border_vals_adj = 1000  # unzoom it little bit
     xlim = gdf.total_bounds[0] + border_vals_adj, gdf.total_bounds[2] + border_vals_adj
     ylim = gdf.total_bounds[1] + border_vals_adj, gdf.total_bounds[3] + border_vals_adj
 
@@ -71,7 +89,13 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
 
 def plot_cluster(gdf: geopandas.GeoDataFrame, fig_location: str = None,
                  show_figure: bool = False):
-    """ Vykresleni grafu s lokalitou vsech nehod v kraji shlukovanych do clusteru """
+    """
+        Vykresleni grafu s lokalitou vsech nehod v kraji shlukovanych do clusteru
+
+    :param gdf: processed geopandas frame
+    :param fig_location: path for figure file
+    :param show_figure: True/False
+    """
     gdf = gdf[((gdf["region"] == "JHM") & (gdf["p36"] > 0) & (gdf["p36"] < 4))].copy()
     # ^^^ copy() to not change original data
 
