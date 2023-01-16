@@ -78,7 +78,6 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
 
         ax.axis("off")
 
-    plt.legend()
     plt.tight_layout()
 
     fig.suptitle("Nehody v kraji JHM", fontsize=20)
@@ -116,12 +115,11 @@ def plot_cluster(gdf: geopandas.GeoDataFrame, fig_location: str = None,
     bar = fig.colorbar(cmappable, location="bottom", shrink=1, pad=0.02, ax=ax)
     bar.set_label("Pocet nehod")
 
-    fig.tight_layout()
     export(fig, fig_location, show_figure)
 
 
 if __name__ == "__main__":
     # zde muzete delat libovolne modifikace
-    gdf = make_geo(pd.read_pickle("accidents.pkl.gz"))
+    gdf = make_geo(pd.read_pickle("/Users/sdobron/skola/izv/project/izv-part03/izv-part03-var-nehody/accidents.pkl.gz"))
     plot_geo(gdf, "geo1.png", True)
     plot_cluster(gdf, "geo2.png", True)
