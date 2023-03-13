@@ -13,3 +13,6 @@
 [submodule "4semester/ICP"]
 	path = 4semester/ICP
 	url = git@github.com:guritchi/ICP-project.git
+[submodule "5semester/IIS"]
+	path = 5semester/IIS
+	url = git@github.com:enhaut/wis2.git
