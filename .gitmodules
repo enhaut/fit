@@ -16,3 +16,6 @@
 [submodule "5semester/IIS"]
 	path = 5semester/IIS
 	url = git@github.com:enhaut/wis2.git
+[submodule "5semester/IMP"]
+	path = 5semester/IMP
+	url = git@github.com:enhaut/imp-project.git
