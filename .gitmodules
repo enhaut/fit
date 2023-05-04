@@ -19,3 +19,6 @@
 [submodule "5semester/IMP"]
 	path = 5semester/IMP
 	url = git@github.com:enhaut/imp-project.git
+[submodule "5semester/ISA/project"]
+	path = 5semester/ISA/project
+	url = git@github.com:enhaut/dns-tunneler.git
