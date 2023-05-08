@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+matplotlib = "*"
+beautifulsoup4 = "*"
+requests = "*"
+pytest = "*"
+black = "*"
+pandas = "*"
+geopandas = "*"
+contextily = "*"
+sklearn = "*"
+scikit-learn = "*"
+jupyter = "*"
+cartopy = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
