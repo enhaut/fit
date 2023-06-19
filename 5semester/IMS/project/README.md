@@ -156,14 +156,14 @@ These experiments demonstrate potential improvements and optimizations for the t
 
 ---
 
-[1] https://www.intermodal-terminals.eu/database/terminal/view/id/424
-[2] https://unicom-tranzit.ro/en/facilities/#terminale
-[3] https://www.openrailwaymap.org/?style=maxspeed&amp;lat=48.73083222613515&amp;lon=24.14794921875&amp;zoom=8
-[4] https://eastwestil.com/en/terminal-2/
-[5] https://www.ect.kz/com_grain_en.html
-[6] https://www.ofimagazine.com/news/ukraines-grain-rail-transport-picks-up-but-remains-just-over-half-of-potential-capacity
-[7] https://www.hellenicshippingnews.com/containerized-shipment-of-grains-pushed-in-shift-from-bulk-cargo/
-[8] https://www.fastmarkets.com/insights/three-reasons-ukraines-railway-grain-movements-are-still-only-reaching-55-of-potential
-[9] https://www.efeedlink.com/contents/04-11-2012/575eaaae-10d4-4cf2-a14a-976347bac9cd-a002.html
-[10] https://youtu.be/HyXZcxr7l3I
-[11] https://blog.sme.sk/martinvozar1/ekonomika/nove-zeleznicne-prekladisko-pri-kosiciach-alebo-zbytocna-investicia-kosickej-zupy
+[1] https://www.intermodal-terminals.eu/database/terminal/view/id/424   
+[2] https://unicom-tranzit.ro/en/facilities/#terminale   
+[3] https://www.openrailwaymap.org/?style=maxspeed&amp;lat=48.73083222613515&amp;lon=24.14794921875&amp;zoom=8   
+[4] https://eastwestil.com/en/terminal-2/   
+[5] https://www.ect.kz/com_grain_en.html   
+[6] https://www.ofimagazine.com/news/ukraines-grain-rail-transport-picks-up-but-remains-just-over-half-of-potential-capacity   
+[7] https://www.hellenicshippingnews.com/containerized-shipment-of-grains-pushed-in-shift-from-bulk-cargo/   
+[8] https://www.fastmarkets.com/insights/three-reasons-ukraines-railway-grain-movements-are-still-only-reaching-55-of-potential   
+[9] https://www.efeedlink.com/contents/04-11-2012/575eaaae-10d4-4cf2-a14a-976347bac9cd-a002.html   
+[10] https://youtu.be/HyXZcxr7l3I   
+[11] https://blog.sme.sk/martinvozar1/ekonomika/nove-zeleznicne-prekladisko-pri-kosiciach-alebo-zbytocna-investicia-kosickej-zupy   
