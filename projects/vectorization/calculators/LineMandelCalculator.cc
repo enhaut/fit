@@ -4,6 +4,8 @@
  * @brief Implementation of Mandelbrot calculator that uses SIMD paralelization over lines
  * @date DATE
  */
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,15 +20,14 @@
 LineMandelCalculator::LineMandelCalculator (unsigned matrixBaseSize, unsigned limit) :
 	BaseMandelCalculator(matrixBaseSize, limit, "LineMandelCalculator")
 {
-	// @TODO allocate & prefill memory
+	data = (int *)(calloc(height * width, sizeof(int)));  // PERF: mm_calloc???
 }
 
 LineMandelCalculator::~LineMandelCalculator() {
-	// @TODO cleanup the memory
+	free(data);
+	data = NULL;
 }
 
-
 int * LineMandelCalculator::calculateMandelbrot () {
-	// @TODO implement the calculator & return array of integers
-	return NULL;
+    return NULL;
 }
