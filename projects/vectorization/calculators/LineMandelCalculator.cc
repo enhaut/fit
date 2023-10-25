@@ -6,6 +6,7 @@
  */
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -50,16 +51,42 @@ static inline int mandelbrot(T real, T imag, int limit)
 
 
 int * LineMandelCalculator::calculateMandelbrot () {
+	memset(data, height * width, limit);
+
 	for (int i = 0; i < height; i++)
 	{
-		for (int j = 0; j < width; j++)
-		{
-			float x = x_start + j * dx; // current real value
-			float y = y_start + i * dy; // current imaginary value
+		float y = y_start + i * dy; // current imaginary value
 
-			int value = mandelbrot(x, y, limit);
+		int *processed = (int *)calloc(width, sizeof(int));
+		float *zImagf = (float *)malloc(width * sizeof(float));
+		float *zRealf = (float *)malloc(width * sizeof(float));
 	
-			*(data + i*width + j) = value;
+		for (int x = 0; x < width; x++)
+		{
+			zImagf[x] = y;
+			zRealf[x] = x_start + x * dx;
+		}
+
+	  	for (int k = 0; k < limit; ++k)
+		{
+			#pragma omp simd
+		  	for (int j = 0; j < width; j++)
+	  	  	{
+				float real = x_start + j * dx;
+
+		  	  	float r2 = zRealf[j] * zRealf[j];
+		  	  	float i2 = zImagf[j] * zImagf[j];
+
+		  	  	if (r2 + i2 > 4.0f && !processed[j])
+		  	  	{
+					processed[j] = 1;
+		  	  	  	*(data + i*width + j) = k;
+				}
+
+		  	  	zImagf[j] = 2.0f * zRealf[j] * zImagf[j] + y;
+		  	  	zRealf[j] = r2 - i2 + real;
+	  	  	}
+	
 		}
 	}
 	
