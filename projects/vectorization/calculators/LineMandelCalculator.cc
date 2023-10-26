@@ -4,6 +4,8 @@
  * @brief Implementation of Mandelbrot calculator that uses SIMD paralelization over lines
  * @date DATE
  */
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -38,6 +40,13 @@ LineMandelCalculator::LineMandelCalculator (unsigned matrixBaseSize, unsigned li
 
 LineMandelCalculator::~LineMandelCalculator() {
 	free(data);
+	_mm_free(zImagf);
+	_mm_free(zRealf);
+	_mm_free(processed);
+
+	zImagf = NULL;
+	zRealf = NULL;
+	processed = NULL;
 	data = NULL;
 }
 
@@ -60,10 +69,10 @@ int * LineMandelCalculator::calculateMandelbrot () {
 			zImagf[x] = y;
 			zRealf[x] = x_start + x * dx;
 		}
-
+		uint processed_count = 0;
 	  	for (int k = 0; k < limit; ++k)
 		{
-			#pragma omp simd
+			#pragma omp simd reduction(+: processed_count, j_f)
 		  	for (int j = 0; j < width; j++)
 	  	  	{
 				__builtin_prefetch(zRealf + 1);
@@ -78,6 +87,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		  	  	if (!processed[j] && r2 + i2 > 4.0f)
 		  	  	{
 					processed[j] = 1;
+					processed_count++;
 		  	  	  	*(data + i*width + j) = k;
 		  	  	  	*(data + (height-1)*width-(i*width) + j) = k;
 				}
@@ -87,14 +97,8 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		  	  	j_f++;
 	  	  	}
 	  	  	j_f = 0.0f;
-
-		    int sum = 0;
-            #pragma omp simd reduction(+:sum)
-            for (int x = 0; x < width; x++)
-              sum = sum + processed[x];
-
-            if (sum >= width)
-              break;
+			if (processed_count >= width)
+			  	break;
 		}
 		i_f++;
 	}
