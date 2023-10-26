@@ -1,0 +1,11 @@
+Advisor*/
+CMakeFiles
+build*/
+CMakeCache.txt
+cmake_install.cmake
+*.png
+*.optrpt
+*.npz
+mandelbrot
+*.out
+.venv/
