@@ -16,4 +16,7 @@ public:
 
 private:
     int *data;
+    float *zImagf;
+    float *zRealf;
+    int *processed;
 };
