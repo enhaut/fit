@@ -1,8 +1,8 @@
 /**
  * @file BatchMandelCalculator.cc
- * @author FULL NAME <xlogin00@stud.fit.vutbr.cz>
+ * @author Samuel Dobron <xdobro23@stud.fit.vutbr.cz>
  * @brief Implementation of Mandelbrot calculator that uses SIMD paralelization over small batches
- * @date DATE
+ * @date 2023-10-25 20:23
  */
 
 #include <cstdlib>
@@ -56,12 +56,11 @@ BatchMandelCalculator::~BatchMandelCalculator() {
 int * BatchMandelCalculator::calculateMandelbrot ()
 {
 	float x, y, r2, i2;
+	int early_end;
 
 	float *Rlf = zRealf;
 	float *Imf = zImagf;
 	float *bReal = batchReal;
-
-	int early_end;
 
 	for (int batch = 0; batch < height * width / 2; batch += BATCH_SIZE)
 	{

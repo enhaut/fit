@@ -1,8 +1,8 @@
 /**
  * @file LineMandelCalculator.cc
- * @author FULL NAME <xlogin00@stud.fit.vutbr.cz>
+ * @author Samuel Dobron <xdobro23@stud.fit.vutbr.cz>
  * @brief Implementation of Mandelbrot calculator that uses SIMD paralelization over lines
- * @date DATE
+ * @date 2023-10-26 11:00
  */
 #include <cstddef>
 #include <cstdint>
@@ -35,7 +35,7 @@ LineMandelCalculator::LineMandelCalculator (unsigned matrixBaseSize, unsigned li
 	zImagf = (float *)_mm_malloc(width * sizeof(float), 4);
 	zRealf = (float *)_mm_malloc(width * sizeof(float), 4);
 
-	processed = (int *)_mm_malloc(width * sizeof(int), 4);
+	processed = (int *)_mm_malloc(width * sizeof(int), 4);  // TODO: move prefill
 }
 
 LineMandelCalculator::~LineMandelCalculator() {
