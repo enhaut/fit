@@ -9,6 +9,7 @@
 
 #include <BaseMandelCalculator.h>
 
+#define CACHE_LINE_SIZE 64  // most usual cacheline size
 class BatchMandelCalculator : public BaseMandelCalculator
 {
 public:
@@ -20,6 +21,7 @@ private:
     int *data;
     float *zImagf;
     float *zRealf;
+    float *batchReal;
     int *processed;
 };
 
