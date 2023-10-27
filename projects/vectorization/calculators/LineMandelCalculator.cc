@@ -32,10 +32,10 @@ LineMandelCalculator::LineMandelCalculator (unsigned matrixBaseSize, unsigned li
 	  	*(data + i*width + j) = limit;
 	}
 
-	zImagf = (float *)_mm_malloc(width * sizeof(float), 4);
-	zRealf = (float *)_mm_malloc(width * sizeof(float), 4);
+	zImagf = (float *)_mm_malloc(width * sizeof(float), CACHE_LINE_SIZE);
+	zRealf = (float *)_mm_malloc(width * sizeof(float), CACHE_LINE_SIZE);
 
-	processed = (int *)_mm_malloc(width * sizeof(int), 4);  // TODO: move prefill
+	processed = (int *)_mm_malloc(width * sizeof(int), CACHE_LINE_SIZE);  // TODO: move prefill
 }
 
 LineMandelCalculator::~LineMandelCalculator() {

@@ -7,6 +7,7 @@
 
 #include <BaseMandelCalculator.h>
 
+#define CACHE_LINE_SIZE 64
 class LineMandelCalculator : public BaseMandelCalculator
 {
 public:
