@@ -58,6 +58,11 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 	float x, y, r2, i2;
 	int early_end;
 
+	float x_start_f = x_start;
+	float y_start_f = y_start;
+	float dx_f = dx;
+	float dy_f = dy;
+
 	// ^^ retype doubles to floats to remove implicit recasting in loops
 	float *Rlf = zRealf;
 	float *Imf = zImagf;
@@ -68,15 +73,15 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 		memset(processed, 0, BATCH_SIZE * sizeof(int));
 		early_end = 0;
 
-		y = y_start + batch / width * dy;
-		x = x_start + (batch % width) * dx;
+		y = y_start_f + batch / width * dy_f;
+		x = x_start_f + (batch % width) * dx_f;
 		// ^^ for explanation of having same x/y for whole batch see initializer
 	
 		#pragma omp simd reduction(+:x)
 		for (int j = 0; j < BATCH_SIZE; j++)  // initialize starting values
 		{
-			bReal[j] = x;
-			Rlf[j] = x;
+			bReal[j] = x + dx_f * j;
+			Rlf[j] = x + dx_f * j;
 			Imf[j] = y;
 		}
 		for (int k = 0; k < limit; ++k)
