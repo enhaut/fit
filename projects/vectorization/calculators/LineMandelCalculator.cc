@@ -53,6 +53,11 @@ LineMandelCalculator::~LineMandelCalculator() {
 int * LineMandelCalculator::calculateMandelbrot () {
 	float real, r2, i2, y, i_f, j_f;
 
+	float x_start_f = x_start;
+	float dx_f = dx;
+	float dy_f = dy;
+	// ^^ retype doubles to floats to remove implicit recasting in loops
+
 	float *Rlf = zRealf;
 	float *Imf = zImagf;
 	int *proc = processed;
@@ -70,7 +75,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		for (int x = 0; x < width; x++)
 		{
 			Imf[x] = y;
-			Rlf[x] = x_start + x * dx;
+			Rlf[x] = x_start_f + x * dx_f;
 		}
 
 		uint processed_count = 0;
@@ -83,7 +88,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 				__builtin_prefetch(Imf + 1);
 				__builtin_prefetch(proc + 1);
 
-				real = x_start + j_f * dx;
+				real = x_start_f + j_f * dx_f;
 
 		  	  	r2 = Rlf[j] * Rlf[j];
 		  	  	i2 = Imf[j] * Imf[j];
