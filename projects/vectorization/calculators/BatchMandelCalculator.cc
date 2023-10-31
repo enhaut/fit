@@ -18,7 +18,7 @@
 
 #include "BatchMandelCalculator.h"
 
-#define BATCH_SIZE 96
+#define BATCH_SIZE 64
 
 BatchMandelCalculator::BatchMandelCalculator (unsigned matrixBaseSize, unsigned limit) :
 	BaseMandelCalculator(matrixBaseSize, limit, "BatchMandelCalculator")
@@ -58,6 +58,7 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 	float x, y, r2, i2;
 	int early_end;
 
+	// ^^ retype doubles to floats to remove implicit recasting in loops
 	float *Rlf = zRealf;
 	float *Imf = zImagf;
 	float *bReal = batchReal;
@@ -70,24 +71,24 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 		y = y_start + batch / width * dy;
 		x = x_start + (batch % width) * dx;
 		// ^^ for explanation of having same x/y for whole batch see initializer
-		
+	
 		#pragma omp simd reduction(+:x)
 		for (int j = 0; j < BATCH_SIZE; j++)  // initialize starting values
 		{
 			bReal[j] = x;
 			Rlf[j] = x;
 			Imf[j] = y;
-			x += dx;
 		}
 		for (int k = 0; k < limit; ++k)
 		{
+			__builtin_prefetch(Rlf + BATCH_SIZE);
+			__builtin_prefetch(Imf + BATCH_SIZE);
+			__builtin_prefetch(bReal + BATCH_SIZE);
+			__builtin_prefetch(processed + BATCH_SIZE);
+
 			#pragma omp simd reduction(+:early_end) aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
 			for (int j = 0; j < BATCH_SIZE; j++)
 			{
-				__builtin_prefetch(Rlf + 1);
-				__builtin_prefetch(Imf + 1);
-				__builtin_prefetch(bReal + 1);
-				__builtin_prefetch(processed + 1);
 
 				r2 = Rlf[j] * Rlf[j];
 				i2 = Imf[j] * Imf[j];
