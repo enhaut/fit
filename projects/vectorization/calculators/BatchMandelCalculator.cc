@@ -77,7 +77,7 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 		x = x_start_f + (batch % width) * dx_f;
 		// ^^ for explanation of having same x/y for whole batch see initializer
 	
-		#pragma omp simd reduction(+:x)
+		#pragma omp simd aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
 		for (int j = 0; j < BATCH_SIZE; j++)  // initialize starting values
 		{
 			bReal[j] = x + dx_f * j;
