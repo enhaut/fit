@@ -63,7 +63,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 	float *Imf = zImagf;
 	int *proc = processed;
 
-	unsigned int i, j, k, processed_count;  // 20ms performance gain 
+	unsigned int i, j, k, early_end;  // 20ms performance gain 
 	for (i = 0; i < height/2; i++)
 	{
 		y = y_start_f + i_f * dy_f; // current imaginary value
@@ -77,10 +77,10 @@ int * LineMandelCalculator::calculateMandelbrot () {
 			Rlf[j] = x_start_f + j * dx_f;
 		}
 
-		processed_count = 0;
+		early_end = 0;
 	  	for (k = 0; k < limit; ++k)
 		{
-			#pragma omp simd reduction(+: processed_count, j_f, j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
+			#pragma omp simd reduction(+: early_end, j_f, j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
 		  	for (j = 0; j < width; j++)
 	  	  	{
 				// PERF: builtin cpu prefetcher is much faster than prefetching next cacheline manually
@@ -93,7 +93,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		  	  	if (!proc[j] && r2 + i2 > 4.0f)
 		  	  	{
 					proc[j] = 1;
-					processed_count++;
+					early_end++;
 		  	  	  	*(data + i*width + j) = k;
 		  	  	  	*(data + (height-1)*width-(i*width) + j) = k;
 				}
@@ -104,7 +104,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		  	  	j_f++;
 	  	  	}
 	  	  	j_f = 0.0f;
-			if (processed_count >= width)
+			if (early_end >= width)
 			  	break;
 		}
 		i_f++;
