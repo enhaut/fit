@@ -83,9 +83,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 			#pragma omp simd reduction(+: processed_count, j_f, j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
 		  	for (j = 0; j < width; j++)
 	  	  	{
-				__builtin_prefetch(Rlf + 1);
-				__builtin_prefetch(Imf + 1);
-				__builtin_prefetch(proc + 1);
+				// PERF: builtin cpu prefetcher is much faster than prefetching next cacheline manually
 
 				real = x_start_f + j_f * dx_f;  // having it here is faster than moving it bellow if
 
