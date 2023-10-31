@@ -50,9 +50,12 @@ LineMandelCalculator::~LineMandelCalculator() {
 	data = NULL;
 }
 
-
 int * LineMandelCalculator::calculateMandelbrot () {
 	float real, r2, i2, y, i_f, j_f;
+
+	float *Rlf = zRealf;
+	float *Imf = zImagf;
+	int *proc = processed;
 
 	i_f = 0.0f;
 	j_f = 0.0f;
@@ -63,37 +66,38 @@ int * LineMandelCalculator::calculateMandelbrot () {
 
 		memset(processed, 0, width * sizeof(int));
 
-		#pragma omp simd
+		#pragma omp simd aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
 		for (int x = 0; x < width; x++)
 		{
-			zImagf[x] = y;
-			zRealf[x] = x_start + x * dx;
+			Imf[x] = y;
+			Rlf[x] = x_start + x * dx;
 		}
+
 		uint processed_count = 0;
 	  	for (int k = 0; k < limit; ++k)
 		{
-			#pragma omp simd reduction(+: processed_count, j_f)
+			#pragma omp simd reduction(+: processed_count, j_f) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
 		  	for (int j = 0; j < width; j++)
 	  	  	{
-				__builtin_prefetch(zRealf + 1);
-				__builtin_prefetch(zImagf + 1);
-				__builtin_prefetch(processed + 1);
+				__builtin_prefetch(Rlf + 1);
+				__builtin_prefetch(Imf + 1);
+				__builtin_prefetch(proc + 1);
 
 				real = x_start + j_f * dx;
 
-		  	  	r2 = zRealf[j] * zRealf[j];
-		  	  	i2 = zImagf[j] * zImagf[j];
+		  	  	r2 = Rlf[j] * Rlf[j];
+		  	  	i2 = Imf[j] * Imf[j];
 
-		  	  	if (!processed[j] && r2 + i2 > 4.0f)
+		  	  	if (!proc[j] && r2 + i2 > 4.0f)
 		  	  	{
-					processed[j] = 1;
+					proc[j] = 1;
 					processed_count++;
 		  	  	  	*(data + i*width + j) = k;
 		  	  	  	*(data + (height-1)*width-(i*width) + j) = k;
 				}
 
-		  	  	zImagf[j] = 2.0f * zRealf[j] * zImagf[j] + y;
-		  	  	zRealf[j] = r2 - i2 + real;
+		  	  	Imf[j] = 2.0f * Rlf[j] * Imf[j] + y;
+		  	  	Rlf[j] = r2 - i2 + real;
 		  	  	j_f++;
 	  	  	}
 	  	  	j_f = 0.0f;
