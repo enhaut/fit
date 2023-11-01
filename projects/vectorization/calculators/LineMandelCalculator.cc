@@ -27,10 +27,8 @@ LineMandelCalculator::LineMandelCalculator (unsigned matrixBaseSize, unsigned li
 {
 	data = (int *)calloc(height * width, sizeof(int));  // PERF: mm_calloc???
 	for (int i = 0; i < height; i++)
-	{
-	  for (int j = 0; j < width; j++)
-	  	*(data + i*width + j) = limit;
-	}
+		for (int j = 0; j < width; j++)
+			*(data + i*width + j) = limit;
 
 	zImagf = (float *)_mm_malloc(width * sizeof(float), CACHE_LINE_SIZE);
 	zRealf = (float *)_mm_malloc(width * sizeof(float), CACHE_LINE_SIZE);
@@ -70,7 +68,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 
 		memset(processed, 0, width * sizeof(int));
 
-		#pragma omp simd reduction(+: j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
+		#pragma omp simd reduction(+: j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE) simdlen(128)
 		for (j = 0; j < width; j++)
 		{
 			Imf[j] = y;
@@ -80,7 +78,7 @@ int * LineMandelCalculator::calculateMandelbrot () {
 		early_end = 0;
 	  	for (k = 0; k < limit; ++k)
 		{
-			#pragma omp simd reduction(+: early_end, j_f, j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
+			#pragma omp simd simdlen(32) reduction(+: early_end, j_f, j) aligned(Rlf, Imf, proc: CACHE_LINE_SIZE)
 		  	for (j = 0; j < width; j++)
 	  	  	{
 				// PERF: builtin cpu prefetcher is much faster than prefetching next cacheline manually

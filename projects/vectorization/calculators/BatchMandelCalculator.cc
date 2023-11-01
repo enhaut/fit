@@ -18,7 +18,7 @@
 
 #include "BatchMandelCalculator.h"
 
-#define BATCH_SIZE 64
+#define BATCH_SIZE 128
 
 BatchMandelCalculator::BatchMandelCalculator (unsigned matrixBaseSize, unsigned limit) :
 	BaseMandelCalculator(matrixBaseSize, limit, "BatchMandelCalculator")
@@ -77,24 +77,20 @@ int * BatchMandelCalculator::calculateMandelbrot ()
 		x = x_start_f + (batch % width) * dx_f;
 		// ^^ for explanation of having same x/y for whole batch see initializer
 	
-		#pragma omp simd aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
+		#pragma omp simd simdlen(BATCH_SIZE) aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
 		for (int j = 0; j < BATCH_SIZE; j++)  // initialize starting values
 		{
 			bReal[j] = x + dx_f * j;
 			Rlf[j] = x + dx_f * j;
 			Imf[j] = y;
 		}
+
 		for (int k = 0; k < limit; ++k)
 		{
-			__builtin_prefetch(Rlf + BATCH_SIZE);
-			__builtin_prefetch(Imf + BATCH_SIZE);
-			__builtin_prefetch(bReal + BATCH_SIZE);
-			__builtin_prefetch(processed + BATCH_SIZE);
 
-			#pragma omp simd reduction(+:early_end) aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
+			#pragma omp simd simdlen(BATCH_SIZE) reduction(+:early_end) aligned(Rlf, Imf, bReal: CACHE_LINE_SIZE)
 			for (int j = 0; j < BATCH_SIZE; j++)
 			{
-
 				r2 = Rlf[j] * Rlf[j];
 				i2 = Imf[j] * Imf[j];
 				
