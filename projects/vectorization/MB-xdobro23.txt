@@ -16,12 +16,7 @@ výpočet viacerých hodnôt sa teda môže vektorizovať.
 |---------------|--------|
 | Referenčná    | 0.24   |
 | Line          | 31.6   |
-| Batch         | 23.2   |
-
-
-Batch implementácia síce dosahuje nižší GFLOPS ale vyššiu rýchlosť celkového výpočtu. To je spôsobené hlavne tým, že vo veľkej časti
-iterácii sa žiadne výpočty nevykonávajú ale su tam len skoky lebo výsledok už bol spočítaný. Tak isto je rýchlejší aj preto,
-že vyžíva bloky riadkov, miesto ich celých to znamená, že sa nám vojdu do L1, čo je ale problém pre line implementáciu.
+| Batch         | 37.505 |
 
 
 3. Jaká část kódu byla vektorizována v "Line" implementaci? Vyčteme tuto 
@@ -31,26 +26,18 @@ Vektorizovala sa hlavne najvnútornejšia smyčka - samotný výpočet. Tak isto
 batch implementacií je vektorizovaný samotný výpočet ako aj "vedľajšie" smyčky, ktoré
 sa starajú o inicializáciu hodnôt či polí.
 
-Vektorizovné smyčky tvoria 75% (line) a 51% (batch) času behu.
+Vektorizovné smyčky tvoria 75% (line) a 54% (batch) času behu.
 
 
 4. Co vyčteme z Roofline modelu pro obě vektorizované implementace?
 ==============================================================================
-Pre line verziu z neho môžme vyčítať, že ak by sme zvýšili aritmetickú intenzitu,
-mohli by sme sa dostať ešte na vyšší výkon, keďže zatiaľ nie sme brzdení ani len L2 cache.
+Pri oboch implementáciach môžeme vidieť, že naś už začína brzdiť pamäť a je teda
+potrebné zvýšiť aritmetickú intenzitu zlepšením práce s pamäťou (bohužial, už
+mi nenapadá, ako by sa dala ešte vylepšiť).
 
-Pre batch implementaciu môžme v roofline modeli vidieť to isté = nie sme brzdení ani len L2
-cache, treba teda zvýšiť aritmetickú intenzitu.
-
-Problemom su najmä podmienené priradenia.
-
-AVX jednotka nás taktiež nebrzdí.
-
+AVX jednotka nás nebrzdí.
 
 ==============================================================================
-V priloženom eval.png môžme vidieť, že batch implementácia je rýchlešia ako line 
-implemetácia a to najmä kvoli tomu, že jednotlivé batche sa nám vojdu do L1 cache.
-
 Obe implementácie sú rádovo rýchlejšie ako referenčná, keďže využívajú vektorizáciu.
 Teda s jednou inštrukciou spracujeme viac dát naraz.
 
