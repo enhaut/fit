@@ -80,15 +80,15 @@ size_t search(const size_t* array, size_t key)
   //------------------------------------------------------------------------------------------------------------------//
   size_t pos = size_t(-1);
 
-
+  #pragma omp parallel for
   for (size_t i = 0; i < size; i++)
   {
     if (array[i] == key)
     {
       pos = i;
+      #pragma omp cancel for
     }
   }
-
   return pos;
 }// end of search
 //----------------------------------------------------------------------------------------------------------------------
