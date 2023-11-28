@@ -37,18 +37,19 @@ void parallelHelloWorld(int numOfThreads)
   // 1. Find out the thread id and number of threads in the seq. region                                               //
   //------------------------------------------------------------------------------------------------------------------//
 
-  int threadId  = -1;
-  int threadNum = 0;
+  int threadId  = omp_get_thread_num();
+  int threadNum = omp_get_num_threads();
 
   //------------------------------------------------------------------------------------------------------------------//
   // 2. Run this block by a given number of threads (numOfThreads)                                                    //
-  //------------------------------------------------------------------------------------------------------------------//
+  //-----------------------------------------------------------
+  #pragma omp parallel num_threads(numOfThreads) private(threadId, threadNum)
   {
     //----------------------------------------------------------------------------------------------------------------//
     // 3. Find out the thread id and number of threads in the par. region                                             //
     //----------------------------------------------------------------------------------------------------------------//
-    threadId  = -1;
-    threadNum = 0;
+    threadId  = omp_get_thread_num();
+    threadNum = omp_get_num_threads();
 
     printf(" - Hi from parallel region. I'm %d of %d.\n", threadId, threadNum);
   }
