@@ -80,28 +80,31 @@ int sieve()
   //------------------------------------------------------------------------------------------------------------------//
 
   // Test all numbers
-  for (int number = 1; number <= size; number++)
+  #pragma omp parallel
   {
-    bool       isPrime    = true;
-    const int  maxDivisor = sqrt(number) + 1;
-
-    // Test all divisors
-    for (int divisor = 2; divisor < maxDivisor; divisor++)
+    #pragma omp for nowait reduction(+: nPrimes) schedule(guided)
+    for (int number = 1; number <= size; number++)
     {
-      if (number % divisor == 0)
+      bool       isPrime    = true;
+      const int  maxDivisor = sqrt(number) + 1;
+
+      // Test all divisors
+      for (int divisor = 2; divisor < maxDivisor; divisor++)
       {
-        isPrime = false;
-        break;
+        if (number % divisor == 0)
+        {
+          isPrime = false;
+          break;
+        }
+      }
+
+      if (isPrime)
+      {
+        nPrimes++;
+        isPrime = true;
       }
     }
-
-    if (isPrime)
-    {
-      nPrimes++;
-      isPrime = true;
-    }
   }
-
   return nPrimes;
 }// end of seqSeive
 //----------------------------------------------------------------------------------------------------------------------
