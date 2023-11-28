@@ -15,12 +15,12 @@
 #include <string>
 #include <omp.h>
 
-#include "cxxopts.hpp"
+#include "common/cxxopts.hpp"
 
-#include "parametric_scalar_field.h"
-#include "ref_mesh_builder.h"
-#include "loop_mesh_builder.h"
-#include "tree_mesh_builder.h"
+#include "common/parametric_scalar_field.h"
+#include "common/ref_mesh_builder.h"
+#include "parallel_builder/loop_mesh_builder.h"
+#include "parallel_builder/tree_mesh_builder.h"
 
 int main(int argc, char *argv[])
 {

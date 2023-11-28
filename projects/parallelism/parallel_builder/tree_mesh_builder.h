@@ -11,7 +11,7 @@
 #ifndef TREE_MESH_BUILDER_H
 #define TREE_MESH_BUILDER_H
 
-#include "base_mesh_builder.h"
+#include "../common/base_mesh_builder.h"
 
 class TreeMeshBuilder : public BaseMeshBuilder
 {
