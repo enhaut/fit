@@ -140,6 +140,7 @@ void matrixMul(float*       c,
 
 
   // Split the number of rows of the C matrix into a few blocks
+  #pragma omp parallel
   for (size_t blockNL3 = 0; blockNL3 < N / blockSizeL3; blockNL3++)
   {
     // Split the number of cols of the C matrix into a few blocks
@@ -152,6 +153,7 @@ void matrixMul(float*       c,
 
         // L2 blocking
         // Split the number of rows of the C matrix into a few blocks
+        #pragma omp for collapse(3)
         for (size_t blockNL2 = 0; blockNL2 < blockSizeL3 / blockSizeL2; blockNL2++)
         {
           // Split the number of cols of the C matrix into a few blocks
