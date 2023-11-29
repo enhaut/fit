@@ -11,35 +11,43 @@
 #include <iostream>
 #include <math.h>
 #include <limits>
+#include <omp.h>
 
 #include "loop_mesh_builder.h"
+#include <algorithm> // for min/max_element
+#include <iterator>  // for begin/end
 
 LoopMeshBuilder::LoopMeshBuilder(unsigned gridEdgeSize)
     : BaseMeshBuilder(gridEdgeSize, "OpenMP Loop")
 {
-
+    mTriangles.reserve(mGridSize*mGridSize*mGridSize);
 }
 
 unsigned LoopMeshBuilder::marchCubes(const ParametricScalarField &field)
 {
     // 1. Compute total number of cubes in the grid.
-    size_t totalCubesCount = mGridSize*mGridSize*mGridSize;
+    size_t z_p = mGridSize*mGridSize;
+
+    size_t totalCubesCount = z_p*mGridSize;
 
     unsigned totalTriangles = 0;
 
     // 2. Loop over each coordinate in the 3D grid.
-    #pragma omp parallel for default(none) shared(totalCubesCount, field) \
-    reduction(+:totalTriangles)  schedule(dynamic, 32)
-    for(size_t i = 0; i < totalCubesCount; ++i)
+    #pragma omp parallel shared(totalCubesCount, field) reduction(+: totalTriangles)
     {
-        // 3. Compute 3D position in the grid.
-        Vec3_t<float> cubeOffset( i % mGridSize,
-                                 (i / mGridSize) % mGridSize,
-                                  i / (mGridSize*mGridSize));
+        #pragma unroll(8)
+        #pragma omp for schedule(runtime, chunk) nowait
+        for(size_t i = 0; i < totalCubesCount; ++i)
+        {
+            // 3. Compute 3D position in the grid.
+            Vec3_t<float> cubeOffset( i % mGridSize,
+                                     (i / mGridSize) % mGridSize,
+                                      i / z_p);
 
-        // 4. Evaluate "Marching Cube" at given position in the grid and
-        //    store the number of triangles generated.
-        totalTriangles += buildCube(cubeOffset, field);
+            // 4. Evaluate "Marching Cube" at given position in the grid and
+            //    store the number of triangles generated.
+            totalTriangles += buildCube(cubeOffset, field);
+        }
     }
 
     // 5. Return total number of triangles generated.
@@ -55,10 +63,13 @@ float LoopMeshBuilder::evaluateFieldAt(const Vec3_t<float> &pos, const Parametri
     const Vec3_t<float> *pPoints = field.getPoints().data();
     const unsigned count = unsigned(field.getPoints().size());
 
-    float value = std::numeric_limits<float>::max();
 
     // 2. Find minimum square distance from points "pos" to any point in the
     //    field.
+
+    float value = std::numeric_limits<float>::max();
+
+    #pragma omp simd simdlen(96) reduction(min: value)
     for(unsigned i = 0; i < count; ++i)
     {
         float distanceSquared  = (pos.x - pPoints[i].x) * (pos.x - pPoints[i].x);
@@ -81,5 +92,6 @@ void LoopMeshBuilder::emitTriangle(const BaseMeshBuilder::Triangle_t &triangle)
     // Store generated triangle into vector (array) of generated triangles.
     // The pointer to data in this array is return by "getTrianglesArray(...)" call
     // after "marchCubes(...)" call ends.
+    #pragma omp critical(loop_emitTriangle)
     mTriangles.push_back(triangle);
 }
