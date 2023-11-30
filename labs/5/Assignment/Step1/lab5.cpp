@@ -111,13 +111,20 @@ int sieve()
   // 3. Be careful when updating nPrimes                                                                              //
   //------------------------------------------------------------------------------------------------------------------//
 
-  constexpr int chunkSize = 1;
+  constexpr int chunkSize = 8000;
   int nPrimes = 0;
 
-
-  for (int number = 1; number <= size; number += chunkSize)
+  #pragma omp parallel
   {
-     nPrimes += getNumberOfPrimes(number, ((number + chunkSize) > size) ? size : number + chunkSize);
+    #pragma omp single nowait
+    for (int number = 1; number <= size; number += chunkSize)
+    {
+       #pragma omp task
+       {
+         #pragma omp atomic update
+         nPrimes += getNumberOfPrimes(number, ((number + chunkSize) > size) ? size : number + chunkSize);
+       }
+    }
   }
 
   return nPrimes;
