@@ -20,7 +20,8 @@
 LoopMeshBuilder::LoopMeshBuilder(unsigned gridEdgeSize)
     : BaseMeshBuilder(gridEdgeSize, "OpenMP Loop")
 {
-    mTriangles.reserve(mGridSize*mGridSize*mGridSize);
+    for (int i = 0; i < omp_get_max_threads(); i++)
+        triangles.push_back(std::vector<Triangle_t>());
 }
 
 unsigned LoopMeshBuilder::marchCubes(const ParametricScalarField &field)
@@ -36,7 +37,7 @@ unsigned LoopMeshBuilder::marchCubes(const ParametricScalarField &field)
     #pragma omp parallel shared(totalCubesCount, field) reduction(+: totalTriangles)
     {
         #pragma unroll(8)
-        #pragma omp for schedule(runtime, chunk) nowait
+        #pragma omp for schedule(runtime) nowait
         for(size_t i = 0; i < totalCubesCount; ++i)
         {
             // 3. Compute 3D position in the grid.
@@ -51,6 +52,11 @@ unsigned LoopMeshBuilder::marchCubes(const ParametricScalarField &field)
     }
 
     // 5. Return total number of triangles generated.
+    mTriangles.reserve(totalTriangles);
+
+    for (auto &threadArray : triangles)
+        mTriangles.insert(mTriangles.end(), threadArray.begin(), threadArray.end());
+
     return totalTriangles;
 }
 
@@ -92,6 +98,5 @@ void LoopMeshBuilder::emitTriangle(const BaseMeshBuilder::Triangle_t &triangle)
     // Store generated triangle into vector (array) of generated triangles.
     // The pointer to data in this array is return by "getTrianglesArray(...)" call
     // after "marchCubes(...)" call ends.
-    #pragma omp critical(loop_emitTriangle)
-    mTriangles.push_back(triangle);
+    triangles[omp_get_thread_num()].push_back(triangle);
 }
