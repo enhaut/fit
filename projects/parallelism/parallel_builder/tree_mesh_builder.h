@@ -20,15 +20,16 @@ public:
     TreeMeshBuilder(unsigned gridEdgeSize);
 
 protected:
+    std::vector<std::vector<Triangle_t>> triangles;
+    std::vector<Triangle_t> mTriangles;
+
     unsigned marchCubes(const ParametricScalarField &field);
     float evaluateFieldAt(const Vec3_t<float> &pos, const ParametricScalarField &field);
     void emitTriangle(const Triangle_t &triangle);
-    const Triangle_t *getTrianglesArray() const { return mTriangles.data(); }
-    std::vector<Triangle_t> mTriangles; ///< Temporary array of triangles
-    unsigned recursiveDecomposition(const Vec3_t<float> &offset, int gridSize, const ParametricScalarField &field);
+    const Triangle_t *getTrianglesArray() const {return mTriangles.data();};
+    size_t recursiveDecomposition(const Vec3_t<float> &offset, int gridSize, const ParametricScalarField &field);
     bool isEmpty(const Vec3_t<float> &offset, float gridSize, const ParametricScalarField &field);
 
-    
 };
 
 #endif // TREE_MESH_BUILDER_H

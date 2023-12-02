@@ -11,14 +11,18 @@
 #include <iostream>
 #include <math.h>
 #include <limits>
+#include <omp.h>
 
+#include "../common/base_mesh_builder.h"
 #include "tree_mesh_builder.h"
 
 TreeMeshBuilder::TreeMeshBuilder(unsigned gridEdgeSize)
     : BaseMeshBuilder(gridEdgeSize, "Octree")
 {
-    mTriangles.reserve(mGridResolution*mGridResolution*mGridResolution);
+    for (int i = 0; i < omp_get_max_threads(); i++)
+        triangles.push_back(std::vector<Triangle_t>());
 }
+
 
 unsigned TreeMeshBuilder::marchCubes(const ParametricScalarField &field)
 {
@@ -27,12 +31,24 @@ unsigned TreeMeshBuilder::marchCubes(const ParametricScalarField &field)
     // It is also strongly suggested to first implement Octree as sequential
     // code and only when that works add OpenMP tasks to achieve parallelism.
 
-    return recursiveDecomposition(Vec3_t<float>(0, 0, 0), mGridSize, field);
+    size_t renderedTriangles;
+    #pragma omp parallel
+    {
+        #pragma omp single nowait
+        renderedTriangles = recursiveDecomposition(Vec3_t<float>(0, 0, 0), mGridSize, field);
+    }
+
+    mTriangles.reserve(renderedTriangles);
+
+    for (auto &threadArray : triangles)
+        mTriangles.insert(mTriangles.end(), threadArray.begin(), threadArray.end());
+
+    return renderedTriangles;
 }
 
 
 #define STEP 2
-unsigned TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int gridSize, const ParametricScalarField &field)
+size_t TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int gridSize, const ParametricScalarField &field)
 {
     int totalTriangles = 0;
 
@@ -44,11 +60,13 @@ unsigned TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int 
     
     auto halfCubeSize = gridSize / STEP;
 
+    #pragma omp simd reduction(+: totalTriangles)
 	for (int x = 0; x < STEP; x++)
 	{
         for (int y = 0; y < STEP; y++)
         {
             for (int z = 0; z < STEP; z++)
+            #pragma omp task firstprivate(x, y, z) shared(totalTriangles)
             {
 	            float c_x = cube.x + x*halfCubeSize;
 	            float c_y = cube.y + y*halfCubeSize;
@@ -60,10 +78,13 @@ unsigned TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int 
                     c_z
                 };
 
+                #pragma omp atomic update
                 totalTriangles += recursiveDecomposition(halfCube, halfCubeSize, field);
             }
         }
 	}
+
+    #pragma omp taskwait
     return totalTriangles;
 }
 
@@ -102,5 +123,5 @@ float TreeMeshBuilder::evaluateFieldAt(const Vec3_t<float> &pos, const Parametri
 
 void TreeMeshBuilder::emitTriangle(const BaseMeshBuilder::Triangle_t &triangle)
 {
-    mTriangles.push_back(triangle);
+    triangles[omp_get_thread_num()].push_back(triangle);
 }
