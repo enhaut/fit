@@ -1,28 +1,52 @@
 Architektury Výpočetních Systémů (AVS 2023)
 Projekt č. 2 (PMC)
-Login: xlogin00
+Login: xdobro23
 
 Úloha 1: Paralelizace původního řešení
 ===============================================================================
 
 1) Kterou ze smyček (viz zadání) je vhodnější paralelizovat a co způsobuje 
    neefektivitu paralelizaci té druhé?
+  Najvyssia (kvoli rezii???) 
 
 2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
    Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
+   dynamic - nevieme kolko budu jednotlive iteracie trvat casu pretoze ak kocka
+             neobsahuje ziadny vertex na vykreslenie preskoci sa znacna cast buildCube
+             a nasladne aj emitTriangle.
+             chunk size 32 vysiel z priemeru 20 spusteni najrychlejsi (aj ked len o kusok).
 
 3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+   Referencna implementacia vyuziva len 1 vector<Triangle_t>, problem ale je,
+   ze viacere vlakna nemozu naraz zapisovat do jedneho miesta v pamati, takze 
+   pristup do kritickej sekcie je treba obmedzit len pre jeden proces sucasne -
+   #pragma omp critical. To ale vyrazne (4x) spomaluje celkovu dobu behu algoritmu.
+
+   Zvolili sme teda ine riesenie - kazde vlakno ma vlastny vektor pre Triangle_t
+   a teda tu odpada problem synchronizacie zapisu. vectory sa potom mergnu dokopy.
+
 
 
 Úloha 2: Paralelní průchod stromem
 ===============================================================================
 
 1) Stručně popište použití OpenMP tasků ve vašem řešení.
+   paralelna sekcia sa startuje/inicializuje??? uz vo funkcii marchCubes
+   master thread potom spravi prve vnorenie do recursiveDecomposition.
+   v nej je v cykle first privates - x,y,z lebo ich aktualne hodnoty su potrebne
+   pre jednotlive thready ale thready mozu byt v roznom stadiu spracovavania,
+   takze to nemoze byt shared, shared je len total triangles.
+   na konci tasku musia jednotlive thready cakat aby bol zapis do totalTriangles
+   atomicky a nestalo sa, ze by do 1 premennej zapisovalo viac threadov naraz.
+   na konci recursiveDecomposition je potom cakanie na dokoncenie vsetkych threadov
+   (je to az po vynoreni vsetkych zanoreni, lebo tie zanorenia sa tam ani nedostanu
+   kvoli returnom na zaciatku).
 
 2) Jaký vliv má na vaše řešení tzv. "cut-off"? Je vhodné vytvářet nový 
    task pro každou krychli na nejnižší úrovni?
 
 3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+   take iste ako pri loope
 
 Úloha 3: Grafy škálování všech řešení
 ===============================================================================
