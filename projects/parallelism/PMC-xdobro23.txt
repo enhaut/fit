@@ -7,46 +7,60 @@ Login: xdobro23
 
 1) Kterou ze smyček (viz zadání) je vhodnější paralelizovat a co způsobuje 
    neefektivitu paralelizaci té druhé?
-  Najvyssia (kvoli rezii???) 
+  Najvhodnejšie je paralelizovať najvyššiu smyčku (tá v marchCubes). Hlavne preto,
+  že tak paralelizujeme väčšie množstvo práce. Smyčku v evaluateFieldAt môžme
+  s miernym zvýšením rýchlosti výpočtu vektorizovať.
+
 
 2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
    Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
-   dynamic - nevieme kolko budu jednotlive iteracie trvat casu pretoze ak kocka
-             neobsahuje ziadny vertex na vykreslenie preskoci sa znacna cast buildCube
-             a nasladne aj emitTriangle.
-             chunk size 32 vysiel z priemeru 20 spusteni najrychlejsi (aj ked len o kusok).
+   Vybral som dynamické plánovanie a to hlavne preto, že dopredu nevieme, koľko
+   ktorá iterácia "zaberie" času (niektoré iterácie nemusia obsahovať žiadnu isoplochu)
+   a teda sa veľká časť code-pathu preskočí.
+   Z priemeru 10 meraní (pre chunk sizes 8, 16, 32 a 64) som dospel k tomu,
+   že pri chunk size 32 je výpočet o rádovo nižšie desiatky ms rýchlejší.
 
 3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
-   Referencna implementacia vyuziva len 1 vector<Triangle_t>, problem ale je,
-   ze viacere vlakna nemozu naraz zapisovat do jedneho miesta v pamati, takze 
-   pristup do kritickej sekcie je treba obmedzit len pre jeden proces sucasne -
-   #pragma omp critical. To ale vyrazne (4x) spomaluje celkovu dobu behu algoritmu.
+   Referenčná implementácia využíva len 1 zdielaný vektor pre všetky vlákna. 
+   V paralelizovanej verzii výpočtu by takýto prístup museli zaistiť výlučný
+   prístup pre 1 vlákno (ktore zapisuje) a ostatné by prípadne museli čakať.
+   Takáto synchronizácia ale približne 4x predlžuje celkovú dobu behu výpočtu.
 
-   Zvolili sme teda ine riesenie - kazde vlakno ma vlastny vektor pre Triangle_t
-   a teda tu odpada problem synchronizacie zapisu. vectory sa potom mergnu dokopy.
-
+   Zvolil som teda iné riešenie - každé vlákno má vlastný vektor, problém
+   synchronizácie teda odpadá a zápis môže prebiehať nezávisle od ostatných
+   vlákien.
+   Separátne vektory sú po vystúpení z paralelnej sekcie spojené do jedného.
 
 
 Úloha 2: Paralelní průchod stromem
 ===============================================================================
 
 1) Stručně popište použití OpenMP tasků ve vašem řešení.
-   paralelna sekcia sa startuje/inicializuje??? uz vo funkcii marchCubes
-   master thread potom spravi prve vnorenie do recursiveDecomposition.
-   v nej je v cykle first privates - x,y,z lebo ich aktualne hodnoty su potrebne
-   pre jednotlive thready ale thready mozu byt v roznom stadiu spracovavania,
-   takze to nemoze byt shared, shared je len total triangles.
-   na konci tasku musia jednotlive thready cakat aby bol zapis do totalTriangles
-   atomicky a nestalo sa, ze by do 1 premennej zapisovalo viac threadov naraz.
-   na konci recursiveDecomposition je potom cakanie na dokoncenie vsetkych threadov
-   (je to az po vynoreni vsetkych zanoreni, lebo tie zanorenia sa tam ani nedostanu
-   kvoli returnom na zaciatku).
+   Paralelná sekcia začína už v marchCubes, kde následne len jedno vlákno
+   prvýkrat zavolá funkciu recursiveMarchCubes, ktorá po rozdelení podpriestoru
+   vytvorý tasky pre rekurzívne volanie recursiveMarchCubes, ...
+   Keďže sa jednotlivé tasky vytvárajú pre iné časti podpriestoru, musia sa súradnice
+   podpriestoru do tasku predať hodnoty pomocou pragmy firstprivate(x, y, z), kde x, y, z
+   sú súradnice rozdelenej kocky na 8 podkociek.
+   Aby sa správne spočítalo, koľko trojuholnikov sa vytvorilo v jednotlivých taskoch 
+   musí byť počet akumulovaný pomocou pragmy reduction.
+   Keďže recursiveMarchCubes vracia počet vygenerovaných trojuholnikov, musí 
+   pred vrátenim hodnoty počkať na dokončenie všetkých taskov.
 
 2) Jaký vliv má na vaše řešení tzv. "cut-off"? Je vhodné vytvářet nový 
    task pro každou krychli na nejnižší úrovni?
+   Na najnižšej úrovni to nedáva zmysel, réžia okolo vytvárania taskov,
+   ich priradzovania a spušťania by už bola vyššia ako "dobehnutie"
+   najnižšej úrovni stromu sekvenčne z úrnovne o 1 vyššej.
+
+   To potvrdzujú aj moje experimenty s cut-off levelom. 
+   do 4 to bezi cca 10.4 s, 5+ uz bezi 9454;
+   5-7 cca po 10ms perf gain
+   7-8 nic
 
 3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
-   take iste ako pri loope
+   Tak isto ako pri loop implementácii - separátny vektor pre každé vlákno, 
+   tie sa potom spoja do jedného vektora.
 
 Úloha 3: Grafy škálování všech řešení
 ===============================================================================
@@ -67,15 +81,16 @@ Login: xdobro23
 1) Jaké bylo průměrné využití jader pro všechny tři implementace s omezením na 
    18 vláken? Na kolik procent byly využity?
    
-   ref:
-   loop:
-   tree:
+   ref: 2.8%
+   loop: 48.4%
+   tree: 43.8%
 
 2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
    všech jader? Na kolik procent se podařilo využít obě CPU?
    
-   ref:
-   loop:
-   tree:
+   ref: 2.8%
+   loop: 90.9%
+   tree: 68.9%
+
 
 3) Jaké jsou závěry z těchto měření?
