@@ -35,7 +35,7 @@ unsigned TreeMeshBuilder::marchCubes(const ParametricScalarField &field)
     #pragma omp parallel
     {
         #pragma omp single nowait
-        renderedTriangles = recursiveDecomposition(Vec3_t<float>(0, 0, 0), mGridSize, field);
+        renderedTriangles = recursiveMarchCubes(0, Vec3_t<float>(0, 0, 0), mGridSize, field);
     }
 
     mTriangles.reserve(renderedTriangles);
@@ -48,7 +48,8 @@ unsigned TreeMeshBuilder::marchCubes(const ParametricScalarField &field)
 
 
 #define STEP 2
-size_t TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int gridSize, const ParametricScalarField &field)
+#define MAX_TASKS_DEPTH 20
+size_t TreeMeshBuilder::recursiveMarchCubes(int depth, const Vec3_t<float> &cube, int gridSize, const ParametricScalarField &field)
 {
     int totalTriangles = 0;
 
@@ -66,7 +67,7 @@ size_t TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int gr
         for (int y = 0; y < STEP; y++)
         {
             for (int z = 0; z < STEP; z++)
-            #pragma omp task firstprivate(x, y, z) shared(totalTriangles)
+            #pragma omp task firstprivate(x, y, z, depth) shared(totalTriangles) final(depth >= MAX_TASKS_DEPTH)
             {
 	            float c_x = cube.x + x*halfCubeSize;
 	            float c_y = cube.y + y*halfCubeSize;
@@ -79,7 +80,7 @@ size_t TreeMeshBuilder::recursiveDecomposition(const Vec3_t<float> &cube, int gr
                 };
 
                 #pragma omp atomic update
-                totalTriangles += recursiveDecomposition(halfCube, halfCubeSize, field);
+                totalTriangles += recursiveMarchCubes(depth + 1, halfCube, halfCubeSize, field);
             }
         }
 	}

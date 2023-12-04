@@ -27,7 +27,7 @@ protected:
     float evaluateFieldAt(const Vec3_t<float> &pos, const ParametricScalarField &field);
     void emitTriangle(const Triangle_t &triangle);
     const Triangle_t *getTrianglesArray() const {return mTriangles.data();};
-    size_t recursiveDecomposition(const Vec3_t<float> &offset, int gridSize, const ParametricScalarField &field);
+    size_t recursiveMarchCubes(int depth, const Vec3_t<float> &offset, int gridSize, const ParametricScalarField &field);
     bool isEmpty(const Vec3_t<float> &offset, float gridSize, const ParametricScalarField &field);
 
 };
