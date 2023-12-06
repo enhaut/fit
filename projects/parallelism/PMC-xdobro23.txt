@@ -112,16 +112,25 @@ Login: xdobro23
    loop: 48.4%
    tree: 43.8%
 
+   Loop aj tree dosahujú približne 50 CPU Utilizáciu, čo je pri použiti polovice
+   CPU žiaduce.
+
 2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
    všech jader? Na kolik procent se podařilo využít obě CPU?
    
-   ref: 2.8%
-   loop: 90.9%
-   tree: 68.9%
+   Utilizacia CPU:
+      ref: 2.8%
+      loop: 90.9%
+      tree: 68.9%
+
+   Tree sa neblíži utilizácii loopu aj keď výpočet zvládne rýchlejšie. Problém bude
+   najmä to, že niektoré iterácie v tree su veľmi krátke (ak podpriestor neobsahuje
+   isoplochu, preskakuje sa). 
 
 3) Jaké jsou závěry z těchto měření?
    Za výpočetne najefektívnejšiu môžme označiť loop implementáciu pri behu s 36
    vláknami. V časovej efektivite ale dominuje tree implementacia, aj keď jej
    priemerne využitie CPU je nižšie a to hlavne kvôli tomu, že podpriestor
    priebežne obmedzuje podľa toho, či obsahuje isoplochu alebo nie.
+   
 
