@@ -86,7 +86,8 @@ Login: xdobro23
    Na grafe slabého škálovania vidíme to isté a to, že tree algoritmus
    je radovo rýchlejší. Dokonca loop implementácia je efektívnejšia v 
    škálovani cez viacero vlákien (rýchlosť výpočtu s pridávaním vlákien
-   (asymptoticky) stúpa).
+   (asymptoticky) stúpa). Čo ale nedáva moc zmysel, pretože s väčším
+   počtom jadier logicky rastie režia.
 
 2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
    mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
