@@ -22,3 +22,12 @@
 [submodule "5semester/bachelor_thesis_progress_report"]
 	path = 5semester/bachelor_thesis_progress_report
 	url = git@github.com:enhaut/Semestral-project-defense.git
+[submodule "6semester/bachelor_thesis/thesis_text"]
+	path = 6semester/bachelor_thesis/thesis_text
+	url = git@github.com:enhaut/BP-thesis.git
+[submodule "6semester/bachelor_thesis/defence_slides"]
+	path = 6semester/bachelor_thesis/defence_slides
+	url = git@github.com:enhaut/BP-defense.git
+[submodule "6semester/bachelor_thesis/implementation"]
+	path = 6semester/bachelor_thesis/implementation
+	url = git@github.com:enhaut/apaler.git
