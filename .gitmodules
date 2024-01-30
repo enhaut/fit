@@ -19,3 +19,6 @@
 [submodule "5semester/IMP"]
 	path = 5semester/IMP
 	url = git@github.com:enhaut/imp-project.git
+[submodule "5semester/bachelor_thesis_progress_report"]
+	path = 5semester/bachelor_thesis_progress_report
+	url = git@github.com:enhaut/Semestral-project-defense.git
