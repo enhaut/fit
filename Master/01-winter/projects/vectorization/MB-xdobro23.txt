@@ -1,0 +1,44 @@
+#### Stručně odpovězte na následující otázky: ######
+
+
+1. Byla "Line" vektorizace časově efektivní? Proč?
+==============================================================================
+Oproti referenčnej implementácii áno pretože využíva vektorizáciu - v jednej iterácii je vypočítaných viac hodnôt.
+Umožnilo nám to vymenenie cyklov, teda (závislé) iterácie algoritmu sa nerobia pre jednotlivé pixely separátne ale pre celý riadok,
+výpočet viacerých hodnôt sa teda môže vektorizovať.
+
+
+2. Jaká byla dosažena výkonnost v Intel Advisoru pro jednotlivé implementace 
+(v GFLOPS)?
+==============================================================================
+
+| Implementácia | GFLOPS |
+|---------------|--------|
+| Referenčná    | 0.24   |
+| Line          | 31.6   |
+| Batch         | 37.505 |
+
+
+3. Jaká část kódu byla vektorizována v "Line" implementaci? Vyčteme tuto 
+informaci i u batch kalkulátoru?
+==============================================================================
+Vektorizovala sa hlavne najvnútornejšia smyčka - samotný výpočet. Tak isto pre
+batch implementacií je vektorizovaný samotný výpočet ako aj "vedľajšie" smyčky, ktoré
+sa starajú o inicializáciu hodnôt či polí.
+
+Vektorizovné smyčky tvoria 75% (line) a 54% (batch) času behu.
+
+
+4. Co vyčteme z Roofline modelu pro obě vektorizované implementace?
+==============================================================================
+Pri oboch implementáciach môžeme vidieť, že naś už začína brzdiť pamäť a je teda
+potrebné zvýšiť aritmetickú intenzitu zlepšením práce s pamäťou (bohužial, už
+mi nenapadá, ako by sa dala ešte vylepšiť).
+
+AVX jednotka nás nebrzdí.
+
+==============================================================================
+Obe implementácie sú rádovo rýchlejšie ako referenčná, keďže využívajú vektorizáciu.
+Teda s jednou inštrukciou spracujeme viac dát naraz.
+
+

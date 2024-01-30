@@ -1,0 +1,137 @@
+Architektury Výpočetních Systémů (AVS 2023)
+Projekt č. 2 (PMC)
+Login: xdobro23
+
+Úloha 1: Paralelizace původního řešení
+===============================================================================
+
+1) Kterou ze smyček (viz zadání) je vhodnější paralelizovat a co způsobuje 
+   neefektivitu paralelizaci té druhé?
+  Najvhodnejšie je paralelizovať najvyššiu smyčku (tá v marchCubes). Hlavne preto,
+  že tak paralelizujeme väčšie množstvo práce. Smyčku v evaluateFieldAt môžme
+  s miernym zvýšením rýchlosti výpočtu vektorizovať.
+
+
+2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
+   Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
+   Vybral som dynamické plánovanie a to hlavne preto, že dopredu nevieme, koľko
+   ktorá iterácia "zaberie" času (niektoré iterácie nemusia obsahovať žiadnu isoplochu)
+   a teda sa veľká časť code-pathu preskočí.
+   Z priemeru 10 meraní (pre chunk sizes 8, 16, 32 a 64) som dospel k tomu,
+   že pri chunk size 32 je výpočet o rádovo nižšie desiatky ms rýchlejší.
+
+3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+   Referenčná implementácia využíva len 1 zdielaný vektor pre všetky vlákna. 
+   V paralelizovanej verzii výpočtu by takýto prístup museli zaistiť výlučný
+   prístup pre 1 vlákno (ktore zapisuje) a ostatné by prípadne museli čakať.
+   Takáto synchronizácia ale približne 4x predlžuje celkovú dobu behu výpočtu.
+
+   Zvolil som teda iné riešenie - každé vlákno má vlastný vektor, problém
+   synchronizácie teda odpadá a zápis môže prebiehať nezávisle od ostatných
+   vlákien.
+   Separátne vektory sú po vystúpení z paralelnej sekcie spojené do jedného.
+
+
+Úloha 2: Paralelní průchod stromem
+===============================================================================
+
+1) Stručně popište použití OpenMP tasků ve vašem řešení.
+   Paralelná sekcia začína už v marchCubes, kde následne len jedno vlákno
+   prvýkrat zavolá funkciu recursiveMarchCubes, ktorá po rozdelení podpriestoru
+   vytvorý tasky pre rekurzívne volanie recursiveMarchCubes, ...
+   Keďže sa jednotlivé tasky vytvárajú pre iné časti podpriestoru, musia sa súradnice
+   podpriestoru do tasku predať hodnoty pomocou pragmy firstprivate(x, y, z), kde x, y, z
+   sú súradnice rozdelenej kocky na 8 podkociek.
+   Aby sa správne spočítalo, koľko trojuholnikov sa vytvorilo v jednotlivých taskoch 
+   musí byť počet akumulovaný pomocou pragmy reduction.
+   Keďže recursiveMarchCubes vracia počet vygenerovaných trojuholnikov, musí 
+   pred vrátenim hodnoty počkať na dokončenie všetkých taskov.
+
+2) Jaký vliv má na vaše řešení tzv. "cut-off"? Je vhodné vytvářet nový 
+   task pro každou krychli na nejnižší úrovni?
+   (V odpovedi na túto otázku predpokladám, že "koreň" priestoru je v stromovej 
+   hierarchii na úrovni 0)
+   Cut-off som implementoval tak, že vytváranie taskov sa v definované hĺbke
+   zastaví a vypočet pre zvyšok podpriestoru daného vlákna na ňom prebehne
+   sekvenčne. To zaisťuje korektnosť algoritmu. Na najnižšej úrovni to nedáva
+   zmysel, réžia okolo vytvárania taskov, ich priradzovania a spušťania by už
+   bola vyššia ako spracovanie najnižšej úrovne stromu sekvenčne z úrovne o
+   1 vyššej. 
+
+   To potvrdzujú aj moje experimenty s cut-off levelom. 
+   Do hĺbky 3 výpočet s grid size 256 trvá približne 10,4s. S hĺbkou 4 výpočet
+   zaberie 9,4s; hlbka 5 je približne o 10ms rýchlejšia. Hĺbka 6, 7 a vyššia ale
+   nemá negatívny vplyv na rýchlosť výpočtu. Robit teda cut-off na základe hĺbky
+   nedáva zmysel, keďže rozbaliť každý podpriestor v separatnom vlakne je (aj keď
+   o málo) rýchlejšie.
+
+3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+   Tak isto ako pri loop implementácii - separátny vektor pre každé vlákno, 
+   tie sa potom spoja do jedného vektora.
+
+Úloha 3: Grafy škálování všech řešení
+===============================================================================
+
+1) Stručně zhodnoťte efektivitu vytvořených řešení (na základě grafů ŠKÁLOVÁNÍ).
+   Z grafu škálovania algoritmov pre rôzne veľký vstup môžme povedať, že loop
+   implementácia pre malé vstupy škáluje efektívnejšie. Približne od velkosti
+   vstupu 2^12 už ale tree algoritmus škáluje efektívnejšie a približne lineárne
+   vzhľadom k veľkosti vstupu.
+   Na grafe silného škálovania vidíme, že tree implementácia je pre všetky 
+   merané vstupy a počet vlákien najrýchlejšia. V tree, pre malé vstupy už
+   ale pre 2^5 vlákien môžme pozorovať spomalenie oproti 2^4 vlákien. To je
+   spôsobné najmä tým, že v jednotlivých iteráciach výpočtu nie je tak veľa
+   práce a je tu teda veľká réžia okolo paralalizácie. Zároveň ale vidíme,
+   že loop implementácia pre menšie vstupy silno škáluje efektívnejšie.
+   Na grafe slabého škálovania vidíme to isté a to, že tree algoritmus
+   je radovo rýchlejší. Dokonca loop implementácia je efektívnejšia v 
+   škálovani cez viacero vlákien (rýchlosť výpočtu s pridávaním vlákien
+   (asymptoticky) stúpa). Čo ale nedáva moc zmysel, pretože s väčším
+   počtom jadier logicky rastie režia.
+
+2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
+   mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
+   Neefektivný bude hlavne pri malej velkosti mriežky a veľkým počtom vlákien.
+   Vtedy bude program veľa času venovať réžii ale práce bude relatívne málo.
+
+3) Je (nebo není) stromový algoritmus efektivnější z pohledu slabého škálování 
+   vzhledem ke vstupu?
+   Nie je, pre menší vstup dobre neškáluje.
+
+4) Jaký je rozdíl mezi silným a slabým škálováním?
+   Silné škálovanie hovorí o rýchlosti riešenia problému konštantnej veľkosti.
+   Naopak slabé škálovanie hovorí o veľkosti úlohy, ktorý vieme v konštantnom
+   čase vyriešiť.
+
+Úloha 4: Analýza využití jader pomocí VTune
+================================================================================
+
+1) Jaké bylo průměrné využití jader pro všechny tři implementace s omezením na 
+   18 vláken? Na kolik procent byly využity?
+   
+   ref: 2.8%
+   loop: 48.4%
+   tree: 43.8%
+
+   Loop aj tree dosahujú približne 50 CPU Utilizáciu, čo je pri použiti polovice
+   CPU žiaduce.
+
+2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
+   všech jader? Na kolik procent se podařilo využít obě CPU?
+   
+   Utilizacia CPU:
+      ref: 2.8%
+      loop: 90.9%
+      tree: 68.9%
+
+   Tree sa neblíži utilizácii loopu aj keď výpočet zvládne rýchlejšie. Problém bude
+   najmä to, že niektoré iterácie v tree su veľmi krátke (ak podpriestor neobsahuje
+   isoplochu, preskakuje sa). 
+
+3) Jaké jsou závěry z těchto měření?
+   Za výpočetne najefektívnejšiu môžme označiť loop implementáciu pri behu s 36
+   vláknami. V časovej efektivite ale dominuje tree implementacia, aj keď jej
+   priemerne využitie CPU je nižšie a to hlavne kvôli tomu, že podpriestor
+   priebežne obmedzuje podľa toho, či obsahuje isoplochu alebo nie.
+   
+
