@@ -31,3 +31,6 @@
 [submodule "6semester/bachelor_thesis/implementation"]
 	path = 6semester/bachelor_thesis/implementation
 	url = git@github.com:enhaut/apaler.git
+[submodule "Master/01-winter/UPA/projects"]
+	path = Master/01-winter/UPA/projects
+	url = git@github.com:enhaut/UPA-projects.git
