@@ -34,3 +34,6 @@
 [submodule "Master/01-winter/UPA/projects"]
 	path = Master/01-winter/UPA/projects
 	url = git@github.com:enhaut/UPA-projects.git
+[submodule "Master/01-winter/TIN/HWs"]
+	path = Master/01-winter/TIN/HWs
+	url = git@github.com:enhaut/TIN.git
