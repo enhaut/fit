@@ -37,3 +37,6 @@
 [submodule "Master/01-winter/TIN/HWs"]
 	path = Master/01-winter/TIN/HWs
 	url = git@github.com:enhaut/TIN.git
+[submodule "Master/01-winter/SUI/projects"]
+	path = Master/01-winter/SUI/projects
+	url = git@github.com:xplick04/SUI.git
